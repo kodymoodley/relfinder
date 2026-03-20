@@ -1,37 +1,38 @@
 <template>
   <main class="connection-view">
     <div class="connection-card">
-      <h1 class="app-title">RelFinder</h1>
-      <p class="app-subtitle">Discover relationships in RDF knowledge graphs</p>
+      <div class="card-header">
+        <h1 class="app-title">RelFinder</h1>
+        <p class="app-subtitle">Discover relationships in RDF knowledge graphs</p>
+      </div>
 
-      <!-- Source type selector -->
-      <div class="source-tabs">
+      <!-- Custom tabs — avoids PrimeVue Tabs provide/inject context bug in Vue 3.5 -->
+      <div class="tab-nav" role="tablist">
         <button
-          :class="['tab', { active: activeTab === 'sparql' }]"
+          role="tab"
+          class="tab-btn"
+          :class="{ 'tab-btn--active': activeTab === 'sparql' }"
+          :aria-selected="activeTab === 'sparql'"
           @click="activeTab = 'sparql'"
         >
+          <i class="pi pi-server tab-icon" />
           SPARQL Endpoint
         </button>
         <button
-          :class="['tab', { active: activeTab === 'file' }]"
+          role="tab"
+          class="tab-btn"
+          :class="{ 'tab-btn--active': activeTab === 'file' }"
+          :aria-selected="activeTab === 'file'"
           @click="activeTab = 'file'"
         >
+          <i class="pi pi-file tab-icon" />
           Upload File
         </button>
       </div>
 
-      <!-- SPARQL endpoint form — placeholder, will be fleshed out in Stage 2 -->
-      <div v-if="activeTab === 'sparql'" class="form-section">
-        <p class="placeholder-note">
-          SPARQL connection form coming in Stage 2.
-        </p>
-      </div>
-
-      <!-- File upload — placeholder -->
-      <div v-else class="form-section">
-        <p class="placeholder-note">
-          File upload coming in Stage 2.
-        </p>
+      <div class="tab-panel">
+        <SparqlForm v-if="activeTab === 'sparql'" />
+        <RdfFileUpload v-else />
       </div>
     </div>
   </main>
@@ -39,9 +40,10 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import SparqlForm from '@/components/connection/SparqlForm.vue'
+import RdfFileUpload from '@/components/connection/RdfFileUpload.vue'
 
-type Tab = 'sparql' | 'file'
-const activeTab = ref<Tab>('sparql')
+const activeTab = ref<'sparql' | 'file'>('sparql')
 </script>
 
 <style scoped>
@@ -50,62 +52,78 @@ const activeTab = ref<Tab>('sparql')
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background: var(--rf-bg);
+  padding: 2rem 1rem;
+  background: var(--p-surface-ground);
 }
 
 .connection-card {
   width: 100%;
-  max-width: 480px;
-  padding: 2.5rem;
+  max-width: 520px;
+  background: var(--p-content-background);
+  border: 1px solid var(--p-content-border-color);
   border-radius: 12px;
-  background: var(--rf-surface);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.card-header {
+  padding: 2rem 2rem 1.25rem;
+  border-bottom: 1px solid var(--p-content-border-color);
 }
 
 .app-title {
   margin: 0 0 0.25rem;
-  font-size: 2rem;
+  font-size: 1.75rem;
   font-weight: 700;
-  color: var(--rf-primary);
+  color: var(--p-primary-color);
 }
 
 .app-subtitle {
-  margin: 0 0 2rem;
-  color: var(--rf-text-muted);
-  font-size: 0.95rem;
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--p-text-muted-color);
 }
 
-.source-tabs {
+/* ── Tab navigation ─────────────────────────────────────────────────────── */
+
+.tab-nav {
   display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--p-content-border-color);
 }
 
-.tab {
+.tab-btn {
   flex: 1;
-  padding: 0.5rem 1rem;
-  border: 1px solid var(--rf-border);
-  border-radius: 6px;
-  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 0.75rem 1rem;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--p-text-muted-color);
   cursor: pointer;
-  font-size: 0.9rem;
-  color: var(--rf-text-muted);
-  transition: all 0.15s;
+  transition: color 0.15s, border-color 0.15s;
 }
 
-.tab.active {
-  background: var(--rf-primary);
-  border-color: var(--rf-primary);
-  color: #fff;
+.tab-btn:hover {
+  color: var(--p-text-color);
 }
 
-.form-section {
-  min-height: 120px;
+.tab-btn--active {
+  color: var(--p-primary-color);
+  border-bottom-color: var(--p-primary-color);
 }
 
-.placeholder-note {
-  color: var(--rf-text-muted);
-  font-style: italic;
-  font-size: 0.9rem;
+.tab-icon {
+  font-size: 0.85rem;
+}
+
+/* ── Tab panel ──────────────────────────────────────────────────────────── */
+
+.tab-panel {
+  padding: 1.5rem 2rem 2rem;
 }
 </style>

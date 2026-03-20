@@ -8,6 +8,7 @@
  */
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import type { Store } from 'n3'
 
 export type SourceType = 'sparql' | 'file'
 
@@ -32,8 +33,8 @@ export interface FileSource {
   type: 'file'
   /** Human-readable filename shown in the UI */
   fileName: string
-  /** Raw Turtle/N-Triples/JSON-LD content parsed from the uploaded file */
-  content: string
+  /** Parsed in-memory RDF store — passed directly to Comunica */
+  store: Store
 }
 
 export type Source = SparqlSource | FileSource
@@ -46,13 +47,8 @@ export const useConnectionStore = defineStore('connection', () => {
 
   // ── Getters ────────────────────────────────────────────────────────────────
 
-  const isSparqlSource = computed(
-    () => source.value?.type === 'sparql',
-  )
-
-  const isFileSource = computed(
-    () => source.value?.type === 'file',
-  )
+  const isSparqlSource = computed(() => source.value?.type === 'sparql')
+  const isFileSource = computed(() => source.value?.type === 'file')
 
   /**
    * Returns the Authorization header value for the active SPARQL source,
@@ -62,8 +58,27 @@ export const useConnectionStore = defineStore('connection', () => {
     if (source.value?.type !== 'sparql') return undefined
     const { username, password } = source.value
     if (!username) return undefined
-    const encoded = btoa(`${username}:${password}`)
-    return `Basic ${encoded}`
+    return `Basic ${btoa(`${username}:${password}`)}`
+  })
+
+  /**
+   * Ready-to-use QueryContext for the lib/sparql functions.
+   * Returns null when no source is connected.
+   */
+  const queryContext = computed(() => {
+    if (source.value?.type !== 'sparql') return null
+    return {
+      endpointUrl: source.value.endpointUrl,
+      authorizationHeader: authorizationHeader.value,
+    }
+  })
+
+  /**
+   * The N3.js Store for file-based sources, or null for SPARQL sources.
+   */
+  const rdfStore = computed(() => {
+    if (source.value?.type !== 'file') return null
+    return source.value.store
   })
 
   // ── Actions ────────────────────────────────────────────────────────────────
@@ -80,7 +95,7 @@ export const useConnectionStore = defineStore('connection', () => {
     }
   }
 
-  function connectFile(config: Omit<FileSource, 'type'>) {
+  function connectFile(config: { fileName: string; store: Store }) {
     source.value = { type: 'file', ...config }
     isConnected.value = true
   }
@@ -112,6 +127,8 @@ export const useConnectionStore = defineStore('connection', () => {
     isSparqlSource,
     isFileSource,
     authorizationHeader,
+    queryContext,
+    rdfStore,
     connectSparql,
     connectFile,
     disconnect,

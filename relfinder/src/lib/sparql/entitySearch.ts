@@ -15,7 +15,18 @@
 
 import type { Store } from 'n3'
 import { executeSelect, executeSelectOnStore } from './engine'
-import type { QueryContext, EntitySearchResult, DataProperty, GraphNode, MergedEdge } from './types'
+import { getQueries } from './queryBuilder'
+import { buildRelationshipsGraph, mergeEdgeDuplicates } from './graphBuilder'
+import {
+  QueryCyclesStrategy,
+  type QueryContext,
+  type EntitySearchResult,
+  type DataProperty,
+  type GraphNode,
+  type RelationshipGraph,
+  type RelationshipQueryConfig,
+  type PathCollection,
+} from './types'
 
 // ── Internal helpers ──────────────────────────────────────────────────────────
 
@@ -281,14 +292,11 @@ export async function findRelationships(
     ignoredObjects?: string[]
     allowedObjectProperties?: string[]
     ontologyPrefix?: string
+    avoidCycles?: QueryCyclesStrategy
     store?: Store
   } = {},
-): Promise<import('./types').RelationshipGraph> {
-  const { getQueries } = await import('./queryBuilder')
-  const { buildRelationshipsGraph, mergeEdgeDuplicates } = await import('./graphBuilder')
-  const { QueryCyclesStrategy } = await import('./types')
-
-  const queryConfig: import('./types').RelationshipQueryConfig = {
+): Promise<RelationshipGraph> {
+  const queryConfig: RelationshipQueryConfig = {
     entity1IRI: entity1,
     entity2IRI: entity2,
     ignoredObjects: options.ignoredObjects ?? [],
@@ -296,13 +304,13 @@ export async function findRelationships(
       'http://www.w3.org/1999/02/22-rdf-syntax-ns#type',
       'http://www.w3.org/2004/02/skos/core#subject',
     ],
-    avoidCycles: QueryCyclesStrategy.NO_INTERMEDIATE_DUPLICATES,
+    avoidCycles: options.avoidCycles ?? QueryCyclesStrategy.NO_INTERMEDIATE_DUPLICATES,
     maxDistance,
     allowedObjectProperties: options.allowedObjectProperties ?? [],
   }
 
   const queryBlocks = getQueries(queryConfig)
-  const pathCollections: import('./types').PathCollection[] = []
+  const pathCollections: PathCollection[] = []
 
   for (const blocks of queryBlocks.values()) {
     for (const block of blocks) {
