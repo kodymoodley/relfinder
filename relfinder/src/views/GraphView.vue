@@ -3,7 +3,7 @@
     <!-- ── Sidebar ──────────────────────────────────────────────────────────── -->
     <aside class="sidebar" :class="{ 'sidebar--collapsed': sidebarCollapsed }">
       <div class="sidebar-header">
-        <span class="app-brand">RelFinder</span>
+        <span v-show="!sidebarCollapsed" class="app-brand">RelFinder</span>
         <div class="header-actions">
           <Button
             :icon="sidebarCollapsed ? 'pi pi-chevron-right' : 'pi pi-chevron-left'"
@@ -14,6 +14,7 @@
             :aria-label="sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'"
           />
           <Button
+            v-show="!sidebarCollapsed"
             icon="pi pi-power-off"
             text
             rounded
@@ -33,6 +34,9 @@
             label="Entity 1"
             placeholder="Search…"
             dot-color="#4f8ef7"
+            :allowed-classes="graphOptions.allowedClasses"
+            :language="graphOptions.language"
+            :custom-label-properties="graphOptions.customLabelProperties"
             @select="entity1 = $event"
           />
         </section>
@@ -43,6 +47,9 @@
             label="Entity 2"
             placeholder="Search…"
             dot-color="#f76b4f"
+            :allowed-classes="graphOptions.allowedClasses"
+            :language="graphOptions.language"
+            :custom-label-properties="graphOptions.customLabelProperties"
             @select="entity2 = $event"
           />
         </section>
@@ -118,6 +125,7 @@
     <!-- ── Node detail drawer ───────────────────────────────────────────────── -->
     <NodeDetail
       :node="selectedNode"
+      :language="graphOptions.language"
       @update:node="selectedNode = $event"
     />
   </div>
@@ -161,6 +169,9 @@ const graphOptions = ref<GraphOptions>({
     'http://www.w3.org/2004/02/skos/core#subject',
   ],
   avoidCycles: QueryCyclesStrategy.NO_INTERMEDIATE_DUPLICATES,
+  allowedClasses: [],
+  language: '',
+  customLabelProperties: [],
 })
 
 // ── Class colour assignment ───────────────────────────────────────────────────
@@ -207,6 +218,7 @@ async function onFindRelationships() {
       {
         ignoredProperties: graphOptions.value.ignoredProperties,
         avoidCycles: graphOptions.value.avoidCycles,
+        language: graphOptions.value.language,
         store,
       },
     )
@@ -261,6 +273,11 @@ function shortIri(iri: string): string {
 
 .sidebar--collapsed {
   width: 48px;
+}
+
+.sidebar--collapsed .sidebar-header {
+  justify-content: center;
+  padding-inline: 0;
 }
 
 .sidebar-header {

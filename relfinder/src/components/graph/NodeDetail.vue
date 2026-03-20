@@ -4,7 +4,7 @@
     position="right"
     :header="node?.label ?? 'Node details'"
     class="node-detail-drawer"
-    :pt="{ root: { style: 'width: 360px' } }"
+    :pt="{ root: { style: 'width: 360px' }, header: { style: 'padding-left: 1.5rem' }, content: { style: 'padding: 1.25rem 1.5rem' } }"
   >
     <template v-if="node">
       <!-- IRI -->
@@ -70,7 +70,7 @@ import { useConnectionStore } from '@/stores/connection'
 import { fetchDataProperties } from '@/lib/sparql/entitySearch'
 import type { GraphNode, DataProperty } from '@/lib/sparql/types'
 
-const props = defineProps<{ node: GraphNode | null }>()
+const props = defineProps<{ node: GraphNode | null; language?: string }>()
 const emit = defineEmits<{ 'update:node': [value: GraphNode | null] }>()
 
 const connectionStore = useConnectionStore()
@@ -99,7 +99,7 @@ watch(
       const store = connectionStore.rdfStore ?? undefined
       const effectiveContext = context ?? { endpointUrl: '' }
 
-      dataProps.value = await fetchDataProperties(node.iri, effectiveContext, 50, store)
+      dataProps.value = await fetchDataProperties(node.iri, effectiveContext, 50, store, props.language ?? 'en')
     } catch (err) {
       propsError.value = 'Could not load properties for this node.'
     } finally {

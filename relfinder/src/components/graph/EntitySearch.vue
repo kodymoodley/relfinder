@@ -2,9 +2,18 @@
   <div class="entity-search">
     <div class="field">
       <label :for="`entity-${id}-input`">{{ label }}</label>
+
+      <!--
+        AutoComplete is only mounted while no entity is selected.
+        Destroying it on selection prevents PrimeVue from firing a second
+        @complete (with the selected label as query) that would trigger
+        force-selection to clear the value when the new suggestion list
+        doesn't contain an exact match.
+      -->
       <AutoComplete
+        v-if="!selectedEntity"
         :inputId="`entity-${id}-input`"
-        v-model="selectedEntity"
+        v-model="inputText"
         :suggestions="suggestions"
         option-label="label"
         :placeholder="placeholder"
@@ -13,7 +22,6 @@
         fluid
         @complete="onSearch"
         @item-select="onSelect"
-        @clear="onClear"
       >
         <template #option="{ option }">
           <div class="suggestion-item">
@@ -29,14 +37,15 @@
           <span class="no-results">No entities found</span>
         </template>
       </AutoComplete>
-    </div>
 
-    <div v-if="selectedEntity" class="selected-chip">
-      <i class="pi pi-circle-fill chip-dot" :style="{ color: dotColor }" />
-      <span class="chip-label" :title="selectedEntity.iri">{{ selectedEntity.label }}</span>
-      <button class="chip-remove" @click="onClear" aria-label="Remove">
-        <i class="pi pi-times" />
-      </button>
+      <!-- Chip replaces the input once an entity is selected -->
+      <div v-else class="selected-chip">
+        <i class="pi pi-circle-fill chip-dot" :style="{ color: dotColor }" />
+        <span class="chip-label" :title="selectedEntity.iri">{{ selectedEntity.label }}</span>
+        <button class="chip-remove" @click="onClear" aria-label="Remove">
+          <i class="pi pi-times" />
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -57,6 +66,10 @@ const props = defineProps<{
   dotColor?: string
   /** RDF class IRIs to restrict search to. Empty = all classes. */
   allowedClasses?: string[]
+  /** RDF language tag for label matching (e.g. 'en'). Empty = any language. */
+  language?: string
+  /** Extra predicate IRIs to recognise as labels in addition to the built-in set. */
+  customLabelProperties?: string[]
 }>()
 
 const emit = defineEmits<{
@@ -65,6 +78,9 @@ const emit = defineEmits<{
 
 const connectionStore = useConnectionStore()
 
+// Separate refs: inputText drives the AutoComplete input; selectedEntity drives
+// the chip. Using v-if on the AutoComplete means these never conflict.
+const inputText = ref<string | EntitySearchResult>('')
 const selectedEntity = ref<EntitySearchResult | null>(null)
 const suggestions = ref<EntitySearchResult[]>([])
 const searching = ref(false)
@@ -72,29 +88,23 @@ const searching = ref(false)
 // ── Search ────────────────────────────────────────────────────────────────────
 
 async function onSearch(event: { query: string }) {
-  const query = event.query.trim().toLowerCase()
+  const query = event.query.trim()
   searching.value = true
 
   try {
     const context = connectionStore.queryContext
     const store = connectionStore.rdfStore ?? undefined
-
-    // Use a dummy context for file-based sources — the store overrides it
     const effectiveContext = context ?? { endpointUrl: '' }
 
-    const results = await searchEntities(
+    suggestions.value = await searchEntities(
       effectiveContext,
       props.allowedClasses ?? [],
       store,
+      50,
+      query,
+      props.language ?? 'en',
+      props.customLabelProperties ?? [],
     )
-
-    suggestions.value = query
-      ? results.filter(
-          (r) =>
-            r.label.toLowerCase().includes(query) ||
-            r.iri.toLowerCase().includes(query),
-        )
-      : results
   } catch {
     suggestions.value = []
   } finally {
@@ -110,12 +120,12 @@ function onSelect(event: { value: EntitySearchResult }) {
 function onClear() {
   selectedEntity.value = null
   suggestions.value = []
+  inputText.value = ''
   emit('select', null)
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-/** Returns the local name of a class IRI for display in the suggestion tag. */
 function shortClass(classIri: string): string {
   return classIri.split('/').pop()?.split('#').pop() ?? classIri
 }
@@ -178,6 +188,7 @@ function shortClass(classIri: string): string {
   border: 1px solid var(--p-content-border-color);
   border-radius: 20px;
   font-size: 0.8rem;
+  min-height: 2.25rem;
 }
 
 .chip-dot {

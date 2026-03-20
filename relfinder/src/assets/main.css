@@ -71,3 +71,37 @@ body {
 #app {
   height: 100%;
 }
+
+/* ── PrimeVue component padding overrides ───────────────────────────────────
+ * Rules outside a CSS layer beat the 'primevue' layer, so no !important needed.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+/* Buttons */
+.p-button {
+  padding-block: 0.6rem;
+  padding-inline: 1.2rem;
+}
+.p-button.p-button-sm {
+  padding-block: 0.45rem;
+  padding-inline: 0.85rem;
+}
+
+/* Text inputs (InputText, AutoComplete, Password inner input) */
+.p-inputtext {
+  padding-block: 0.6rem;
+  padding-inline: 0.85rem;
+}
+.p-inputtext.p-inputtext-sm {
+  padding-block: 0.45rem;
+  padding-inline: 0.7rem;
+}
+
+/* Select / Dropdown label */
+.p-select-label {
+  padding-block: 0.6rem;
+  padding-inline: 0.85rem;
+}
+.p-select.p-select-sm .p-select-label {
+  padding-block: 0.45rem;
+  padding-inline: 0.7rem;
+}

@@ -53,41 +53,125 @@ async function runSelect(
 // ── Entity search ─────────────────────────────────────────────────────────────
 
 /**
- * Retrieves all entities of the given RDF classes from the endpoint.
+ * Retrieves entities of the given RDF classes from the endpoint.
  *
  * Ported from `SPARQLEndpoint.entities()`. The `allowedClasses` list replaces
  * the hardcoded `allowed_entity_classes` constructor parameter — pass an empty
  * array to return entities of any class.
  *
  * @param allowedClasses  Array of class IRIs to filter by (full IRIs, not prefixed).
+ * @param limit           Maximum number of results (default 200 — avoids timeout on large endpoints).
  */
 export async function searchEntities(
   context: QueryContext,
   allowedClasses: string[] = [],
   store?: Store,
+  limit = 50,
+  textFilter = '',
+  language = 'en',
+  customLabelProperties: string[] = [],
 ): Promise<EntitySearchResult[]> {
   const classFilter =
     allowedClasses.length > 0
       ? `FILTER (?ctype IN (${allowedClasses.map((c) => `<${c}>`).join(', ')}))`
       : ''
 
+  // Escape backslashes and double-quotes so the string is safe inside a SPARQL
+  // string literal, then wrap in STRSTARTS for case-insensitive prefix match.
+  const labelFilter = textFilter.trim()
+    ? `FILTER (STRSTARTS(LCASE(STR(?label)), LCASE("${textFilter.trim().replace(/\\/g, '\\\\').replace(/"/g, '\\"')}")))`
+    : ''
+
+  const langFilter = language
+    ? `FILTER (lang(?label) = '${language}' || lang(?label) = '')`
+    : ''
+
+  let query: string
+
+  if (store) {
+    // Local in-memory store: scan any xsd:string / lang-tagged predicate as a
+    // label. This handles custom vocabularies (e.g. :hasName, :hasTitle) without
+    // requiring the user to configure every predicate manually. Numeric and other
+    // non-string datatypes are excluded by the FILTER.
+    query = `
+      SELECT DISTINCT ?s ?ctype ?label WHERE {
+        ?s a ?ctype .
+        ?s ?lp ?label .
+        FILTER (isLiteral(?label) && (
+          datatype(?label) = <http://www.w3.org/2001/XMLSchema#string> ||
+          lang(?label) != ''
+        ))
+        ${classFilter}
+        ${labelFilter}
+        ${langFilter}
+      } LIMIT ${limit}
+    `
+  } else {
+    // Remote endpoint: restrict to a known set of label predicates so we don't
+    // issue a full-scan query over a potentially huge dataset.
+    const builtinLabelProps = [
+      'http://www.w3.org/2000/01/rdf-schema#label',
+      'http://www.w3.org/2004/02/skos/core#prefLabel',
+      'http://xmlns.com/foaf/0.1/name',
+      'http://schema.org/name',
+      'http://purl.org/dc/elements/1.1/title',
+      'http://purl.org/dc/terms/title',
+    ]
+    const allLabelProps = [...new Set([...builtinLabelProps, ...customLabelProperties])]
+    const labelPropsValues = allLabelProps.map((p) => `<${p}>`).join('\n        ')
+
+    query = `
+      SELECT DISTINCT ?s ?ctype ?label WHERE {
+        ?s a ?ctype .
+        VALUES ?lp { ${labelPropsValues} }
+        ?s ?lp ?label .
+        ${classFilter}
+        ${labelFilter}
+        ${langFilter}
+      } LIMIT ${limit}
+    `
+  }
+
+  const bindings = await runSelect(query, context, store)
+
+  // Deduplicate by IRI — an entity may have multiple matching string predicates
+  // (e.g. both :hasName and :hasNationality), keep the first match only.
+  const seen = new Set<string>()
+  return bindings
+    .filter((b) => b['s'] && b['label'] && b['ctype'])
+    .reduce<EntitySearchResult[]>((acc, b) => {
+      const iri = b['s']!.value
+      if (!seen.has(iri)) {
+        seen.add(iri)
+        acc.push({ iri, label: b['label']!.value, class: b['ctype']!.value })
+      }
+      return acc
+    }, [])
+}
+
+// ── Available class discovery ─────────────────────────────────────────────────
+
+/**
+ * Queries the endpoint for distinct `rdf:type` values used by any subject,
+ * up to `limit` results. Used to populate the class-filter dropdown in the UI.
+ */
+export async function fetchAvailableClasses(
+  context: QueryContext,
+  limit = 50,
+  store?: Store,
+): Promise<string[]> {
   const query = `
-    SELECT ?s ?ctype ?label WHERE {
-      ?s a ?ctype ;
-         <http://www.w3.org/2000/01/rdf-schema#label> ?label .
-      ${classFilter}
-    }
+    SELECT DISTINCT ?type WHERE {
+      ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?type .
+      FILTER (!isBlank(?type))
+    } LIMIT ${limit}
   `
 
   const bindings = await runSelect(query, context, store)
 
   return bindings
-    .filter((b) => b['s'] && b['label'] && b['ctype'])
-    .map((b) => ({
-      iri: b['s']!.value,
-      label: b['label']!.value,
-      class: b['ctype']!.value,
-    }))
+    .filter((b) => b['type'])
+    .map((b) => b['type']!.value)
 }
 
 // ── Label fetching ────────────────────────────────────────────────────────────
@@ -106,6 +190,7 @@ export async function fetchLabels(
   iris: string[],
   context: QueryContext,
   store?: Store,
+  language = 'en',
 ): Promise<Map<string, string>> {
   if (iris.length === 0) return new Map()
 
@@ -113,10 +198,14 @@ export async function fetchLabels(
     .map((iri) => `{ ?p <http://www.w3.org/2000/01/rdf-schema#label> ?label FILTER(?p = <${iri}>) }`)
     .join('\n    UNION\n    ')
 
+  const langFilter = language
+    ? `FILTER (lang(?label) = '${language}' || lang(?label) = '')`
+    : ''
+
   const query = `
     SELECT * WHERE {
       ${subqueries}
-      FILTER (lang(?label) = 'en' || lang(?label) = '')
+      ${langFilter}
     }
   `
 
@@ -193,12 +282,18 @@ export async function fetchDataProperties(
   context: QueryContext,
   limit = 50,
   store?: Store,
+  language = 'en',
 ): Promise<DataProperty[]> {
+  const langFilter = language
+    ? `FILTER (lang(?propLabel) = '${language}' || lang(?propLabel) = '')`
+    : ''
+
   const query = `
     SELECT DISTINCT ?p ?propLabel ?propValue WHERE {
       <${entityIri}> ?p ?propValue .
       ?p <http://www.w3.org/2000/01/rdf-schema#label> ?propLabel .
       FILTER isLiteral(?propValue)
+      ${langFilter}
     } LIMIT ${limit}
   `
 
@@ -241,6 +336,7 @@ export async function enrichGraph(
   ontologyPrefix = '',
   chunkSize = 50,
   store?: Store,
+  language = 'en',
 ): Promise<void> {
   const propIris = edges.map((e) => e.iri)
   const nodeIris = nodes.map((n) => n.iri)
@@ -250,7 +346,7 @@ export async function enrichGraph(
   // Merge chunked label results
   const labelsMap = new Map<string, string>()
   for (const chunk of chunks(allLabelIris, chunkSize)) {
-    const partial = await fetchLabels(chunk, context, store)
+    const partial = await fetchLabels(chunk, context, store, language)
     for (const [k, v] of partial) labelsMap.set(k, v)
   }
 
@@ -294,6 +390,7 @@ export async function findRelationships(
     ontologyPrefix?: string
     avoidCycles?: QueryCyclesStrategy
     store?: Store
+    language?: string
   } = {},
 ): Promise<RelationshipGraph> {
   const queryConfig: RelationshipQueryConfig = {
@@ -326,7 +423,7 @@ export async function findRelationships(
     options.allowedObjectProperties ?? [],
   )
 
-  await enrichGraph(nodes, edges, context, options.ontologyPrefix ?? '', 50, options.store)
+  await enrichGraph(nodes, edges, context, options.ontologyPrefix ?? '', 50, options.store, options.language ?? 'en')
 
   const mergedEdges = mergeEdgeDuplicates(edges)
   const classes = [...new Set(nodes.map((n) => n.class))]
