@@ -29,11 +29,14 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onUnmounted } from 'vue'
 import cytoscape from 'cytoscape'
-import type { Core, NodeSingular } from 'cytoscape'
+import type { Core, NodeSingular, Layouts } from 'cytoscape'
+import d3Force from 'cytoscape-d3-force'
 import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import ProgressSpinner from 'primevue/progressspinner'
 import type { GraphNode, MergedEdge } from '@/lib/sparql/types'
+
+cytoscape.use(d3Force)
 
 // ── Props / emits ─────────────────────────────────────────────────────────────
 
@@ -53,6 +56,7 @@ const emit = defineEmits<{
 
 const cyContainer = ref<HTMLElement | null>(null)
 let cy: Core | null = null
+let layout: Layouts | null = null
 
 const hasGraph = ref(false)
 
@@ -68,10 +72,15 @@ function classColor(classIri: string): string {
 
 // ── Graph rendering ───────────────────────────────────────────────────────────
 
+// Prefix node IDs with "n" so they are unambiguously strings. Purely numeric
+// IDs like "2" can be coerced to the number 2 inside cytoscape-d3-force's D3
+// forceLink lookup, causing a Map key mismatch and a "node not found" error.
+function nodeId(id: number) { return `n${id}` }
+
 function buildElements() {
   const nodeEls = props.nodes.map((n) => ({
     data: {
-      id: String(n.id),
+      id: nodeId(n.id),
       label: n.label,
       iri: n.iri,
       class: n.class,
@@ -82,8 +91,8 @@ function buildElements() {
   const edgeEls = props.edges.map((e, idx) => ({
     data: {
       id: `e${idx}`,
-      source: String(e.sid),
-      target: String(e.tid),
+      source: nodeId(e.sid),
+      target: nodeId(e.tid),
       label: e.label,
       iris: e.iris,
     },
@@ -166,16 +175,10 @@ function initCytoscape() {
         },
       },
     ],
-    layout: {
-      name: 'cose',
-      animate: true,
-      animationDuration: 400,
-      nodeRepulsion: () => 8000,
-      idealEdgeLength: () => 100,
-      edgeElasticity: () => 100,
-      padding: 40,
-    },
+    layout: { name: 'preset' },
   })
+
+  runLayout()
 
   // Node click → emit event to parent
   cy.on('tap', 'node', (evt) => {
@@ -183,7 +186,7 @@ function initCytoscape() {
       id: string; label: string; iri: string; class: string; isEndpoint: boolean
     }
     const graphNode: GraphNode = {
-      id: parseInt(nodeData.id),
+      id: parseInt(nodeData.id.slice(1)), // strip the "n" prefix
       label: nodeData.label,
       iri: nodeData.iri,
       class: nodeData.class,
@@ -195,21 +198,36 @@ function initCytoscape() {
   hasGraph.value = true
 }
 
+function runLayout() {
+  if (!cy) return
+  layout?.stop()
+  layout = cy.layout({
+    name: 'd3-force',
+    animate: true,
+    // Required: tell forceLink to use the node's `id` field instead of
+    // its array index (the plugin only sets this when linkId is defined).
+    linkId: (d: { id: string }) => d.id,
+    // Link spring — pulls connected nodes toward this distance
+    linkDistance: 120,
+    // Node repulsion — negative = push apart
+    manyBodyStrength: -600,
+    // Gentle pull toward canvas centre so the graph doesn't drift away
+    gravity: 0.08,
+    // Low damping = more bounce; 0.1 is very springy, 0.4 is D3 default
+    velocityDecay: 0.15,
+    // Nodes spring back into the simulation after being released
+    fixedAfterDragging: false,
+    padding: 40,
+    fit: true,
+    infinite: false,
+  } as Parameters<Core['layout']>[0])
+  layout.run()
+}
+
 function zoomIn() { cy?.zoom(cy.zoom() * 1.2) }
 function zoomOut() { cy?.zoom(cy.zoom() / 1.2) }
 function fitGraph() { cy?.fit(undefined, 40) }
-
-function rerunLayout() {
-  cy?.layout({
-    name: 'cose',
-    animate: true,
-    animationDuration: 400,
-    nodeRepulsion: () => 8000,
-    idealEdgeLength: () => 100,
-    edgeElasticity: () => 100,
-    padding: 40,
-  }).run()
-}
+function rerunLayout() { runLayout() }
 
 // Re-render whenever the graph data changes
 watch(
@@ -218,6 +236,8 @@ watch(
     if (props.nodes.length > 0) {
       initCytoscape()
     } else {
+      layout?.stop()
+      layout = null
       cy?.destroy()
       cy = null
       hasGraph.value = false
@@ -231,6 +251,8 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  layout?.stop()
+  layout = null
   cy?.destroy()
   cy = null
 })
