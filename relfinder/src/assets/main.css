@@ -1,0 +1,73 @@
+/*
+ * main.css — global styles and design tokens for RelFinder
+ *
+ * PrimeVue's Aura theme is emitted into the `primevue` CSS layer (configured
+ * in main.ts), so any rules here written outside a layer automatically take
+ * precedence over PrimeVue defaults without needing !important.
+ *
+ * Design tokens are defined as CSS custom properties on :root so they can be
+ * referenced throughout the app and overridden for dark mode or theming.
+ */
+
+/* ── Reset ──────────────────────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ── Design tokens (light mode) ─────────────────────────────────────────── */
+:root {
+  /* Brand */
+  --rf-primary: #4f46e5;       /* indigo-600 */
+  --rf-primary-hover: #4338ca; /* indigo-700 */
+  --rf-danger: #ef4444;        /* red-500 */
+
+  /* Surfaces */
+  --rf-bg: #f5f5f5;
+  --rf-surface: #ffffff;
+  --rf-border: #e5e7eb;        /* gray-200 */
+
+  /* Text */
+  --rf-text: #111827;          /* gray-900 */
+  --rf-text-muted: #6b7280;    /* gray-500 */
+
+  /* Graph */
+  --rf-node-endpoint: #4f46e5;
+  --rf-node-default: #374151;  /* gray-700 */
+  --rf-node-selected: #ef4444;
+  --rf-edge: #9ca3af;          /* gray-400 */
+}
+
+/* ── Dark mode tokens ────────────────────────────────────────────────────── */
+.dark {
+  --rf-bg: #0f172a;
+  --rf-surface: #1e293b;
+  --rf-border: #334155;
+  --rf-text: #f1f5f9;
+  --rf-text-muted: #94a3b8;
+}
+
+/* ── Base typography ─────────────────────────────────────────────────────── */
+html,
+body {
+  height: 100%;
+  font-family:
+    'Inter',
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  font-size: 16px;
+  color: var(--rf-text);
+  background: var(--rf-bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+#app {
+  height: 100%;
+}

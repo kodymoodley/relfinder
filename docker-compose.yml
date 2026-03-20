@@ -1,0 +1,47 @@
+version: '3.9'
+
+# RelFinder — local development stack
+#
+# Services:
+#   app    — Vite dev server (hot-reload)
+#   proxy  — Caddy CORS proxy (only needed when querying non-CORS endpoints)
+#
+# Quick start:
+#   cp .env.example .env          # fill in SPARQL_ENDPOINT
+#   docker compose up
+#
+# The frontend will be available at http://localhost:5173
+# The CORS proxy will be available at http://localhost:8080
+# Set the "Proxy URL" field in the RelFinder UI to http://localhost:8080
+# if your SPARQL endpoint does not support CORS natively.
+
+services:
+  app:
+    build:
+      context: ./relfinder
+      dockerfile: Dockerfile.dev
+    ports:
+      - '5173:5173'
+    volumes:
+      # Mount source so Vite HMR works without rebuilding the image
+      - ./relfinder/src:/app/src
+      - ./relfinder/public:/app/public
+    environment:
+      - NODE_ENV=development
+
+  proxy:
+    build:
+      context: ./proxy
+    ports:
+      - '8080:8080'
+    environment:
+      # Required: the SPARQL endpoint to proxy requests to
+      SPARQL_ENDPOINT: ${SPARQL_ENDPOINT}
+      # Optional: restrict CORS to your frontend origin (default: *)
+      ALLOWED_ORIGIN: ${ALLOWED_ORIGIN:-*}
+      PROXY_PORT: 8080
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:8080/health']
+      interval: 10s
+      timeout: 5s
+      retries: 3

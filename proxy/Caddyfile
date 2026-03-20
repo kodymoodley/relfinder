@@ -1,0 +1,42 @@
+# RelFinder CORS Proxy
+#
+# This is a minimal reverse proxy that adds CORS headers to responses from a
+# SPARQL endpoint that does not support cross-origin requests natively.
+#
+# Usage:
+#   Set the SPARQL_ENDPOINT environment variable to the target endpoint URL,
+#   then run `caddy run` in this directory, or use docker-compose.yml at the
+#   repo root.
+#
+# In the RelFinder UI, set the Proxy URL field to: http://localhost:8080
+#
+# The proxy forwards all requests to /sparql/* to the configured endpoint and
+# injects the necessary CORS headers so the browser accepts the response.
+
+:{$PROXY_PORT:8080} {
+	handle /sparql/* {
+		# Strip the /sparql prefix before forwarding
+		uri strip_prefix /sparql
+
+		reverse_proxy {$SPARQL_ENDPOINT} {
+			# Forward the original Host header so the endpoint recognises the request
+			header_up Host {upstream_hostport}
+		}
+
+		# CORS headers — allow the RelFinder frontend origin
+		header Access-Control-Allow-Origin  {$ALLOWED_ORIGIN:*}
+		header Access-Control-Allow-Methods "GET, POST, OPTIONS"
+		header Access-Control-Allow-Headers "Content-Type, Authorization, Accept"
+
+		# Handle preflight requests
+		@preflight method OPTIONS
+		handle @preflight {
+			respond 204
+		}
+	}
+
+	# Health check — useful for Docker Compose depends_on healthcheck
+	handle /health {
+		respond "ok" 200
+	}
+}

@@ -1,0 +1,121 @@
+# ── Node.js ───────────────────────────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.npm/
+.yarn/
+.pnp.*
+package-lock.json.bak
+
+# ── Vite / Build output ───────────────────────────────────────────────────────
+dist/
+dist-ssr/
+build/
+.vite/
+*.tsbuildinfo
+*.timestamp-*-*.mjs
+
+# ── Environment files ─────────────────────────────────────────────────────────
+# Keep .env.example (safe template); ignore everything else
+.env
+.env.*
+!.env.example
+
+# ── TypeScript ────────────────────────────────────────────────────────────────
+*.js.map
+*.d.ts.map
+
+# ── Testing ───────────────────────────────────────────────────────────────────
+coverage/
+.nyc_output/
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+vitest.cache/
+__screenshots__/
+
+# ── ESLint cache ──────────────────────────────────────────────────────────────
+.eslintcache
+.oxlintcache
+
+# ── Python (legacy relfinder-api) ─────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+.venv/
+venv/
+env/
+ENV/
+*.egg-info/
+dist/
+.eggs/
+pip-wheel-metadata/
+
+# ── Docker ────────────────────────────────────────────────────────────────────
+# Allow docker-compose.yml and Dockerfiles; ignore local overrides
+docker-compose.override.yml
+docker-compose.local.yml
+
+# ── macOS ─────────────────────────────────────────────────────────────────────
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# ── Windows ───────────────────────────────────────────────────────────────────
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# ── Linux ─────────────────────────────────────────────────────────────────────
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+
+# ── VS Code ───────────────────────────────────────────────────────────────────
+# Keep shared settings (extensions.json, settings.json) if committed intentionally;
+# ignore per-user and generated files
+.vscode/
+.vscode/launch.json
+.vscode/*.code-workspace
+.history/
+
+# ── JetBrains IDEs ───────────────────────────────────────────────────────────
+.idea/
+*.iml
+*.iws
+out/
+
+# ── Visual Studio ─────────────────────────────────────────────────────────────
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# ── Vim / Emacs ───────────────────────────────────────────────────────────────
+*.swp
+*.swo
+*~
+\#*\#
+.#*
+
+# ── Logs ─────────────────────────────────────────────────────────────────────
+logs/
+*.log
+debug/
+
+# ── Misc ─────────────────────────────────────────────────────────────────────
+*.bak
+*.tmp
+*.temp
+.cache/
