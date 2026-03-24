@@ -219,7 +219,9 @@ function runLayout() {
     fixedAfterDragging: false,
     padding: 40,
     fit: true,
-    infinite: false,
+    // Keep the simulation running indefinitely so the graph stays springy
+    // and interactive after the initial layout settles — matching D3's behaviour.
+    infinite: true,
   } as Parameters<Core['layout']>[0])
   layout.run()
 }
