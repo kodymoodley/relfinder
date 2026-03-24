@@ -1,0 +1,64 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # allow manual runs from the Actions tab
+
+# Grant the GITHUB_TOKEN the permissions required by actions/deploy-pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Only one deployment at a time; don't cancel an in-progress run
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          # package-lock.json lives inside the relfinder/ subdirectory
+          cache-dependency-path: relfinder/package-lock.json
+
+      - name: Install dependencies
+        working-directory: relfinder
+        run: npm ci
+
+      - name: Build
+        working-directory: relfinder
+        env:
+          # Must match your GitHub repository name.
+          # e.g. if the repo is github.com/kodymoodley/relfinder → /relfinder/
+          VITE_BASE_PATH: /relfinder/
+        run: npm run build
+
+      # GitHub Pages returns 404.html for unknown paths.
+      # Copying index.html there lets the Vue router boot and redirect
+      # to the connection screen via the existing navigation guard.
+      - name: Copy index.html → 404.html
+        run: cp relfinder/dist/index.html relfinder/dist/404.html
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: relfinder/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

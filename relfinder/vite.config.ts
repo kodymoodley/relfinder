@@ -11,6 +11,9 @@ const processShim = fileURLToPath(new URL('./src/lib/process-shim.js', import.me
 
 // https://vite.dev/config/
 export default defineConfig({
+  // In CI (GitHub Pages) VITE_BASE_PATH is set to /<repo-name>/.
+  // Locally it falls back to '/' so the dev server still works at http://localhost:5173/.
+  base: process.env.VITE_BASE_PATH ?? '/',
   plugins: [
     vue(),
     vueDevTools(),
@@ -44,6 +47,10 @@ export default defineConfig({
     },
   },
   build: {
+    // Comunica is a large SPARQL engine (~2 MB minified) and is already
+    // isolated in its own chunk via manualChunks so the browser can cache it
+    // separately. Raising the limit silences the spurious warning.
+    chunkSizeWarningLimit: 2500,
     rollupOptions: {
       output: {
         manualChunks: {

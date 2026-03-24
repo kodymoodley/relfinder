@@ -36,7 +36,7 @@ import Divider from 'primevue/divider'
 import ProgressSpinner from 'primevue/progressspinner'
 import type { GraphNode, MergedEdge } from '@/lib/sparql/types'
 
-cytoscape.use(d3Force)
+cytoscape.use(d3Force as unknown as cytoscape.Ext)
 
 // ── Props / emits ─────────────────────────────────────────────────────────────
 
