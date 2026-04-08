@@ -1,8 +1,10 @@
 # RelFinder
 
-RelFinder is a browser-based tool for discovering and visualising relationships between entities in RDF knowledge graphs. Point it at any public-facing SPARQL endpoint or upload a local RDF file, select two entities, and RelFinder finds and displays all connecting paths as an interactive force-directed graph.
+[Demo](https://kodymoodley.github.io/relfinder)
 
-It is a modernised, fully client-side (partial) rewrite of the original [RelFinder](https://github.com/VisualDataWeb/RelFinder) tool, rebuilt with current web technologies and requiring no server-side installation beyond an optional CORS proxy.
+[RelFinder](https://kodymoodley.github.io/relfinder) is a browser-based tool for discovering and visualising relationships between entities in RDF knowledge graphs. Point it at any public-facing SPARQL endpoint or upload a local RDF file, select two entities, and RelFinder finds and displays all connecting paths as an interactive force-directed graph.
+
+It is a modernised, fully client-side, partial rewrite of the [original RelFinder](https://github.com/VisualDataWeb/RelFinder) tool, rebuilt with current web technologies and requiring no server-side installation beyond an optional CORS proxy.
 
 ## Features
 
