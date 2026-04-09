@@ -88,13 +88,15 @@ async function runExample(example: Example) {
 
     await router.push({
       name: 'graph',
-      state: {
+      // Cast needed: HistoryState only accepts index-signature types, but the
+      // data is plain-serializable at runtime so the cast is safe.
+      state: JSON.parse(JSON.stringify({
         example: {
           entity1: example.entity1,
           entity2: example.entity2,
           options: example.options,
         },
-      },
+      })),
     })
   } catch (err) {
     errorId.value = example.id

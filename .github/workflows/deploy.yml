@@ -33,6 +33,10 @@ jobs:
         working-directory: relfinder
         run: npm ci
 
+      - name: Lint
+        working-directory: relfinder
+        run: npm run lint
+
       - name: Build
         working-directory: relfinder
         env:

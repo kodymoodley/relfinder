@@ -100,7 +100,7 @@ watch(
       const effectiveContext = context ?? { endpointUrl: '' }
 
       dataProps.value = await fetchDataProperties(node.iri, effectiveContext, 50, store, props.language ?? 'en')
-    } catch (err) {
+    } catch {
       propsError.value = 'Could not load properties for this node.'
     } finally {
       loadingProps.value = false

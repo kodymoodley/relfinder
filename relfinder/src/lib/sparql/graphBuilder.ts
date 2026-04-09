@@ -14,7 +14,6 @@ import type {
   GraphNode,
   GraphEdge,
   MergedEdge,
-  RelationshipGraph,
 } from './types'
 
 // ── Internal helpers ──────────────────────────────────────────────────────────

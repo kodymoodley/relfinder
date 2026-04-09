@@ -19,7 +19,6 @@
 import { describe, it, expect } from 'vitest'
 import { parseRdfContent } from '../rdf/parser'
 import { findRelationships } from '../sparql/entitySearch'
-import { QueryCyclesStrategy } from '../sparql/types'
 import { EXAMPLES } from '../examples'
 import type { TtlExample, SparqlExample } from '../examples'
 
@@ -40,6 +39,7 @@ function sparqlExamples(): SparqlExample[] {
 
 describe('TTL examples — node count between 10 and 50', () => {
   for (const example of ttlExamples()) {
+    // eslint-disable-next-line vitest/valid-title
     it(example.title, async () => {
       const store = await parseRdfContent(example.ttlContent, 'text/turtle')
 
@@ -56,20 +56,13 @@ describe('TTL examples — node count between 10 and 50', () => {
         },
       )
 
-      expect(
-        graph.nodes.length,
-        `"${example.title}": expected 10–50 nodes, got ${graph.nodes.length}`,
-      ).toBeGreaterThanOrEqual(MIN_NODES)
-
-      expect(
-        graph.nodes.length,
-        `"${example.title}": expected 10–50 nodes, got ${graph.nodes.length}`,
-      ).toBeLessThanOrEqual(MAX_NODES)
+      expect(graph.nodes.length).toBeGreaterThanOrEqual(MIN_NODES)
+      expect(graph.nodes.length).toBeLessThanOrEqual(MAX_NODES)
 
       // Sanity: both endpoints must be present in the graph
       const iris = new Set(graph.nodes.map((n) => n.iri))
-      expect(iris.has(example.entity1.iri), 'entity1 missing from graph').toBe(true)
-      expect(iris.has(example.entity2.iri), 'entity2 missing from graph').toBe(true)
+      expect(iris.has(example.entity1.iri)).toBe(true)
+      expect(iris.has(example.entity2.iri)).toBe(true)
 
       // Must have at least one edge
       expect(graph.edges.length).toBeGreaterThanOrEqual(1)
@@ -83,6 +76,7 @@ describe.skipIf(!process.env['INTEGRATION'])(
   'DBpedia SPARQL examples — node count between 10 and 50 [INTEGRATION]',
   () => {
     for (const example of sparqlExamples()) {
+      // eslint-disable-next-line vitest/valid-title
       it(example.title, async () => {
         const graph = await findRelationships(
           example.entity1.iri,
@@ -96,19 +90,12 @@ describe.skipIf(!process.env['INTEGRATION'])(
           },
         )
 
-        expect(
-          graph.nodes.length,
-          `"${example.title}": expected 10–50 nodes, got ${graph.nodes.length}`,
-        ).toBeGreaterThanOrEqual(MIN_NODES)
-
-        expect(
-          graph.nodes.length,
-          `"${example.title}": expected 10–50 nodes, got ${graph.nodes.length}`,
-        ).toBeLessThanOrEqual(MAX_NODES)
+        expect(graph.nodes.length).toBeGreaterThanOrEqual(MIN_NODES)
+        expect(graph.nodes.length).toBeLessThanOrEqual(MAX_NODES)
 
         const iris = new Set(graph.nodes.map((n) => n.iri))
-        expect(iris.has(example.entity1.iri), 'entity1 missing from graph').toBe(true)
-        expect(iris.has(example.entity2.iri), 'entity2 missing from graph').toBe(true)
+        expect(iris.has(example.entity1.iri)).toBe(true)
+        expect(iris.has(example.entity2.iri)).toBe(true)
 
         expect(graph.edges.length).toBeGreaterThanOrEqual(1)
       }, 60_000) // DBpedia can be slow — generous timeout
