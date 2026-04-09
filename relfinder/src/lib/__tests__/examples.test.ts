@@ -1,3 +1,5 @@
+// @vitest-environment node
+
 /**
  * Tests for the built-in quick-start examples.
  *
