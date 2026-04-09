@@ -132,7 +132,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import Divider from 'primevue/divider'
@@ -242,6 +242,23 @@ function onDisconnect() {
   connectionStore.disconnect()
   router.push({ name: 'connection' })
 }
+
+// ── Example auto-run (from quick-start examples panel) ───────────────────────
+
+onMounted(() => {
+  const state = (history.state as Record<string, unknown>)?.example as {
+    entity1: EntitySearchResult
+    entity2: EntitySearchResult
+    options: Partial<GraphOptions>
+  } | undefined
+  if (!state) return
+  entity1.value = state.entity1
+  entity2.value = state.entity2
+  if (state.options) {
+    graphOptions.value = { ...graphOptions.value, ...state.options }
+  }
+  onFindRelationships()
+})
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
