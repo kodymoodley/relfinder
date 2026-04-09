@@ -120,3 +120,4 @@ debug/
 *.temp
 .cache/
 movies.ttl
+.claude/
