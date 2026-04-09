@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+authors:
+  - family-names: "Moodley"
+    given-names: "Kody"
+    orcid: "https://orcid.org/0000-0002-5117-5531"
+    affiliation: "Maastricht University"
+  - family-names: "Simoncini"
+    given-names: "Walter"
+    affiliation: "University of Amsterdam"
+title: "RelFinder"
+version: 0.0.1
+date-released: 2026-04-09
+repository-code: "https://github.com/kodymoodley/relfinder"
+license: AGPL-3.0
+keywords:
+  - SPARQL
+  - RDF
+  - "Linked Data"
+  - "Knowledge Graph"
+  - Relationships
+  - Visualization
+  - "Semantic Web"
+  - Javascript
+abstract: "A browser-based tool for discovering and visualising relationships between entities in RDF knowledge graphs via SPARQL endpoints or local RDF files."
