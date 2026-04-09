@@ -35,6 +35,8 @@
         <RdfFileUpload v-else />
       </div>
     </div>
+
+    <ExamplesPanel />
   </main>
 </template>
 
@@ -42,6 +44,7 @@
 import { ref } from 'vue'
 import SparqlForm from '@/components/connection/SparqlForm.vue'
 import RdfFileUpload from '@/components/connection/RdfFileUpload.vue'
+import ExamplesPanel from '@/components/connection/ExamplesPanel.vue'
 
 const activeTab = ref<'sparql' | 'file'>('sparql')
 </script>
@@ -49,8 +52,8 @@ const activeTab = ref<'sparql' | 'file'>('sparql')
 <style scoped>
 .connection-view {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
   min-height: 100vh;
   padding: 2rem 1rem;
   background: var(--p-surface-ground);
