@@ -1,0 +1,286 @@
+@prefix :     <http://sciencegraph.org/> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+
+# -----------------------------------------------------------------------
+# ONTOLOGY — classes
+# -----------------------------------------------------------------------
+
+:Scientist    rdf:type owl:Class .
+:Physicist    rdf:type owl:Class ; rdfs:subClassOf :Scientist .
+:Chemist      rdf:type owl:Class ; rdfs:subClassOf :Scientist .
+:Institution  rdf:type owl:Class .
+:Discovery    rdf:type owl:Class .
+:Award        rdf:type owl:Class .
+:Conference   rdf:type owl:Class .
+
+# -----------------------------------------------------------------------
+# ONTOLOGY — properties with rdfs:label (required for node detail panel)
+# -----------------------------------------------------------------------
+
+:collaboratedWith  rdf:type owl:ObjectProperty  ; rdfs:label "Collaborated With" ; rdfs:domain :Scientist    ; rdfs:range :Scientist .
+:workedAt          rdf:type owl:ObjectProperty  ; rdfs:label "Worked At"          ; rdfs:domain :Scientist    ; rdfs:range :Institution .
+:madeDiscovery     rdf:type owl:ObjectProperty  ; rdfs:label "Made Discovery"     ; rdfs:domain :Scientist    ; rdfs:range :Discovery .
+:receivedAward     rdf:type owl:ObjectProperty  ; rdfs:label "Received Award"     ; rdfs:domain :Scientist    ; rdfs:range :Award .
+:attendedConference rdf:type owl:ObjectProperty ; rdfs:label "Attended Conference"; rdfs:domain :Scientist    ; rdfs:range :Conference .
+:relatedTo         rdf:type owl:ObjectProperty  ; rdfs:label "Related To" .
+:hasName           rdf:type owl:DatatypeProperty; rdfs:label "Name"               ; rdfs:domain :Scientist    ; rdfs:range xsd:string .
+:hasNationality    rdf:type owl:DatatypeProperty; rdfs:label "Nationality"        ; rdfs:domain :Scientist    ; rdfs:range xsd:string .
+:birthDate         rdf:type owl:DatatypeProperty; rdfs:label "Birth Date"         ; rdfs:range xsd:date .
+:birthPlace        rdf:type owl:DatatypeProperty; rdfs:label "Birth Place"        ; rdfs:range xsd:string .
+:hasDescription    rdf:type owl:DatatypeProperty; rdfs:label "Description"        ; rdfs:range xsd:string .
+:hasYear           rdf:type owl:DatatypeProperty; rdfs:label "Year"               ; rdfs:range xsd:integer .
+
+# -----------------------------------------------------------------------
+# SCIENTISTS
+# -----------------------------------------------------------------------
+
+:einstein   rdf:type :Physicist ; rdfs:label "Albert Einstein"    ;
+            :hasName "Albert Einstein"    ; :hasNationality "German-American" ;
+            :birthDate "1879-03-14"^^xsd:date ; :birthPlace "Ulm, Kingdom of Württemberg, Germany" .
+
+:bohr       rdf:type :Physicist ; rdfs:label "Niels Bohr"         ;
+            :hasName "Niels Bohr"         ; :hasNationality "Danish" ;
+            :birthDate "1885-10-07"^^xsd:date ; :birthPlace "Copenhagen, Denmark" .
+
+:heisenberg rdf:type :Physicist ; rdfs:label "Werner Heisenberg"  ;
+            :hasName "Werner Heisenberg"  ; :hasNationality "German" ;
+            :birthDate "1901-12-05"^^xsd:date ; :birthPlace "Würzburg, Germany" .
+
+:planck     rdf:type :Physicist ; rdfs:label "Max Planck"         ;
+            :hasName "Max Planck"         ; :hasNationality "German" ;
+            :birthDate "1858-04-23"^^xsd:date ; :birthPlace "Kiel, Duchy of Holstein, Germany" .
+
+:schrodinger rdf:type :Physicist ; rdfs:label "Erwin Schrödinger" ;
+             :hasName "Erwin Schrödinger" ; :hasNationality "Austrian" ;
+             :birthDate "1887-08-12"^^xsd:date ; :birthPlace "Vienna, Austria-Hungary" .
+
+:curie      rdf:type :Chemist   ; rdfs:label "Marie Curie"        ;
+            :hasName "Marie Curie"        ; :hasNationality "Polish-French" ;
+            :birthDate "1867-11-07"^^xsd:date ; :birthPlace "Warsaw, Congress Poland" .
+
+:rutherford rdf:type :Physicist ; rdfs:label "Ernest Rutherford"  ;
+            :hasName "Ernest Rutherford"  ; :hasNationality "New Zealand-British" ;
+            :birthDate "1871-08-30"^^xsd:date ; :birthPlace "Brightwater, Nelson, New Zealand" .
+
+:dirac      rdf:type :Physicist ; rdfs:label "Paul Dirac"         ;
+            :hasName "Paul Dirac"         ; :hasNationality "British" ;
+            :birthDate "1902-08-08"^^xsd:date ; :birthPlace "Bristol, England, UK" .
+
+:meitner    rdf:type :Physicist ; rdfs:label "Lise Meitner"       ;
+            :hasName "Lise Meitner"       ; :hasNationality "Austrian-Swedish" ;
+            :birthDate "1878-11-07"^^xsd:date ; :birthPlace "Vienna, Austria-Hungary" .
+
+:pauli      rdf:type :Physicist ; rdfs:label "Wolfgang Pauli"     ;
+            :hasName "Wolfgang Pauli"     ; :hasNationality "Austrian-Swiss" ;
+            :birthDate "1900-04-25"^^xsd:date ; :birthPlace "Vienna, Austria-Hungary" .
+
+:born_max   rdf:type :Physicist ; rdfs:label "Max Born"           ;
+            :hasName "Max Born"           ; :hasNationality "German-British" ;
+            :birthDate "1882-12-11"^^xsd:date ; :birthPlace "Breslau, Province of Silesia, Germany" .
+
+# -----------------------------------------------------------------------
+# INSTITUTIONS
+# -----------------------------------------------------------------------
+
+:inst_advanced_study rdf:type :Institution ; rdfs:label "Institute for Advanced Study"  ;
+                     :hasName "Institute for Advanced Study"  ; :birthPlace "Princeton, USA" .
+:univ_copenhagen     rdf:type :Institution ; rdfs:label "University of Copenhagen"      ;
+                     :hasName "University of Copenhagen"      ; :birthPlace "Copenhagen, Denmark" .
+:univ_berlin         rdf:type :Institution ; rdfs:label "Humboldt University of Berlin" ;
+                     :hasName "Humboldt University of Berlin" ; :birthPlace "Berlin, Germany" .
+:eth_zurich          rdf:type :Institution ; rdfs:label "ETH Zurich"                    ;
+                     :hasName "ETH Zurich"                    ; :birthPlace "Zurich, Switzerland" .
+:univ_cambridge      rdf:type :Institution ; rdfs:label "University of Cambridge"       ;
+                     :hasName "University of Cambridge"       ; :birthPlace "Cambridge, UK" .
+:univ_gottingen      rdf:type :Institution ; rdfs:label "University of Göttingen"       ;
+                     :hasName "University of Göttingen"       ; :birthPlace "Göttingen, Germany" .
+:univ_manchester     rdf:type :Institution ; rdfs:label "University of Manchester"      ;
+                     :hasName "University of Manchester"      ; :birthPlace "Manchester, UK" .
+
+# -----------------------------------------------------------------------
+# DISCOVERIES
+# -----------------------------------------------------------------------
+
+:relativity           rdf:type :Discovery ; rdfs:label "Theory of Relativity"    ;
+                      :hasName "Theory of Relativity"    ; :hasYear 1905 .
+:photoelectric_effect rdf:type :Discovery ; rdfs:label "Photoelectric Effect"    ;
+                      :hasName "Photoelectric Effect"    ; :hasYear 1905 .
+:quantum_mechanics    rdf:type :Discovery ; rdfs:label "Quantum Mechanics"       ;
+                      :hasName "Quantum Mechanics"       ; :hasYear 1925 .
+:uncertainty_principle rdf:type :Discovery ; rdfs:label "Uncertainty Principle"  ;
+                       :hasName "Uncertainty Principle"  ; :hasYear 1927 .
+:atomic_model         rdf:type :Discovery ; rdfs:label "Bohr Atomic Model"       ;
+                      :hasName "Bohr Atomic Model"       ; :hasYear 1913 .
+:nuclear_fission      rdf:type :Discovery ; rdfs:label "Nuclear Fission"         ;
+                      :hasName "Nuclear Fission"         ; :hasYear 1938 .
+:wave_mechanics       rdf:type :Discovery ; rdfs:label "Wave Mechanics"          ;
+                      :hasName "Wave Mechanics"          ; :hasYear 1926 .
+:exclusion_principle  rdf:type :Discovery ; rdfs:label "Pauli Exclusion Principle" ;
+                      :hasName "Pauli Exclusion Principle" ; :hasYear 1925 .
+
+# -----------------------------------------------------------------------
+# CONFERENCES
+# -----------------------------------------------------------------------
+
+:solvay1927 rdf:type :Conference ; rdfs:label "Fifth Solvay Conference (1927)"  ;
+            :hasName "Fifth Solvay Conference"  ; :hasYear 1927 ;
+            :hasDescription "Famous for the Einstein-Bohr debates on quantum mechanics" .
+:solvay1911 rdf:type :Conference ; rdfs:label "First Solvay Conference (1911)"  ;
+            :hasName "First Solvay Conference"  ; :hasYear 1911 ;
+            :hasDescription "The first international physics conference of its kind" .
+
+# -----------------------------------------------------------------------
+# AWARDS
+# -----------------------------------------------------------------------
+
+:nobel_physics rdf:type :Award ; rdfs:label "Nobel Prize in Physics" ;
+               :hasName "Nobel Prize in Physics" ;
+               :hasDescription "Awarded by the Royal Swedish Academy of Sciences" .
+
+# -----------------------------------------------------------------------
+# DISCOVERY RELATIONSHIPS
+# -----------------------------------------------------------------------
+
+# Relativity and photoelectric effect both laid groundwork for quantum mechanics
+:relativity           :relatedTo :quantum_mechanics .
+:photoelectric_effect :relatedTo :quantum_mechanics .
+:atomic_model         :relatedTo :quantum_mechanics .
+:uncertainty_principle :relatedTo :quantum_mechanics .
+:wave_mechanics       :relatedTo :quantum_mechanics .
+
+# -----------------------------------------------------------------------
+# WHO MADE WHAT DISCOVERY
+# -----------------------------------------------------------------------
+
+:einstein    :madeDiscovery :relativity .
+:einstein    :madeDiscovery :photoelectric_effect .
+:einstein    :madeDiscovery :quantum_mechanics .
+
+:bohr        :madeDiscovery :atomic_model .
+:bohr        :madeDiscovery :quantum_mechanics .
+
+:heisenberg  :madeDiscovery :uncertainty_principle .
+:heisenberg  :madeDiscovery :quantum_mechanics .
+
+:planck      :madeDiscovery :quantum_mechanics .
+
+:schrodinger :madeDiscovery :wave_mechanics .
+
+:meitner     :madeDiscovery :nuclear_fission .
+
+:pauli       :madeDiscovery :exclusion_principle .
+
+:rutherford  :madeDiscovery :atomic_model .
+
+:born_max    :madeDiscovery :quantum_mechanics .
+
+# -----------------------------------------------------------------------
+# INSTITUTIONS — who worked where
+# -----------------------------------------------------------------------
+
+:einstein    :workedAt :univ_berlin .
+:einstein    :workedAt :eth_zurich .
+:einstein    :workedAt :inst_advanced_study .
+
+:bohr        :workedAt :univ_copenhagen .
+:bohr        :workedAt :univ_manchester .
+
+:heisenberg  :workedAt :univ_gottingen .
+:heisenberg  :workedAt :univ_berlin .
+:heisenberg  :workedAt :univ_copenhagen .
+
+:planck      :workedAt :univ_berlin .
+
+:schrodinger :workedAt :univ_berlin .
+:schrodinger :workedAt :eth_zurich .
+
+:curie       :workedAt :univ_cambridge .
+
+:rutherford  :workedAt :univ_manchester .
+:rutherford  :workedAt :univ_cambridge .
+
+:dirac       :workedAt :univ_cambridge .
+:dirac       :workedAt :inst_advanced_study .
+
+:meitner     :workedAt :univ_berlin .
+
+:pauli       :workedAt :eth_zurich .
+:pauli       :workedAt :univ_gottingen .
+:pauli       :workedAt :univ_copenhagen .
+
+:born_max    :workedAt :univ_gottingen .
+:born_max    :workedAt :univ_cambridge .
+
+# -----------------------------------------------------------------------
+# CONFERENCES — who attended
+# -----------------------------------------------------------------------
+
+# Fifth Solvay Conference 1927 — famous for Einstein-Bohr quantum debates
+:einstein    :attendedConference :solvay1927 .
+:bohr        :attendedConference :solvay1927 .
+:heisenberg  :attendedConference :solvay1927 .
+:planck      :attendedConference :solvay1927 .
+:schrodinger :attendedConference :solvay1927 .
+:curie       :attendedConference :solvay1927 .
+:dirac       :attendedConference :solvay1927 .
+:pauli       :attendedConference :solvay1927 .
+:meitner     :attendedConference :solvay1927 .
+:rutherford  :attendedConference :solvay1927 .
+
+# First Solvay Conference 1911
+:einstein    :attendedConference :solvay1911 .
+:planck      :attendedConference :solvay1911 .
+:curie       :attendedConference :solvay1911 .
+:rutherford  :attendedConference :solvay1911 .
+
+# -----------------------------------------------------------------------
+# AWARDS — who received Nobel Prize in Physics
+# -----------------------------------------------------------------------
+
+:einstein    :receivedAward :nobel_physics .
+:bohr        :receivedAward :nobel_physics .
+:heisenberg  :receivedAward :nobel_physics .
+:planck      :receivedAward :nobel_physics .
+:schrodinger :receivedAward :nobel_physics .
+:dirac       :receivedAward :nobel_physics .
+:pauli       :receivedAward :nobel_physics .
+:born_max    :receivedAward :nobel_physics .
+
+# -----------------------------------------------------------------------
+# COLLABORATIONS
+# -----------------------------------------------------------------------
+
+# Einstein collaborated directly with all major quantum physicists
+:einstein    :collaboratedWith :bohr .
+:einstein    :collaboratedWith :planck .
+:einstein    :collaboratedWith :heisenberg .
+:einstein    :collaboratedWith :schrodinger .
+:einstein    :collaboratedWith :curie .
+:einstein    :collaboratedWith :meitner .
+:einstein    :collaboratedWith :rutherford .
+:einstein    :collaboratedWith :dirac .
+:einstein    :collaboratedWith :pauli .
+:einstein    :collaboratedWith :born_max .
+
+# Bohr's Copenhagen circle
+:bohr        :collaboratedWith :heisenberg .
+:bohr        :collaboratedWith :pauli .
+:bohr        :collaboratedWith :dirac .
+:bohr        :collaboratedWith :schrodinger .
+:bohr        :collaboratedWith :rutherford .
+:bohr        :collaboratedWith :born_max .
+:bohr        :collaboratedWith :curie .
+:bohr        :collaboratedWith :planck .
+
+# Göttingen group
+:heisenberg  :collaboratedWith :pauli .
+:heisenberg  :collaboratedWith :born_max .
+
+# Berlin group
+:planck      :collaboratedWith :meitner .
+
+# Rutherford's school
+:curie       :collaboratedWith :rutherford .
