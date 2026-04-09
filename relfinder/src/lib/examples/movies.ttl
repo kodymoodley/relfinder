@@ -1,0 +1,443 @@
+@prefix :     <http://filmgraph.org/> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+
+# -----------------------------------------------------------------------
+# ONTOLOGY — classes
+# -----------------------------------------------------------------------
+
+:Person   rdf:type owl:Class .
+:Movie    rdf:type owl:Class .
+:Actor    rdf:type owl:Class ; rdfs:subClassOf :Person .
+:Actress  rdf:type owl:Class ; rdfs:subClassOf :Person .
+:Director rdf:type owl:Class ; rdfs:subClassOf :Person .
+:DP       rdf:type owl:Class ; rdfs:subClassOf :Person .
+:Editor   rdf:type owl:Class ; rdfs:subClassOf :Person .
+:Composer rdf:type owl:Class ; rdfs:subClassOf :Person .
+
+# -----------------------------------------------------------------------
+# ONTOLOGY — properties with rdfs:label (required for node detail panel)
+# -----------------------------------------------------------------------
+
+:actedIn        rdf:type owl:ObjectProperty  ; rdfs:label "Acted In"       ; rdfs:domain :Person   ; rdfs:range :Movie .
+:directed       rdf:type owl:ObjectProperty  ; rdfs:label "Directed"       ; rdfs:domain :Director ; rdfs:range :Movie .
+:shotBy         rdf:type owl:ObjectProperty  ; rdfs:label "Shot By"        ; rdfs:domain :Movie    ; rdfs:range :DP .
+:editedBy       rdf:type owl:ObjectProperty  ; rdfs:label "Edited By"      ; rdfs:domain :Movie    ; rdfs:range :Editor .
+:scoredBy       rdf:type owl:ObjectProperty  ; rdfs:label "Scored By"      ; rdfs:domain :Movie    ; rdfs:range :Composer .
+:workedWith     rdf:type owl:ObjectProperty  ; rdfs:label "Worked With"    ; rdfs:domain :Person   ; rdfs:range :Person .
+:playedRole     rdf:type owl:DatatypeProperty; rdfs:label "Played Role"    ; rdfs:domain :Person   ; rdfs:range xsd:string .
+:hasTitle       rdf:type owl:DatatypeProperty; rdfs:label "Title"          ; rdfs:domain :Movie    ; rdfs:range xsd:string .
+:hasYear        rdf:type owl:DatatypeProperty; rdfs:label "Year"           ; rdfs:domain :Movie    ; rdfs:range xsd:integer .
+:hasName        rdf:type owl:DatatypeProperty; rdfs:label "Name"           ; rdfs:domain :Person   ; rdfs:range xsd:string .
+:hasNationality rdf:type owl:DatatypeProperty; rdfs:label "Nationality"    ; rdfs:domain :Person   ; rdfs:range xsd:string .
+:birthDate      rdf:type owl:DatatypeProperty; rdfs:label "Birth Date"     ; rdfs:domain :Person   ; rdfs:range xsd:date .
+:birthPlace     rdf:type owl:DatatypeProperty; rdfs:label "Birth Place"    ; rdfs:domain :Person   ; rdfs:range xsd:string .
+:hasGenre       rdf:type owl:DatatypeProperty; rdfs:label "Genre"          ; rdfs:domain :Movie    ; rdfs:range xsd:string .
+
+# -----------------------------------------------------------------------
+# DIRECTORS
+# -----------------------------------------------------------------------
+
+:nolan      rdf:type :Director ; rdfs:label "Christopher Nolan"  ;
+            :hasName "Christopher Nolan"  ; :hasNationality "British-American" ;
+            :birthDate "1970-07-30"^^xsd:date ; :birthPlace "Westminster, London, UK" .
+
+:fincher    rdf:type :Director ; rdfs:label "David Fincher"      ;
+            :hasName "David Fincher"      ; :hasNationality "American" ;
+            :birthDate "1962-08-28"^^xsd:date ; :birthPlace "Denver, Colorado, USA" .
+
+:villeneuve rdf:type :Director ; rdfs:label "Denis Villeneuve"   ;
+            :hasName "Denis Villeneuve"   ; :hasNationality "Canadian" ;
+            :birthDate "1967-10-03"^^xsd:date ; :birthPlace "Gentilly, Quebec, Canada" .
+
+:mendes     rdf:type :Director ; rdfs:label "Sam Mendes"         ;
+            :hasName "Sam Mendes"         ; :hasNationality "British" ;
+            :birthDate "1965-08-01"^^xsd:date ; :birthPlace "Reading, Berkshire, UK" .
+
+:iannucci   rdf:type :Director ; rdfs:label "Armando Iannucci"   ;
+            :hasName "Armando Iannucci"   ; :hasNationality "British" ;
+            :birthDate "1963-11-28"^^xsd:date ; :birthPlace "Glasgow, Scotland, UK" .
+
+# -----------------------------------------------------------------------
+# DIRECTORS OF PHOTOGRAPHY
+# -----------------------------------------------------------------------
+
+:pfister     rdf:type :DP ; rdfs:label "Wally Pfister"     ;
+             :hasName "Wally Pfister"     ; :hasNationality "American" ;
+             :birthDate "1961-07-08"^^xsd:date ; :birthPlace "Chicago, Illinois, USA" .
+
+:deakins     rdf:type :DP ; rdfs:label "Roger Deakins"     ;
+             :hasName "Roger Deakins"     ; :hasNationality "British" ;
+             :birthDate "1949-05-24"^^xsd:date ; :birthPlace "Torquay, Devon, UK" .
+
+:khondji     rdf:type :DP ; rdfs:label "Darius Khondji"    ;
+             :hasName "Darius Khondji"    ; :hasNationality "French-Iranian" ;
+             :birthDate "1955-10-21"^^xsd:date ; :birthPlace "Tehran, Iran" .
+
+:van_hoytema rdf:type :DP ; rdfs:label "Hoyte van Hoytema" ;
+             :hasName "Hoyte van Hoytema" ; :hasNationality "Dutch-Swedish" ;
+             :birthDate "1971-10-04"^^xsd:date ; :birthPlace "Maastricht, Netherlands" .
+
+:muro        rdf:type :DP ; rdfs:label "James Muro"        ;
+             :hasName "James Muro"        ; :hasNationality "American" ;
+             :birthDate "1959-01-01"^^xsd:date ; :birthPlace "Los Angeles, USA" .
+
+# -----------------------------------------------------------------------
+# EDITORS
+# -----------------------------------------------------------------------
+
+:lee_smith    rdf:type :Editor ; rdfs:label "Lee Smith"     ;
+              :hasName "Lee Smith"     ; :hasNationality "Australian" ;
+              :birthDate "1960-01-01"^^xsd:date ; :birthPlace "Australia" .
+
+:kirk_baxter  rdf:type :Editor ; rdfs:label "Kirk Baxter"   ;
+              :hasName "Kirk Baxter"   ; :hasNationality "Australian" ;
+              :birthDate "1974-01-01"^^xsd:date ; :birthPlace "Australia" .
+
+:angus_wall   rdf:type :Editor ; rdfs:label "Angus Wall"    ;
+              :hasName "Angus Wall"    ; :hasNationality "American" ;
+              :birthDate "1967-01-01"^^xsd:date ; :birthPlace "USA" .
+
+:pietro_scalia rdf:type :Editor ; rdfs:label "Pietro Scalia" ;
+               :hasName "Pietro Scalia" ; :hasNationality "Italian-American" ;
+               :birthDate "1960-01-01"^^xsd:date ; :birthPlace "Italy" .
+
+# -----------------------------------------------------------------------
+# COMPOSERS
+# -----------------------------------------------------------------------
+
+:zimmer      rdf:type :Composer ; rdfs:label "Hans Zimmer"       ;
+             :hasName "Hans Zimmer"       ; :hasNationality "German-American" ;
+             :birthDate "1957-09-12"^^xsd:date ; :birthPlace "Frankfurt, Germany" .
+
+:reznor      rdf:type :Composer ; rdfs:label "Trent Reznor"      ;
+             :hasName "Trent Reznor"      ; :hasNationality "American" ;
+             :birthDate "1965-05-17"^^xsd:date ; :birthPlace "New Castle, Pennsylvania, USA" .
+
+:atticus_ross rdf:type :Composer ; rdfs:label "Atticus Ross"     ;
+              :hasName "Atticus Ross"     ; :hasNationality "British" ;
+              :birthDate "1968-01-16"^^xsd:date ; :birthPlace "London, UK" .
+
+:goransson   rdf:type :Composer ; rdfs:label "Ludwig Göransson"  ;
+             :hasName "Ludwig Göransson"  ; :hasNationality "Swedish" ;
+             :birthDate "1984-09-01"^^xsd:date ; :birthPlace "Linköping, Sweden" .
+
+# -----------------------------------------------------------------------
+# ACTORS & ACTRESSES
+# -----------------------------------------------------------------------
+
+:bale        rdf:type :Actor   ; rdfs:label "Christian Bale"     ;
+             :hasName "Christian Bale"     ; :hasNationality "Welsh-American" ;
+             :birthDate "1974-01-30"^^xsd:date ; :birthPlace "Haverfordwest, Wales, UK" .
+
+:cillian     rdf:type :Actor   ; rdfs:label "Cillian Murphy"     ;
+             :hasName "Cillian Murphy"     ; :hasNationality "Irish" ;
+             :birthDate "1976-05-25"^^xsd:date ; :birthPlace "Douglas, Cork, Ireland" .
+
+:hardy       rdf:type :Actor   ; rdfs:label "Tom Hardy"          ;
+             :hasName "Tom Hardy"          ; :hasNationality "British" ;
+             :birthDate "1977-09-15"^^xsd:date ; :birthPlace "Hammersmith, London, UK" .
+
+:dicaprio    rdf:type :Actor   ; rdfs:label "Leonardo DiCaprio"  ;
+             :hasName "Leonardo DiCaprio"  ; :hasNationality "American" ;
+             :birthDate "1974-11-11"^^xsd:date ; :birthPlace "Los Angeles, California, USA" .
+
+:pitt        rdf:type :Actor   ; rdfs:label "Brad Pitt"          ;
+             :hasName "Brad Pitt"          ; :hasNationality "American" ;
+             :birthDate "1963-12-18"^^xsd:date ; :birthPlace "Shawnee, Oklahoma, USA" .
+
+:affleck     rdf:type :Actor   ; rdfs:label "Ben Affleck"        ;
+             :hasName "Ben Affleck"        ; :hasNationality "American" ;
+             :birthDate "1972-08-15"^^xsd:date ; :birthPlace "Berkeley, California, USA" .
+
+:gosling     rdf:type :Actor   ; rdfs:label "Ryan Gosling"       ;
+             :hasName "Ryan Gosling"       ; :hasNationality "Canadian" ;
+             :birthDate "1980-11-12"^^xsd:date ; :birthPlace "London, Ontario, Canada" .
+
+:brolin      rdf:type :Actor   ; rdfs:label "Josh Brolin"        ;
+             :hasName "Josh Brolin"        ; :hasNationality "American" ;
+             :birthDate "1968-02-12"^^xsd:date ; :birthPlace "Santa Monica, California, USA" .
+
+:chalamet    rdf:type :Actor   ; rdfs:label "Timothée Chalamet"  ;
+             :hasName "Timothée Chalamet"  ; :hasNationality "American-French" ;
+             :birthDate "1995-12-27"^^xsd:date ; :birthPlace "New York City, USA" .
+
+:isaac       rdf:type :Actor   ; rdfs:label "Oscar Isaac"        ;
+             :hasName "Oscar Isaac"        ; :hasNationality "Guatemalan-American" ;
+             :birthDate "1979-03-09"^^xsd:date ; :birthPlace "Guatemala City, Guatemala" .
+
+:mikkelsen   rdf:type :Actor   ; rdfs:label "Mads Mikkelsen"     ;
+             :hasName "Mads Mikkelsen"     ; :hasNationality "Danish" ;
+             :birthDate "1965-11-22"^^xsd:date ; :birthPlace "Østerbro, Copenhagen, Denmark" .
+
+:fassbender  rdf:type :Actor   ; rdfs:label "Michael Fassbender" ;
+             :hasName "Michael Fassbender" ; :hasNationality "German-Irish" ;
+             :birthDate "1977-04-02"^^xsd:date ; :birthPlace "Heidelberg, Germany" .
+
+:rylance     rdf:type :Actor   ; rdfs:label "Mark Rylance"       ;
+             :hasName "Mark Rylance"       ; :hasNationality "British" ;
+             :birthDate "1960-01-18"^^xsd:date ; :birthPlace "Ashford, Kent, UK" .
+
+:blanchett   rdf:type :Actress ; rdfs:label "Cate Blanchett"     ;
+             :hasName "Cate Blanchett"     ; :hasNationality "Australian" ;
+             :birthDate "1969-05-14"^^xsd:date ; :birthPlace "Melbourne, Australia" .
+
+:portman     rdf:type :Actress ; rdfs:label "Natalie Portman"    ;
+             :hasName "Natalie Portman"    ; :hasNationality "Israeli-American" ;
+             :birthDate "1981-06-09"^^xsd:date ; :birthPlace "Jerusalem, Israel" .
+
+:rooney_mara rdf:type :Actress ; rdfs:label "Rooney Mara"        ;
+             :hasName "Rooney Mara"        ; :hasNationality "American" ;
+             :birthDate "1985-04-17"^^xsd:date ; :birthPlace "Bedford, New York, USA" .
+
+:ferguson    rdf:type :Actress ; rdfs:label "Rebecca Ferguson"   ;
+             :hasName "Rebecca Ferguson"   ; :hasNationality "Swedish" ;
+             :birthDate "1983-10-19"^^xsd:date ; :birthPlace "Stockholm, Sweden" .
+
+:hathaway    rdf:type :Actress ; rdfs:label "Anne Hathaway"      ;
+             :hasName "Anne Hathaway"      ; :hasNationality "American" ;
+             :birthDate "1982-11-12"^^xsd:date ; :birthPlace "Brooklyn, New York, USA" .
+
+:cotillard   rdf:type :Actress ; rdfs:label "Marion Cotillard"   ;
+             :hasName "Marion Cotillard"   ; :hasNationality "French" ;
+             :birthDate "1975-09-30"^^xsd:date ; :birthPlace "Paris, France" .
+
+:zendaya     rdf:type :Actress ; rdfs:label "Zendaya"            ;
+             :hasName "Zendaya"            ; :hasNationality "American" ;
+             :birthDate "1996-09-01"^^xsd:date ; :birthPlace "Oakland, California, USA" .
+
+:knightley   rdf:type :Actress ; rdfs:label "Keira Knightley"    ;
+             :hasName "Keira Knightley"    ; :hasNationality "British" ;
+             :birthDate "1985-03-26"^^xsd:date ; :birthPlace "Teddington, Middlesex, UK" .
+
+# -----------------------------------------------------------------------
+# MOVIES
+# -----------------------------------------------------------------------
+
+:dark_knight       rdf:type :Movie ; rdfs:label "The Dark Knight"            ; :hasTitle "The Dark Knight"            ; :hasYear 2008 ; :hasGenre "Action / Crime" .
+:dark_knight_rises rdf:type :Movie ; rdfs:label "The Dark Knight Rises"      ; :hasTitle "The Dark Knight Rises"      ; :hasYear 2012 ; :hasGenre "Action / Thriller" .
+:inception         rdf:type :Movie ; rdfs:label "Inception"                  ; :hasTitle "Inception"                  ; :hasYear 2010 ; :hasGenre "Sci-Fi / Thriller" .
+:interstellar      rdf:type :Movie ; rdfs:label "Interstellar"               ; :hasTitle "Interstellar"               ; :hasYear 2014 ; :hasGenre "Sci-Fi / Drama" .
+:dunkirk           rdf:type :Movie ; rdfs:label "Dunkirk"                    ; :hasTitle "Dunkirk"                    ; :hasYear 2017 ; :hasGenre "War / Drama" .
+:oppenheimer       rdf:type :Movie ; rdfs:label "Oppenheimer"                ; :hasTitle "Oppenheimer"                ; :hasYear 2023 ; :hasGenre "Historical Drama" .
+:tenet             rdf:type :Movie ; rdfs:label "Tenet"                      ; :hasTitle "Tenet"                      ; :hasYear 2020 ; :hasGenre "Action / Sci-Fi" .
+
+:fight_club        rdf:type :Movie ; rdfs:label "Fight Club"                 ; :hasTitle "Fight Club"                 ; :hasYear 1999 ; :hasGenre "Drama / Thriller" .
+:se7en             rdf:type :Movie ; rdfs:label "Se7en"                      ; :hasTitle "Se7en"                      ; :hasYear 1995 ; :hasGenre "Crime / Thriller" .
+:gone_girl         rdf:type :Movie ; rdfs:label "Gone Girl"                  ; :hasTitle "Gone Girl"                  ; :hasYear 2014 ; :hasGenre "Mystery / Thriller" .
+:social_network    rdf:type :Movie ; rdfs:label "The Social Network"         ; :hasTitle "The Social Network"         ; :hasYear 2010 ; :hasGenre "Drama / Biography" .
+:girl_dragon       rdf:type :Movie ; rdfs:label "The Girl with the Dragon Tattoo" ; :hasTitle "The Girl with the Dragon Tattoo" ; :hasYear 2011 ; :hasGenre "Crime / Drama" .
+:mank              rdf:type :Movie ; rdfs:label "Mank"                       ; :hasTitle "Mank"                       ; :hasYear 2020 ; :hasGenre "Historical Drama" .
+
+:arrival           rdf:type :Movie ; rdfs:label "Arrival"                    ; :hasTitle "Arrival"                    ; :hasYear 2016 ; :hasGenre "Sci-Fi / Drama" .
+:blade_runner      rdf:type :Movie ; rdfs:label "Blade Runner 2049"          ; :hasTitle "Blade Runner 2049"          ; :hasYear 2017 ; :hasGenre "Sci-Fi / Neo-Noir" .
+:dune              rdf:type :Movie ; rdfs:label "Dune"                       ; :hasTitle "Dune"                       ; :hasYear 2021 ; :hasGenre "Sci-Fi / Adventure" .
+:dune2             rdf:type :Movie ; rdfs:label "Dune: Part Two"             ; :hasTitle "Dune: Part Two"             ; :hasYear 2024 ; :hasGenre "Sci-Fi / Adventure" .
+:sicario           rdf:type :Movie ; rdfs:label "Sicario"                    ; :hasTitle "Sicario"                    ; :hasYear 2015 ; :hasGenre "Crime / Thriller" .
+:prisoners         rdf:type :Movie ; rdfs:label "Prisoners"                  ; :hasTitle "Prisoners"                  ; :hasYear 2013 ; :hasGenre "Mystery / Thriller" .
+
+:1917              rdf:type :Movie ; rdfs:label "1917"                       ; :hasTitle "1917"                       ; :hasYear 2019 ; :hasGenre "War / Drama" .
+:skyfall           rdf:type :Movie ; rdfs:label "Skyfall"                    ; :hasTitle "Skyfall"                    ; :hasYear 2012 ; :hasGenre "Action / Spy" .
+:road_to_perdition rdf:type :Movie ; rdfs:label "Road to Perdition"          ; :hasTitle "Road to Perdition"          ; :hasYear 2002 ; :hasGenre "Crime / Drama" .
+
+# -----------------------------------------------------------------------
+# DIRECTED BY
+# -----------------------------------------------------------------------
+
+:nolan      :directed :dark_knight, :dark_knight_rises, :inception, :interstellar, :dunkirk, :oppenheimer, :tenet .
+:fincher    :directed :fight_club, :se7en, :gone_girl, :social_network, :girl_dragon, :mank .
+:villeneuve :directed :arrival, :blade_runner, :dune, :dune2, :sicario, :prisoners .
+:mendes     :directed :1917, :skyfall, :road_to_perdition .
+
+# -----------------------------------------------------------------------
+# SHOT BY (Director of Photography)
+# -----------------------------------------------------------------------
+
+:dark_knight       :shotBy :pfister .
+:dark_knight_rises :shotBy :pfister .
+:inception         :shotBy :pfister .
+:interstellar      :shotBy :van_hoytema .
+:dunkirk           :shotBy :van_hoytema .
+:oppenheimer       :shotBy :van_hoytema .
+:tenet             :shotBy :van_hoytema .
+
+:se7en             :shotBy :khondji .
+:fight_club        :shotBy :khondji .
+:gone_girl         :shotBy :khondji .
+:social_network    :shotBy :khondji .
+:girl_dragon       :shotBy :khondji .
+:mank              :shotBy :khondji .
+
+:arrival           :shotBy :deakins .
+:blade_runner      :shotBy :deakins .
+:sicario           :shotBy :deakins .
+:prisoners         :shotBy :deakins .
+:skyfall           :shotBy :deakins .
+:road_to_perdition :shotBy :deakins .
+
+:1917              :shotBy :muro .
+
+# -----------------------------------------------------------------------
+# EDITED BY
+# -----------------------------------------------------------------------
+
+:dark_knight       :editedBy :lee_smith .
+:dark_knight_rises :editedBy :lee_smith .
+:inception         :editedBy :lee_smith .
+:interstellar      :editedBy :lee_smith .
+:dunkirk           :editedBy :lee_smith .
+:oppenheimer       :editedBy :lee_smith .
+:tenet             :editedBy :lee_smith .
+:1917              :editedBy :lee_smith .
+:skyfall           :editedBy :lee_smith .
+
+:fight_club        :editedBy :angus_wall .
+:se7en             :editedBy :angus_wall .
+:road_to_perdition :editedBy :angus_wall .
+
+:social_network    :editedBy :kirk_baxter .
+:girl_dragon       :editedBy :kirk_baxter .
+:gone_girl         :editedBy :kirk_baxter .
+:mank              :editedBy :kirk_baxter .
+
+:arrival           :editedBy :pietro_scalia .
+:blade_runner      :editedBy :pietro_scalia .
+:dune              :editedBy :pietro_scalia .
+:dune2             :editedBy :pietro_scalia .
+:sicario           :editedBy :pietro_scalia .
+:prisoners         :editedBy :pietro_scalia .
+
+# -----------------------------------------------------------------------
+# SCORED BY
+# -----------------------------------------------------------------------
+
+:dark_knight       :scoredBy :zimmer .
+:dark_knight_rises :scoredBy :zimmer .
+:inception         :scoredBy :zimmer .
+:interstellar      :scoredBy :zimmer .
+:dunkirk           :scoredBy :zimmer .
+:oppenheimer       :scoredBy :goransson .
+:tenet             :scoredBy :goransson .
+
+:social_network    :scoredBy :reznor .
+:girl_dragon       :scoredBy :reznor .
+:gone_girl         :scoredBy :reznor .
+:mank              :scoredBy :reznor .
+:social_network    :scoredBy :atticus_ross .
+:girl_dragon       :scoredBy :atticus_ross .
+:gone_girl         :scoredBy :atticus_ross .
+:mank              :scoredBy :atticus_ross .
+
+:dune              :scoredBy :zimmer .
+:dune2             :scoredBy :zimmer .
+:blade_runner      :scoredBy :zimmer .
+:arrival           :scoredBy :goransson .
+:sicario           :scoredBy :zimmer .
+:1917              :scoredBy :zimmer .
+:skyfall           :scoredBy :zimmer .
+:road_to_perdition :scoredBy :zimmer .
+
+# -----------------------------------------------------------------------
+# ACTED IN
+# -----------------------------------------------------------------------
+
+:bale      :actedIn :dark_knight, :dark_knight_rises .
+:cillian   :actedIn :dark_knight, :dark_knight_rises, :inception, :dunkirk, :oppenheimer .
+:hardy     :actedIn :dark_knight_rises, :inception, :dunkirk .
+:dicaprio  :actedIn :inception, :mank .
+:hathaway  :actedIn :dark_knight_rises, :interstellar .
+:cotillard :actedIn :dark_knight_rises, :inception .
+:rylance   :actedIn :dunkirk, :oppenheimer .
+:blanchett :actedIn :tenet, :dune2 .
+:fassbender :actedIn :tenet, :girl_dragon .
+:chalamet  :actedIn :oppenheimer, :dune, :dune2 .
+
+:pitt      :actedIn :fight_club, :se7en, :road_to_perdition .
+:affleck   :actedIn :gone_girl, :road_to_perdition .
+:rooney_mara :actedIn :girl_dragon, :gone_girl .
+:mikkelsen :actedIn :mank, :arrival, :1917 .
+:knightley :actedIn :mank, :road_to_perdition .
+
+:brolin    :actedIn :sicario, :prisoners, :dune, :dune2, :blade_runner .
+:gosling   :actedIn :blade_runner .
+:ferguson  :actedIn :dune, :dune2 .
+:isaac     :actedIn :dune, :arrival .
+:zendaya   :actedIn :dune, :dune2 .
+:portman   :actedIn :arrival .
+
+:rylance   :actedIn :1917 .
+:knightley :actedIn :road_to_perdition .
+
+# Played role annotations (selected key roles)
+:bale      :playedRole "Bruce Wayne / Batman" .
+:cillian   :playedRole "J. Robert Oppenheimer" .
+:hardy     :playedRole "Bane" .
+:dicaprio  :playedRole "Dom Cobb" .
+:hathaway  :playedRole "Selina Kyle / Catwoman" .
+:cotillard :playedRole "Mal Cobb" .
+:rylance   :playedRole "Mr. Dawson" .
+:pitt      :playedRole "Tyler Durden" .
+:affleck   :playedRole "Nick Dunne" .
+:rooney_mara :playedRole "Lisbeth Salander" .
+:brolin    :playedRole "Matt Graver" .
+:gosling   :playedRole "Officer K" .
+:chalamet  :playedRole "Paul Atreides" .
+:ferguson  :playedRole "Lady Jessica" .
+:isaac     :playedRole "Duke Leto Atreides" .
+:zendaya   :playedRole "Chani" .
+
+# -----------------------------------------------------------------------
+# WORKED WITH (explicit cross-community bridges)
+# -----------------------------------------------------------------------
+
+:pfister      :workedWith :nolan .
+:van_hoytema  :workedWith :nolan .
+:deakins      :workedWith :villeneuve .
+:deakins      :workedWith :mendes .
+:khondji      :workedWith :fincher .
+:lee_smith    :workedWith :nolan .
+:lee_smith    :workedWith :mendes .
+:kirk_baxter  :workedWith :fincher .
+:angus_wall   :workedWith :fincher .
+:pietro_scalia :workedWith :villeneuve .
+:zimmer       :workedWith :nolan .
+:zimmer       :workedWith :villeneuve .
+:zimmer       :workedWith :mendes .
+:reznor       :workedWith :fincher .
+:atticus_ross :workedWith :fincher .
+:goransson    :workedWith :nolan .
+:goransson    :workedWith :villeneuve .
+
+:hardy        :workedWith :nolan .
+:cillian      :workedWith :nolan .
+:bale         :workedWith :nolan .
+:dicaprio     :workedWith :nolan .
+:dicaprio     :workedWith :fincher .
+:pitt         :workedWith :fincher .
+:pitt         :workedWith :mendes .
+:affleck      :workedWith :fincher .
+:affleck      :workedWith :mendes .
+:brolin       :workedWith :villeneuve .
+:gosling      :workedWith :villeneuve .
+:chalamet     :workedWith :villeneuve .
+:chalamet     :workedWith :nolan .
+:ferguson     :workedWith :villeneuve .
+:blanchett    :workedWith :nolan .
+:blanchett    :workedWith :villeneuve .
+:rylance      :workedWith :nolan .
+:rylance      :workedWith :mendes .
+:mikkelsen    :workedWith :villeneuve .
+:mikkelsen    :workedWith :fincher .
+:mikkelsen    :workedWith :mendes .
+:knightley    :workedWith :fincher .
+:knightley    :workedWith :mendes .
+:rooney_mara  :workedWith :fincher .
+:portman      :workedWith :villeneuve .
+:fassbender   :workedWith :nolan .
+:fassbender   :workedWith :fincher .
+:zendaya      :workedWith :villeneuve .
+:hathaway     :workedWith :nolan .
+:cotillard    :workedWith :nolan .
+:isaac        :workedWith :villeneuve .

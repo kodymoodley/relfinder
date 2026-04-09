@@ -119,5 +119,4 @@ debug/
 *.tmp
 *.temp
 .cache/
-movies.ttl
 .claude/
