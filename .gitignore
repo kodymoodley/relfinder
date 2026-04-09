@@ -119,3 +119,4 @@ debug/
 *.tmp
 *.temp
 .cache/
+movies.ttl
