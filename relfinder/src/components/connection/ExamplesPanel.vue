@@ -108,7 +108,7 @@ async function runExample(example: Example) {
 <style scoped>
 .examples-panel {
   width: 100%;
-  max-width: 860px;
+  max-width: 1100px;
   margin: 2rem auto 0;
   padding: 0 1rem 3rem;
 }
@@ -130,7 +130,7 @@ async function runExample(example: Example) {
 
 .examples-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: 1rem;
 }
 

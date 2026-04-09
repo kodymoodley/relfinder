@@ -284,9 +284,9 @@ export async function fetchDataProperties(
   store?: Store,
   language = 'en',
 ): Promise<DataProperty[]> {
-  const langFilter = language
-    ? `FILTER (lang(?propLabel) = '${language}' || lang(?propLabel) = '')`
-    : ''
+  const effectiveLang = language || 'en'
+  const langFilter = `FILTER (lang(?propLabel) = '${effectiveLang}' || lang(?propLabel) = '')
+      FILTER (lang(?propValue) = '${effectiveLang}' || lang(?propValue) = '')`
 
   const query = `
     SELECT DISTINCT ?p ?propLabel ?propValue WHERE {
