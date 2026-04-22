@@ -52,7 +52,7 @@
         >
           <span class="prop-chip-label" :title="iri">{{ shortIri(iri) }}</span>
           <button class="chip-remove" @click="removeCustomLabel(idx)" aria-label="Remove">
-            <i class="pi pi-times" />
+            <span aria-hidden="true">×</span>
           </button>
         </div>
       </div>
@@ -89,7 +89,7 @@
         >
           <span class="prop-chip-label" :title="iri">{{ shortIri(iri) }}</span>
           <button class="chip-remove" @click="removeClass(idx)" aria-label="Remove">
-            <i class="pi pi-times" />
+            <span aria-hidden="true">×</span>
           </button>
         </div>
       </div>
@@ -129,7 +129,7 @@
         >
           <span class="prop-chip-label" :title="iri">{{ shortIri(iri) }}</span>
           <button class="chip-remove" @click="removeIgnoredProp(idx)" aria-label="Remove">
-            <i class="pi pi-times" />
+            <span aria-hidden="true">×</span>
           </button>
         </div>
       </div>
@@ -382,18 +382,23 @@ function removeCustomLabel(idx: number) {
 .chip-remove {
   background: none;
   border: none;
-  padding: 0;
+  padding: 0 0 0 var(--rf-space-1);
   cursor: pointer;
   color: var(--rf-text-subtle);
-  font-size: 0.6rem;
+  font-size: 0.7rem;
+  line-height: 1;
   display: flex;
   align-items: center;
   flex-shrink: 0;
-  transition: color var(--rf-duration-fast) var(--rf-ease-out);
+  opacity: 0.5;
+  transition:
+    color var(--rf-duration-fast) var(--rf-ease-out),
+    opacity var(--rf-duration-fast) var(--rf-ease-out);
 }
 
 .chip-remove:hover {
   color: var(--rf-danger);
+  opacity: 1;
 }
 
 .add-prop {
