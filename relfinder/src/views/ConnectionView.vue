@@ -77,17 +77,14 @@ const { dark, toggle: toggleDark } = useDarkMode()
   padding: var(--rf-space-10) var(--rf-space-4) var(--rf-space-12);
   background: var(--rf-bg);
   background-image:
-    radial-gradient(ellipse 80% 50% at 50% -5%,  rgb(8 145 178 / 0.18) 0%, transparent 60%),
-    radial-gradient(ellipse 50% 40% at 85% 95%,  rgb(245 158 11 / 0.12) 0%, transparent 55%),
-    radial-gradient(ellipse 45% 60% at 8% 55%,   rgb(139 92 246 / 0.10) 0%, transparent 50%);
+    radial-gradient(ellipse 80% 50% at 50% -5%, rgb(8 145 178 / 0.09) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 85% 95%, rgb(245 158 11 / 0.06) 0%, transparent 55%);
 }
 
 .connection-card {
   width: 100%;
   max-width: 520px;
-  background: rgb(255 255 255 / 0.72);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  background: var(--rf-surface);
   border: 1px solid var(--rf-border);
   border-radius: var(--rf-radius-xl);
   overflow: hidden;
@@ -97,7 +94,7 @@ const { dark, toggle: toggleDark } = useDarkMode()
 .card-header {
   padding: var(--rf-space-8) var(--rf-space-8) var(--rf-space-6);
   border-bottom: 1px solid var(--rf-border);
-  background: linear-gradient(160deg, rgb(255 255 255 / 0.5) 0%, rgb(255 255 255 / 0.25) 100%);
+  background: linear-gradient(160deg, var(--rf-surface) 0%, var(--rf-surface-raised) 100%);
   position: relative;
   overflow: hidden;
 }
@@ -190,20 +187,11 @@ const { dark, toggle: toggleDark } = useDarkMode()
   font-size: var(--rf-text-sm);
 }
 
-/* Dark mode: brighter gradients + dark glass card */
+/* Dark mode: brighter gradient so it reads on a near-black background */
 :global(.dark) .connection-view {
   background-image:
-    radial-gradient(ellipse 80% 50% at 50% -5%,  rgb(34 211 238 / 0.13) 0%, transparent 60%),
-    radial-gradient(ellipse 50% 40% at 85% 95%,  rgb(251 191 36 / 0.09) 0%, transparent 55%),
-    radial-gradient(ellipse 45% 60% at 8% 55%,   rgb(167 139 250 / 0.08) 0%, transparent 50%);
-}
-
-:global(.dark) .connection-card {
-  background: rgb(15 23 42 / 0.78);
-}
-
-:global(.dark) .card-header {
-  background: linear-gradient(160deg, rgb(255 255 255 / 0.04) 0%, rgb(255 255 255 / 0.02) 100%);
+    radial-gradient(ellipse 80% 50% at 50% -5%, rgb(34 211 238 / 0.08) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 85% 95%, rgb(251 191 36 / 0.06) 0%, transparent 55%);
 }
 
 /* ── Tab panel ──────────────────────────────────────────────────────────── */
