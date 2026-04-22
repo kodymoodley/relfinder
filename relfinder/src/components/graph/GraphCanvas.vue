@@ -46,6 +46,10 @@ const props = defineProps<{
   loading: boolean
   /** Map of rdf:type IRI → hex colour — passed from parent for consistent colouring */
   classColors: Map<string, string>
+  /** IRI of entity 1 — rendered in orange to match the sidebar dot */
+  endpoint1Iri?: string
+  /** IRI of entity 2 — rendered in violet to match the sidebar dot */
+  endpoint2Iri?: string
 }>()
 
 const emit = defineEmits<{
@@ -60,14 +64,17 @@ let layout: Layouts | null = null
 
 const hasGraph = ref(false)
 
-// Colour palette for node classes
+// Colour palette for node classes — matches --rf-cat-* tokens in tokens.css
 const PALETTE = [
-  '#4f8ef7', '#f76b4f', '#4fc994', '#f7c94f',
-  '#a44ff7', '#4ff7f0', '#f74fa4', '#8ef74f',
+  '#06b6d4', '#10b981', '#a78bfa', '#fb923c',
+  '#f472b6', '#34d399', '#60a5fa', '#facc15',
 ]
 
-function classColor(classIri: string): string {
-  return props.classColors.get(classIri) ?? '#94a3b8'
+function nodeColor(ele: NodeSingular): string {
+  const iri = ele.data('iri') as string
+  if (iri && props.endpoint1Iri && iri === props.endpoint1Iri) return '#f97316' // --rf-node-entity1
+  if (iri && props.endpoint2Iri && iri === props.endpoint2Iri) return '#8b5cf6' // --rf-node-entity2
+  return props.classColors.get(ele.data('class') as string) ?? '#71717a'
 }
 
 // ── Graph rendering ───────────────────────────────────────────────────────────
@@ -114,27 +121,29 @@ function initCytoscape() {
         selector: 'node',
         style: {
           label: 'data(label)',
-          'background-color': (ele: NodeSingular) => classColor(ele.data('class') as string),
-          color: '#fff',
+          'background-color': (ele: NodeSingular) => nodeColor(ele),
+          color: '#ffffff',
           'text-valign': 'center',
           'text-halign': 'center',
           'font-size': '11px',
+          'font-family': 'DM Sans, system-ui, sans-serif',
           'text-wrap': 'wrap',
           'text-max-width': '80px',
           width: 60,
           height: 60,
           'border-width': 0,
-          'text-outline-width': 1,
-          'text-outline-color': 'rgba(0,0,0,0.35)',
+          'text-outline-width': 1.5,
+          'text-outline-color': 'rgba(0,0,0,0.3)',
         },
       },
       {
         selector: 'node[?isEndpoint]',
         style: {
           'border-width': 3,
-          'border-color': '#fff',
-          width: 72,
-          height: 72,
+          'border-color': 'rgba(255,255,255,0.85)',
+          'border-style': 'solid',
+          width: 76,
+          height: 76,
           'font-size': '12px',
           'font-weight': 'bold',
         },
@@ -142,11 +151,10 @@ function initCytoscape() {
       {
         selector: 'node:selected',
         style: {
+          'background-color': '#f59e0b', // --rf-node-selected / amber-500
           'border-width': 3,
-          'border-color': '#fff',
+          'border-color': 'rgba(255,255,255,0.85)',
           'border-opacity': 1,
-          'overlay-color': '#000',
-          'overlay-opacity': 0.1,
         },
       },
       {
@@ -155,22 +163,24 @@ function initCytoscape() {
           label: 'data(label)',
           'curve-style': 'bezier',
           'target-arrow-shape': 'triangle',
-          'target-arrow-color': '#94a3b8',
-          'line-color': '#94a3b8',
+          'target-arrow-color': '#a1a1aa', // --rf-edge
+          'line-color': '#a1a1aa',         // --rf-edge
           width: 1.5,
           'font-size': '9px',
-          color: '#64748b',
+          'font-family': 'DM Sans, system-ui, sans-serif',
+          color: '#71717a',                // --rf-edge-label
           'text-rotation': 'autorotate',
-          'text-background-color': '#fff',
-          'text-background-opacity': 0.8,
+          'text-background-color': '#ffffff',
+          'text-background-opacity': 0.85,
           'text-background-padding': '2px',
+          'text-background-shape': 'roundrectangle',
         },
       },
       {
         selector: 'edge:selected',
         style: {
-          'line-color': '#4f8ef7',
-          'target-arrow-color': '#4f8ef7',
+          'line-color': '#0891b2',         // --rf-primary
+          'target-arrow-color': '#0891b2',
           width: 2.5,
         },
       },
@@ -268,7 +278,7 @@ defineExpose({ PALETTE })
   position: relative;
   width: 100%;
   height: 100%;
-  background: var(--p-surface-ground);
+  background: var(--rf-bg);
 }
 
 .cy-container {
@@ -289,41 +299,44 @@ defineExpose({ PALETTE })
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 1rem;
-  color: var(--p-text-muted-color);
+  gap: var(--rf-space-4);
+  color: var(--rf-text-muted);
   text-align: center;
-  padding: 2rem;
+  padding: var(--rf-space-8);
   pointer-events: none;
 }
 
 .empty-icon {
   font-size: 3rem;
-  opacity: 0.3;
+  color: var(--rf-text-subtle);
+  opacity: 0.5;
 }
 
 .canvas-empty p {
   margin: 0;
-  font-size: 0.95rem;
-  max-width: 240px;
-  line-height: 1.6;
+  font-size: var(--rf-text-base);
+  max-width: 260px;
+  line-height: var(--rf-leading-relaxed);
+  color: var(--rf-text-muted);
 }
 
 .canvas-loading p {
   margin: 0;
-  font-size: 0.9rem;
+  font-size: var(--rf-text-sm);
+  color: var(--rf-text-muted);
 }
 
 .canvas-toolbar {
   position: absolute;
-  bottom: 1rem;
-  right: 1rem;
+  bottom: var(--rf-space-4);
+  right: var(--rf-space-4);
   display: flex;
   align-items: center;
-  gap: 0.1rem;
-  background: var(--p-content-background);
-  border: 1px solid var(--p-content-border-color);
-  border-radius: 8px;
-  padding: 0.25rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  gap: var(--rf-space-1);
+  background: var(--rf-surface);
+  border: 1px solid var(--rf-border);
+  border-radius: var(--rf-radius-lg);
+  padding: var(--rf-space-1);
+  box-shadow: var(--rf-shadow-md);
 }
 </style>

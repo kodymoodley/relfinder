@@ -120,47 +120,51 @@ function shortIri(iri: string): string {
 
 <style scoped>
 .detail-section {
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--rf-space-6);
 }
 
 .section-label {
-  margin: 0 0 0.4rem;
-  font-size: 0.75rem;
-  font-weight: 600;
+  margin: 0 0 var(--rf-space-2);
+  font-size: var(--rf-text-xs);
+  font-weight: var(--rf-weight-semibold);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--p-text-muted-color);
+  letter-spacing: 0.06em;
+  color: var(--rf-text-subtle);
 }
 
 .iri-link {
-  font-size: 0.8rem;
+  font-size: var(--rf-text-xs);
   word-break: break-all;
-  color: var(--p-primary-color);
+  color: var(--rf-primary);
   text-decoration: none;
+  line-height: var(--rf-leading-relaxed);
+  transition: color var(--rf-duration-fast) var(--rf-ease-out);
 }
 
 .iri-link:hover {
+  color: var(--rf-primary-hover);
   text-decoration: underline;
 }
 
 .props-loading {
   display: flex;
   justify-content: center;
-  padding: 1rem 0;
+  padding: var(--rf-space-4) 0;
 }
 
 .props-empty {
   margin: 0;
-  font-size: 0.85rem;
-  color: var(--p-text-muted-color);
+  font-size: var(--rf-text-sm);
+  color: var(--rf-text-muted);
   font-style: italic;
 }
 
 .props-table {
-  font-size: 0.82rem;
+  font-size: var(--rf-text-xs);
 }
 
 .prop-value {
   word-break: break-word;
+  color: var(--rf-text);
 }
 </style>

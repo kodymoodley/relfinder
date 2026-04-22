@@ -118,6 +118,8 @@
         :edges="graph?.edges ?? []"
         :loading="searching"
         :class-colors="classColors"
+        :endpoint1-iri="entity1?.iri"
+        :endpoint2-iri="entity2?.iri"
         @node-click="selectedNode = $event"
       />
     </main>
