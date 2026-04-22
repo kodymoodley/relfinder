@@ -1,5 +1,7 @@
 # RelFinder
 
+[![CI](https://github.com/kodymoodley/relfinder/actions/workflows/deploy.yml/badge.svg)](https://github.com/kodymoodley/relfinder/actions/workflows/deploy.yml)
+
 [Demo](https://kodymoodley.github.io/relfinder)
 
 [RelFinder](https://kodymoodley.github.io/relfinder) is a browser-based tool for discovering and visualising relationships between entities in RDF knowledge graphs. Point it at any public-facing SPARQL endpoint or upload a local RDF file, select two entities, and RelFinder finds and displays all connecting paths as an interactive force-directed graph.
@@ -13,16 +15,23 @@ It is a modernised, fully client-side, partial rewrite of the [original RelFinde
 - **Class filtering** — constrain entity search to specific RDF types (e.g. `dbo:Person`, `schema:Movie`)
 - **Language filtering** — target a specific language tag when retrieving labels
 - **Configurable path search** — adjust maximum path length, exclude specific properties, and control cycle avoidance
-- **Interactive force-directed graph** — springy D3-physics simulation via Cytoscape.js; drag nodes to explore, double-click to fix in place
+- **Quick-start examples** — four built-in examples (film industry and physics pioneers, both as bundled Turtle datasets and as live DBpedia queries) that load instantly with no setup
+- **Interactive force-directed graph** — springy D3-physics simulation via Cytoscape.js; drag nodes to explore, double-click to fix in place, box-select subgraphs, and crop the view to a selection
 - **Node detail panel** — inspect any node's IRI, RDF type, and data properties
 
 ## Usage
 
-1. **Connect** — on the connection screen, either enter a SPARQL endpoint URL or drag-and-drop an RDF file.
+### Quick start
+
+Click any of the built-in examples on the connection screen to load a bundled dataset and run a query instantly — no endpoint or file required.
+
+### Manual setup
+
+1. **Connect** — enter a SPARQL endpoint URL or drag-and-drop an RDF file (Turtle, N-Triples, N-Quads, TriG).
 2. **Search for entities** — in the graph view, type into the *Entity 1* and *Entity 2* fields. Autocomplete suggestions appear after a short delay.
 3. **Optionally filter** — open *Query Options* to restrict by class, language, path length, or ignored properties.
 4. **Find relationships** — click *Find Relationships*. The graph renders all discovered paths between the two entities.
-5. **Explore** — drag nodes, click them for detail, zoom and pan, or re-run the layout with the toolbar buttons.
+5. **Explore** — drag nodes, click them for detail, zoom and pan, toggle edge labels, box-select a subgraph to crop the view, or re-run the layout with the toolbar buttons.
 
 ### Example endpoints
 
@@ -62,6 +71,9 @@ npm run type-check
 
 # Run unit tests
 npm run test:unit
+
+# Run unit tests + live endpoint integration tests (requires internet access)
+INTEGRATION=1 npm run test:unit
 ```
 
 The application is built with:
