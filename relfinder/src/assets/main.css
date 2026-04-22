@@ -218,3 +218,10 @@
 .p-progressspinner-circle {
   stroke: var(--rf-primary) !important;
 }
+
+/* ── Fix vertical centering broken by global margin:0 reset ─────────────── */
+/* PrimeVue uses margin-top:calc(-size/2) to center the slider handle;       */
+/* the global reset strips it. Replace with transform-based centering.        */
+.p-slider-handle {
+  transform: translateY(-50%);
+}

@@ -21,149 +21,179 @@
 
     <!-- Label language -->
     <div class="option-group">
-      <label class="option-label" for="lang-input">Label Language</label>
-      <p class="option-hint">
-        RDF language tag for labels (e.g. <code>en</code>, <code>de</code>, <code>fr</code>). Leave
-        empty to accept any language.
-      </p>
-      <InputText
-        id="lang-input"
-        :model-value="modelValue.language"
-        placeholder="en"
-        size="small"
-        style="width: 80px"
-        @update:model-value="update('language', $event as string)"
-      />
+      <button class="section-toggle" @click="open.language = !open.language">
+        <span class="option-label">Label Language</span>
+        <span v-if="!open.language && modelValue.language" class="section-badge">{{ modelValue.language }}</span>
+        <i class="pi pi-chevron-right toggle-chevron" :class="{ 'toggle-chevron--open': open.language }" />
+      </button>
+      <div class="section-body" :class="{ 'section-body--open': open.language }">
+        <div class="section-body-inner">
+          <p class="option-hint">
+            RDF language tag for labels (e.g. <code>en</code>, <code>de</code>, <code>fr</code>). Leave
+            empty to accept any language.
+          </p>
+          <InputText
+            id="lang-input"
+            :model-value="modelValue.language"
+            placeholder="en"
+            size="small"
+            style="width: 80px"
+            @update:model-value="update('language', $event as string)"
+          />
+        </div>
+      </div>
     </div>
 
     <!-- Custom label properties -->
     <div class="option-group">
-      <label class="option-label">Extra Label Properties</label>
-      <p class="option-hint">
-        Additional predicate IRIs to use as labels when searching entities (e.g.
-        <code>http://schema.org/alternateName</code>).
-      </p>
-
-      <div v-if="modelValue.customLabelProperties.length > 0" class="chip-list">
-        <div v-for="(iri, idx) in modelValue.customLabelProperties" :key="iri" class="prop-chip">
-          <span class="prop-chip-label" :title="iri">{{ shortIri(iri) }}</span>
-          <button class="chip-remove" @click="removeCustomLabel(idx)" aria-label="Remove">
-            <span aria-hidden="true">×</span>
-          </button>
+      <button class="section-toggle" @click="open.customLabels = !open.customLabels">
+        <span class="option-label">Extra Label Properties</span>
+        <span v-if="!open.customLabels && modelValue.customLabelProperties.length > 0" class="section-badge">{{ modelValue.customLabelProperties.length }}</span>
+        <i class="pi pi-chevron-right toggle-chevron" :class="{ 'toggle-chevron--open': open.customLabels }" />
+      </button>
+      <div class="section-body" :class="{ 'section-body--open': open.customLabels }">
+        <div class="section-body-inner">
+          <p class="option-hint">
+            Additional predicate IRIs to use as labels when searching entities (e.g.
+            <code>http://schema.org/alternateName</code>).
+          </p>
+          <div v-if="modelValue.customLabelProperties.length > 0" class="chip-list">
+            <div v-for="(iri, idx) in modelValue.customLabelProperties" :key="iri" class="prop-chip">
+              <span class="prop-chip-label" :title="iri">{{ shortIri(iri) }}</span>
+              <button class="chip-remove" @click="removeCustomLabel(idx)" aria-label="Remove">
+                <span aria-hidden="true">×</span>
+              </button>
+            </div>
+          </div>
+          <div class="add-prop">
+            <InputText
+              v-model="newLabelIri"
+              placeholder="https://example.org/label"
+              size="small"
+              fluid
+              @keydown.enter.prevent="addCustomLabel"
+            />
+            <Button
+              icon="pi pi-plus"
+              severity="secondary"
+              size="small"
+              :disabled="!newLabelIri.trim()"
+              @click="addCustomLabel"
+              aria-label="Add label property"
+            />
+          </div>
         </div>
-      </div>
-
-      <div class="add-prop">
-        <InputText
-          v-model="newLabelIri"
-          placeholder="https://example.org/label"
-          size="small"
-          fluid
-          @keydown.enter.prevent="addCustomLabel"
-        />
-        <Button
-          icon="pi pi-plus"
-          severity="secondary"
-          size="small"
-          :disabled="!newLabelIri.trim()"
-          @click="addCustomLabel"
-          aria-label="Add label property"
-        />
       </div>
     </div>
 
     <!-- Entity class filter -->
     <div class="option-group">
-      <label class="option-label">Entity Class Filter</label>
-      <p class="option-hint">
-        Restrict entity search to specific RDF types. Leave empty to allow all.
-      </p>
-
-      <div v-if="modelValue.allowedClasses.length > 0" class="chip-list">
-        <div v-for="(iri, idx) in modelValue.allowedClasses" :key="iri" class="prop-chip">
-          <span class="prop-chip-label" :title="iri">{{ shortIri(iri) }}</span>
-          <button class="chip-remove" @click="removeClass(idx)" aria-label="Remove">
-            <span aria-hidden="true">×</span>
-          </button>
+      <button class="section-toggle" @click="open.classFilter = !open.classFilter">
+        <span class="option-label">Entity Class Filter</span>
+        <span v-if="!open.classFilter && modelValue.allowedClasses.length > 0" class="section-badge">{{ modelValue.allowedClasses.length }}</span>
+        <i class="pi pi-chevron-right toggle-chevron" :class="{ 'toggle-chevron--open': open.classFilter }" />
+      </button>
+      <div class="section-body" :class="{ 'section-body--open': open.classFilter }">
+        <div class="section-body-inner">
+          <p class="option-hint">
+            Restrict entity search to specific RDF types. Leave empty to allow all.
+          </p>
+          <div v-if="modelValue.allowedClasses.length > 0" class="chip-list">
+            <div v-for="(iri, idx) in modelValue.allowedClasses" :key="iri" class="prop-chip">
+              <span class="prop-chip-label" :title="iri">{{ shortIri(iri) }}</span>
+              <button class="chip-remove" @click="removeClass(idx)" aria-label="Remove">
+                <span aria-hidden="true">×</span>
+              </button>
+            </div>
+          </div>
+          <div class="add-prop">
+            <Select
+              v-model="classPickerValue"
+              :options="unselectedClasses"
+              option-label="label"
+              option-value="iri"
+              placeholder="Add class filter…"
+              :loading="loadingClasses"
+              filter
+              filter-placeholder="Search types…"
+              :empty-message="loadingClasses ? 'Loading…' : classLoadError || 'No classes found'"
+              size="small"
+              fluid
+              @show="onDropdownShow"
+              @change="onClassSelect"
+            />
+          </div>
+          <Message v-if="classLoadError" severity="warn" :closable="false" class="class-error">
+            {{ classLoadError }}
+          </Message>
         </div>
       </div>
-
-      <div class="add-prop">
-        <Select
-          v-model="classPickerValue"
-          :options="unselectedClasses"
-          option-label="label"
-          option-value="iri"
-          placeholder="Add class filter…"
-          :loading="loadingClasses"
-          filter
-          filter-placeholder="Search types…"
-          :empty-message="loadingClasses ? 'Loading…' : classLoadError || 'No classes found'"
-          size="small"
-          fluid
-          @show="onDropdownShow"
-          @change="onClassSelect"
-        />
-      </div>
-
-      <Message v-if="classLoadError" severity="warn" :closable="false" class="class-error">
-        {{ classLoadError }}
-      </Message>
     </div>
 
     <!-- Ignored properties -->
     <div class="option-group">
-      <label class="option-label">Ignored Properties</label>
-      <p class="option-hint">Property IRIs excluded from all paths.</p>
-      <div class="chip-list">
-        <div v-for="(iri, idx) in modelValue.ignoredProperties" :key="iri" class="prop-chip">
-          <span class="prop-chip-label" :title="iri">{{ shortIri(iri) }}</span>
-          <button class="chip-remove" @click="removeIgnoredProp(idx)" aria-label="Remove">
-            <span aria-hidden="true">×</span>
-          </button>
+      <button class="section-toggle" @click="open.ignoredProps = !open.ignoredProps">
+        <span class="option-label">Ignored Properties</span>
+        <span v-if="!open.ignoredProps && modelValue.ignoredProperties.length > 0" class="section-badge">{{ modelValue.ignoredProperties.length }}</span>
+        <i class="pi pi-chevron-right toggle-chevron" :class="{ 'toggle-chevron--open': open.ignoredProps }" />
+      </button>
+      <div class="section-body" :class="{ 'section-body--open': open.ignoredProps }">
+        <div class="section-body-inner">
+          <p class="option-hint">Property IRIs excluded from all paths.</p>
+          <div class="chip-list">
+            <div v-for="(iri, idx) in modelValue.ignoredProperties" :key="iri" class="prop-chip">
+              <span class="prop-chip-label" :title="iri">{{ shortIri(iri) }}</span>
+              <button class="chip-remove" @click="removeIgnoredProp(idx)" aria-label="Remove">
+                <span aria-hidden="true">×</span>
+              </button>
+            </div>
+          </div>
+          <div class="add-prop">
+            <InputText
+              v-model="newPropIri"
+              placeholder="https://example.org/property"
+              size="small"
+              fluid
+              @keydown.enter.prevent="addIgnoredProp"
+            />
+            <Button
+              icon="pi pi-plus"
+              severity="secondary"
+              size="small"
+              :disabled="!newPropIri.trim()"
+              @click="addIgnoredProp"
+              aria-label="Add property"
+            />
+          </div>
         </div>
-      </div>
-      <div class="add-prop">
-        <InputText
-          v-model="newPropIri"
-          placeholder="https://example.org/property"
-          size="small"
-          fluid
-          @keydown.enter.prevent="addIgnoredProp"
-        />
-        <Button
-          icon="pi pi-plus"
-          severity="secondary"
-          size="small"
-          :disabled="!newPropIri.trim()"
-          @click="addIgnoredProp"
-          aria-label="Add property"
-        />
       </div>
     </div>
 
     <!-- Cycle avoidance -->
     <div class="option-group">
-      <label class="option-label">Cycle Avoidance</label>
-      <SelectButton
-        class="cycle-toggle"
-        :model-value="modelValue.avoidCycles"
-        :options="cycleOptions"
-        option-label="label"
-        option-value="value"
-        @update:model-value="update('avoidCycles', $event)"
-      />
+      <div class="switch-row">
+        <label class="option-label">Avoid Cycles</label>
+        <ToggleButton
+          :model-value="modelValue.avoidCycles !== QueryCyclesStrategy.NONE"
+          on-label="On"
+          off-label="Off"
+          on-icon="pi pi-check"
+          off-icon="pi pi-times"
+          size="small"
+          @update:model-value="update('avoidCycles', $event ? QueryCyclesStrategy.NO_INTERMEDIATE_DUPLICATES : QueryCyclesStrategy.NONE)"
+        />
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import Slider from 'primevue/slider'
 import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
 import Select from 'primevue/select'
-import SelectButton from 'primevue/selectbutton'
+import ToggleButton from 'primevue/togglebutton'
 import Message from 'primevue/message'
 import { QueryCyclesStrategy } from '@/lib/sparql/types'
 import { fetchAvailableClasses } from '@/lib/sparql/entitySearch'
@@ -183,6 +213,13 @@ const emit = defineEmits<{ 'update:modelValue': [value: GraphOptions] }>()
 
 const connectionStore = useConnectionStore()
 
+const open = reactive({
+  language: false,
+  customLabels: false,
+  classFilter: false,
+  ignoredProps: false,
+})
+
 const newPropIri = ref('')
 const newLabelIri = ref('')
 const classPickerValue = ref<string | null>(null)
@@ -190,11 +227,6 @@ const availableClasses = ref<{ iri: string; label: string }[]>([])
 const loadingClasses = ref(false)
 const classesLoaded = ref(false)
 const classLoadError = ref('')
-
-const cycleOptions = [
-  { label: 'Off', value: QueryCyclesStrategy.NONE },
-  { label: 'On', value: QueryCyclesStrategy.NO_INTERMEDIATE_DUPLICATES },
-]
 
 // Only show classes not already selected
 const unselectedClasses = computed(() =>
@@ -288,13 +320,25 @@ function removeCustomLabel(idx: number) {
 .options-panel {
   display: flex;
   flex-direction: column;
-  gap: var(--rf-space-6);
+  gap: 0;
 }
 
 .option-group {
   display: flex;
   flex-direction: column;
   gap: var(--rf-space-2);
+  padding-top: var(--rf-space-4);
+  padding-bottom: var(--rf-space-4);
+  border-top: 1px solid var(--rf-border);
+}
+
+.option-group:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+
+.option-group:last-child {
+  padding-bottom: 0;
 }
 
 .option-header {
@@ -407,46 +451,92 @@ function removeCustomLabel(idx: number) {
   border-radius: var(--rf-radius-sm);
 }
 
-/* ── Cycle avoidance toggle ───────────────────────────────────────────────── */
+/* ── Collapsible sections ────────────────────────────────────────────────── */
 
-.cycle-toggle {
-  display: inline-flex;
-}
-
-.cycle-toggle :deep(.p-selectbutton) {
-  display: inline-flex;
-  gap: var(--rf-space-1);
+.section-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--rf-space-2);
   background: none;
   border: none;
   padding: 0;
-}
-
-.cycle-toggle :deep(.p-togglebutton) {
-  padding: 0.28rem 0.85rem;
-  font-size: var(--rf-text-xs);
-  font-weight: var(--rf-weight-medium);
-  border-radius: var(--rf-radius-full);
-  border: 1px solid var(--rf-border);
-  background: var(--rf-surface-raised);
-  color: var(--rf-text-muted);
-  transition:
-    background var(--rf-duration-fast) var(--rf-ease-out),
-    color var(--rf-duration-fast) var(--rf-ease-out),
-    border-color var(--rf-duration-fast) var(--rf-ease-out);
   cursor: pointer;
-  white-space: nowrap;
+  text-align: left;
 }
 
-.cycle-toggle :deep(.p-togglebutton:hover:not(.p-togglebutton-checked)) {
+.section-toggle:hover .option-label {
+  color: var(--rf-primary);
+}
+
+.section-badge {
+  font-size: var(--rf-text-xs);
+  font-weight: var(--rf-weight-semibold);
+  background: var(--rf-primary-soft);
+  color: var(--rf-primary);
+  border: 1px solid color-mix(in srgb, var(--rf-primary) 30%, transparent);
+  border-radius: var(--rf-radius-full);
+  padding: 0.05rem 0.45rem;
+  letter-spacing: 0.02em;
+  line-height: 1.6;
+}
+
+.toggle-chevron {
+  margin-left: auto;
+  font-size: 0.55rem;
+  color: var(--rf-text-subtle);
+  transition:
+    transform var(--rf-duration-base) var(--rf-ease-out),
+    color var(--rf-duration-fast) var(--rf-ease-out);
+  flex-shrink: 0;
+}
+
+.section-toggle:hover .toggle-chevron {
+  color: var(--rf-primary);
+}
+
+.toggle-chevron--open {
+  transform: rotate(90deg);
+}
+
+.section-body {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--rf-duration-base) var(--rf-ease-out);
+}
+
+.section-body--open {
+  grid-template-rows: 1fr;
+}
+
+.section-body-inner {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: var(--rf-space-2);
+  padding-top: var(--rf-space-2);
+}
+
+/* ── Cycle avoidance switch ───────────────────────────────────────────────── */
+
+.switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.switch-row .option-label {
+  cursor: pointer;
+}
+
+.switch-row :deep(.p-togglebutton) {
+  font-size: var(--rf-text-xs);
+  padding: 0.3rem 0.7rem;
+}
+
+.switch-row :deep(.p-togglebutton-checked) {
+  background: var(--rf-primary-soft);
   border-color: var(--rf-primary);
   color: var(--rf-primary);
-  background: var(--rf-primary-soft);
-}
-
-.cycle-toggle :deep(.p-togglebutton-checked) {
-  background: var(--rf-primary);
-  border-color: var(--rf-primary);
-  color: var(--rf-text-on-primary);
-  font-weight: var(--rf-weight-semibold);
 }
 </style>
