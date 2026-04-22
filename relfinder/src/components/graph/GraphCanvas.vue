@@ -139,7 +139,7 @@ let layout: Layouts | null = null
 const { dark } = useDarkMode()
 
 const hasGraph = ref(false)
-const showEdgeLabels = ref(true)
+const showEdgeLabels = ref(false)
 const selectionMode = ref<'pan' | 'select'>('pan')
 const hasSelection = ref(false)
 const cropHistory = ref<cytoscape.ElementDefinition[][]>([])
