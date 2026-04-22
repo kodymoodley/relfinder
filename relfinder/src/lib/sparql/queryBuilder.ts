@@ -7,6 +7,20 @@
  *
  * All functions are pure (no I/O, no side effects) and operate solely
  * on strings and plain objects. This makes them straightforward to unit-test.
+ *
+ * ## SPARQL variable naming convention
+ *
+ * Variables follow a positional scheme derived from the original Python port.
+ * Understanding the naming makes the query builder and graph builder easier to read together:
+ *
+ *   ?pf<n>  — forward property at hop n  (entity1 → ?middle)
+ *   ?of<n>  — forward object at hop n    (intermediate node between entity1 and ?middle)
+ *   ?ps<n>  — backward property at hop n (entity2 → ?middle)
+ *   ?os<n>  — backward object at hop n   (intermediate node between entity2 and ?middle)
+ *   ?middle — the shared node where forward and backward chains meet
+ *
+ * Direct paths use only ?pf/?of variables (no ?middle).
+ * Middle-object paths use both forward and backward chains converging at ?middle.
  */
 
 import {
@@ -116,6 +130,8 @@ export function generateFilter(
 
   for (const prop of variables.pred) {
     for (const ignoredProp of queryConfig.ignoredProperties) {
+      // Skip blank entries — a blank IRI would produce <> which is invalid SPARQL
+      if (!ignoredProp.trim()) continue
       filterTerms.push(`${prop} != ${uri(ignoredProp)} `)
     }
   }
@@ -145,8 +161,12 @@ export function generateFilter(
     }
   }
 
+  // No terms means no constraints — omit the FILTER clause entirely.
+  // `FILTER ()` (empty braces) is invalid SPARQL 1.1 and will be rejected by parsers.
+  if (filterTerms.length === 0) return ''
+
   const expanded = expandTerms(filterTerms, '&&')
-  return `FILTER ${expanded}. `
+  return `FILTER ${expanded}`
 }
 
 // ── Query assembly ────────────────────────────────────────────────────────────
@@ -200,11 +220,7 @@ export function direct(
 
   if (distance === 1) {
     variables.pred.push('?pf1')
-    return completeQuery(
-      queryConfig,
-      `${uri(entity1IRI)} ?pf1 ${uri(entity2IRI)}`,
-      variables,
-    )
+    return completeQuery(queryConfig, `${uri(entity1IRI)} ?pf1 ${uri(entity2IRI)}`, variables)
   }
 
   let coreQuery = `${uri(entity1IRI)} ?pf1 ?of1 .\n`

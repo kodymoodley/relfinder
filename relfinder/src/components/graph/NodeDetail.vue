@@ -4,7 +4,7 @@
     position="right"
     :header="node?.label ?? 'Node details'"
     class="node-detail-drawer"
-    :pt="{ root: { style: 'width: 360px' }, header: { style: 'padding-left: 1.5rem' }, content: { style: 'padding: 1.25rem 1.5rem' } }"
+    :pt="{ root: { style: 'width: 380px' } }"
   >
     <template v-if="node">
       <!-- IRI -->
@@ -34,9 +34,7 @@
           {{ propsError }}
         </Message>
 
-        <p v-else-if="dataProps.length === 0" class="props-empty">
-          No data properties found.
-        </p>
+        <p v-else-if="dataProps.length === 0" class="props-empty">No data properties found.</p>
 
         <DataTable
           v-else
@@ -69,6 +67,7 @@ import Message from 'primevue/message'
 import { useConnectionStore } from '@/stores/connection'
 import { fetchDataProperties } from '@/lib/sparql/entitySearch'
 import type { GraphNode, DataProperty } from '@/lib/sparql/types'
+import { shortIri } from '@/lib/utils/iri'
 
 const props = defineProps<{ node: GraphNode | null; language?: string }>()
 const emit = defineEmits<{ 'update:node': [value: GraphNode | null] }>()
@@ -97,9 +96,17 @@ watch(
     try {
       const context = connectionStore.queryContext
       const store = connectionStore.rdfStore ?? undefined
+      // When store is set (file mode), context is null. The empty endpointUrl
+      // fallback is never used — Comunica queries the store directly.
       const effectiveContext = context ?? { endpointUrl: '' }
 
-      dataProps.value = await fetchDataProperties(node.iri, effectiveContext, 50, store, props.language ?? 'en')
+      dataProps.value = await fetchDataProperties(
+        node.iri,
+        effectiveContext,
+        50,
+        store,
+        props.language ?? 'en',
+      )
     } catch {
       propsError.value = 'Could not load properties for this node.'
     } finally {
@@ -113,54 +120,55 @@ watch(visible, (v) => {
   if (!v) emit('update:node', null)
 })
 
-function shortIri(iri: string): string {
-  return iri.split('/').pop()?.split('#').pop() ?? iri
-}
 </script>
 
 <style scoped>
 .detail-section {
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--rf-space-6);
 }
 
 .section-label {
-  margin: 0 0 0.4rem;
-  font-size: 0.75rem;
-  font-weight: 600;
+  margin: 0 0 var(--rf-space-2);
+  font-size: var(--rf-text-xs);
+  font-weight: var(--rf-weight-semibold);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--p-text-muted-color);
+  letter-spacing: 0.06em;
+  color: var(--rf-text-subtle);
 }
 
 .iri-link {
-  font-size: 0.8rem;
+  font-size: var(--rf-text-xs);
   word-break: break-all;
-  color: var(--p-primary-color);
+  color: var(--rf-primary);
   text-decoration: none;
+  line-height: var(--rf-leading-relaxed);
+  transition: color var(--rf-duration-fast) var(--rf-ease-out);
 }
 
 .iri-link:hover {
+  color: var(--rf-primary-hover);
   text-decoration: underline;
 }
 
 .props-loading {
   display: flex;
   justify-content: center;
-  padding: 1rem 0;
+  padding: var(--rf-space-4) 0;
 }
 
 .props-empty {
   margin: 0;
-  font-size: 0.85rem;
-  color: var(--p-text-muted-color);
+  font-size: var(--rf-text-sm);
+  color: var(--rf-text-muted);
   font-style: italic;
 }
 
 .props-table {
-  font-size: 0.82rem;
+  font-size: var(--rf-text-xs);
 }
 
 .prop-value {
   word-break: break-word;
+  color: var(--rf-text);
 }
 </style>

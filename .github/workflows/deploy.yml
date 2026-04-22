@@ -1,23 +1,26 @@
-name: Deploy to GitHub Pages
+name: CI / Deploy
 
 on:
   push:
+    branches: ['**']
+  pull_request:
     branches: [main]
-  workflow_dispatch: # allow manual runs from the Actions tab
+  workflow_dispatch:
 
-# Grant the GITHUB_TOKEN the permissions required by actions/deploy-pages
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# Only one deployment at a time; don't cancel an in-progress run
+# On main: use the 'pages' group so deploys never run in parallel.
+# On other branches: group by ref so a new push cancels a redundant run.
 concurrency:
-  group: pages
-  cancel-in-progress: false
+  group: ${{ github.ref == 'refs/heads/main' && 'pages' || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
-  build:
+  ci:
+    name: Lint / Type-check / Test / Build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -26,7 +29,6 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
-          # package-lock.json lives inside the relfinder/ subdirectory
           cache-dependency-path: relfinder/package-lock.json
 
       - name: Install dependencies
@@ -37,27 +39,37 @@ jobs:
         working-directory: relfinder
         run: npm run lint
 
+      - name: Type-check
+        working-directory: relfinder
+        run: npm run type-check
+
+      - name: Unit tests
+        working-directory: relfinder
+        run: npm run test:unit -- --run
+
+      # Use build-only (not build) since type-check already ran above
       - name: Build
         working-directory: relfinder
         env:
-          # Must match your GitHub repository name.
-          # e.g. if the repo is github.com/kodymoodley/relfinder → /relfinder/
           VITE_BASE_PATH: /relfinder/
-        run: npm run build
+        run: npm run build-only
 
       # GitHub Pages returns 404.html for unknown paths.
-      # Copying index.html there lets the Vue router boot and redirect
-      # to the connection screen via the existing navigation guard.
+      # Copying index.html lets the Vue router boot and redirect correctly.
       - name: Copy index.html → 404.html
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         run: cp relfinder/dist/index.html relfinder/dist/404.html
 
       - name: Upload Pages artifact
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v3
         with:
           path: relfinder/dist
 
   deploy:
-    needs: build
+    name: Deploy to GitHub Pages
+    needs: ci
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     environment:
       name: github-pages

@@ -8,13 +8,8 @@
  * for executing the queries; this module only interprets the results.
  */
 
-import type {
-  SparqlBinding,
-  PathCollection,
-  GraphNode,
-  GraphEdge,
-  MergedEdge,
-} from './types'
+import type { SparqlBinding, PathCollection, GraphNode, GraphEdge, MergedEdge } from './types'
+import { shortIri } from '../utils/iri'
 
 // ── Internal helpers ──────────────────────────────────────────────────────────
 
@@ -60,7 +55,10 @@ function extractRelationshipNodes(
   dest: string,
   pathCollections: PathCollection[],
 ): Map<string, number> {
-  const nodes = new Map<string, number>([[src, 0], [dest, 1]])
+  const nodes = new Map<string, number>([
+    [src, 0],
+    [dest, 1],
+  ])
   let nodeIdx = 2
 
   for (const collection of pathCollections) {
@@ -112,7 +110,7 @@ function pathToEdges(
     if (!propTerm) continue
 
     const propIri = propTerm.value
-    const propLabel = propIri.split('/').pop() ?? propIri
+    const propLabel = shortIri(propIri)
     const targetObj = `${objectKeyPrefix}${idx + 1}`
 
     if (targetObj in path) {
@@ -199,10 +197,7 @@ function extractRelationshipEdges(
         // Direct single-hop connection — pathKeys[0] exists (length === 1).
         const propIri = path[pathKeys[0]!]!.value
 
-        if (
-          allowedObjectProperties.length > 0 &&
-          !allowedObjectProperties.includes(propIri)
-        ) {
+        if (allowedObjectProperties.length > 0 && !allowedObjectProperties.includes(propIri)) {
           continue
         }
 
@@ -210,7 +205,7 @@ function extractRelationshipEdges(
           sid: nodes.get(collection.src)!,
           tid: nodes.get(collection.dest)!,
           iri: propIri,
-          label: propIri.split('/').pop() ?? propIri,
+          label: shortIri(propIri),
         }
 
         const key = JSON.stringify(edge)
@@ -221,12 +216,7 @@ function extractRelationshipEdges(
       } else {
         if (!isPropChainValid(path, allowedObjectProperties)) continue
 
-        for (const edge of extractPathEdges(
-          collection.src,
-          collection.dest,
-          path,
-          nodes,
-        )) {
+        for (const edge of extractPathEdges(collection.src, collection.dest, path, nodes)) {
           const key = JSON.stringify(edge)
           if (!edgeSet.has(key)) {
             edgeSet.add(key)
@@ -258,9 +248,7 @@ export function mergeEdgeDuplicates(edges: GraphEdge[], labelSep = '|'): MergedE
     if (existing) {
       if (!existing.iris.includes(edge.iri)) {
         existing.iris.push(edge.iri)
-        existing.label = existing.iris
-          .map((iri) => iri.split('/').pop() ?? iri)
-          .join(` ${labelSep} `)
+        existing.label = existing.iris.map(shortIri).join(` ${labelSep} `)
       }
     } else {
       edgesMap.set(key, {
@@ -296,7 +284,7 @@ export function buildRelationshipsGraph(
   const nodes: GraphNode[] = Array.from(nodeMap.entries()).map(([iri, id]) => ({
     id,
     iri,
-    label: iri.split('/').pop()?.split('#').pop() ?? iri,
+    label: shortIri(iri),
     class: 'Thing',
     isEndpoint: iri === src || iri === dest,
   }))

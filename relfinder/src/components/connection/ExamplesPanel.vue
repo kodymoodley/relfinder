@@ -1,16 +1,35 @@
 <template>
   <div class="examples-panel">
-    <h2 class="examples-heading">Quick-start examples</h2>
-    <p class="examples-subheading">
+    <h2
+      class="examples-heading"
+      v-motion
+      :initial="{ opacity: 0, y: 16 }"
+      :enter="{ opacity: 1, y: 0, transition: { duration: 360, ease: 'easeOut' } }"
+    >
+      Quick-start examples
+    </h2>
+    <p
+      class="examples-subheading"
+      v-motion
+      :initial="{ opacity: 0, y: 12 }"
+      :enter="{ opacity: 1, y: 0, transition: { duration: 360, delay: 80, ease: 'easeOut' } }"
+    >
       Click any example to load the dataset and run the query instantly — no setup required.
     </p>
 
     <div class="examples-grid">
       <div
-        v-for="example in EXAMPLES"
+        v-for="(example, idx) in EXAMPLES"
         :key="example.id"
         class="example-card"
         :class="{ 'example-card--sparql': example.kind === 'sparql' }"
+        v-motion
+        :initial="{ opacity: 0, y: 24 }"
+        :enter="{
+          opacity: 1,
+          y: 0,
+          transition: { duration: 380, delay: 160 + idx * 70, ease: 'easeOut' },
+        }"
       >
         <!-- Kind badge -->
         <span class="kind-badge" :class="`kind-badge--${example.kind}`">
@@ -90,13 +109,15 @@ async function runExample(example: Example) {
       name: 'graph',
       // Cast needed: HistoryState only accepts index-signature types, but the
       // data is plain-serializable at runtime so the cast is safe.
-      state: JSON.parse(JSON.stringify({
-        example: {
-          entity1: example.entity1,
-          entity2: example.entity2,
-          options: example.options,
-        },
-      })),
+      state: JSON.parse(
+        JSON.stringify({
+          example: {
+            entity1: example.entity1,
+            entity2: example.entity2,
+            options: example.options,
+          },
+        }),
+      ),
     })
   } catch (err) {
     errorId.value = example.id
@@ -111,29 +132,32 @@ async function runExample(example: Example) {
 .examples-panel {
   width: 100%;
   max-width: 1100px;
-  margin: 2rem auto 0;
-  padding: 0 1rem 3rem;
+  margin: var(--rf-space-8) auto 0;
+  padding: 0 var(--rf-space-4) var(--rf-space-12);
 }
 
 .examples-heading {
-  margin: 0 0 0.35rem;
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--p-text-color);
+  margin: 0 0 var(--rf-space-1);
+  font-family: var(--rf-font-display);
+  font-size: var(--rf-text-lg);
+  font-weight: var(--rf-weight-bold);
+  letter-spacing: -0.02em;
+  color: var(--rf-text);
   text-align: center;
 }
 
 .examples-subheading {
-  margin: 0 0 1.25rem;
-  font-size: 0.82rem;
-  color: var(--p-text-muted-color);
+  margin: 0 0 var(--rf-space-5);
+  font-size: var(--rf-text-sm);
+  color: var(--rf-text-muted);
   text-align: center;
+  line-height: var(--rf-leading-relaxed);
 }
 
 .examples-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 1rem;
+  gap: var(--rf-space-4);
 }
 
 /* ── Card ────────────────────────────────────────────────────────────────── */
@@ -141,17 +165,21 @@ async function runExample(example: Example) {
 .example-card {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  padding: 1.1rem 1.25rem 1.25rem;
-  background: var(--p-content-background);
-  border: 1px solid var(--p-content-border-color);
-  border-radius: 10px;
-  transition: box-shadow 0.15s, border-color 0.15s;
+  gap: var(--rf-space-3);
+  padding: var(--rf-space-5);
+  background: var(--rf-surface);
+  border: 1px solid var(--rf-border);
+  border-radius: var(--rf-radius-lg);
+  transition:
+    box-shadow var(--rf-duration-base) var(--rf-ease-out),
+    border-color var(--rf-duration-base) var(--rf-ease-out),
+    transform var(--rf-duration-base) var(--rf-ease-out);
 }
 
 .example-card:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-  border-color: var(--p-primary-200, #93c5fd);
+  box-shadow: var(--rf-shadow-lg);
+  border-color: var(--rf-primary);
+  transform: translateY(-2px);
 }
 
 .example-card--sparql {
@@ -163,42 +191,44 @@ async function runExample(example: Example) {
 .kind-badge {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
+  gap: var(--rf-space-1);
   align-self: flex-start;
-  padding: 0.2rem 0.55rem;
-  border-radius: 999px;
-  font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 0.03em;
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--rf-radius-full);
+  font-size: var(--rf-text-xs);
+  font-weight: var(--rf-weight-semibold);
+  letter-spacing: 0.04em;
 }
 
 .kind-badge--ttl {
-  background: var(--p-primary-50, #eff6ff);
-  color: var(--p-primary-600, #2563eb);
-  border: 1px solid var(--p-primary-200, #bfdbfe);
+  background: var(--rf-primary-soft);
+  color: var(--rf-primary);
+  border: 1px solid rgb(8 145 178 / 0.25);
 }
 
 .kind-badge--sparql {
-  background: var(--p-orange-50, #fff7ed);
-  color: var(--p-orange-600, #ea580c);
-  border: 1px solid var(--p-orange-200, #fed7aa);
+  background: var(--rf-accent-soft);
+  color: var(--rf-accent-hover);
+  border: 1px solid rgb(245 158 11 / 0.3);
 }
 
 /* ── Card content ────────────────────────────────────────────────────────── */
 
 .card-title {
   margin: 0;
-  font-size: 0.92rem;
-  font-weight: 600;
-  color: var(--p-text-color);
-  line-height: 1.3;
+  font-family: var(--rf-font-display);
+  font-size: var(--rf-text-base);
+  font-weight: var(--rf-weight-semibold);
+  letter-spacing: -0.01em;
+  color: var(--rf-text);
+  line-height: var(--rf-leading-tight);
 }
 
 .card-description {
   margin: 0;
-  font-size: 0.78rem;
-  color: var(--p-text-muted-color);
-  line-height: 1.5;
+  font-size: var(--rf-text-xs);
+  color: var(--rf-text-muted);
+  line-height: var(--rf-leading-relaxed);
   flex: 1;
 }
 
@@ -207,29 +237,35 @@ async function runExample(example: Example) {
 .entity-pair {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: var(--rf-space-2);
   flex-wrap: wrap;
 }
 
 .entity-chip {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
+  gap: var(--rf-space-1);
   padding: 0.2rem 0.55rem;
-  border-radius: 999px;
-  font-size: 0.72rem;
-  font-weight: 500;
-  border: 1px solid var(--p-content-border-color);
-  background: var(--p-surface-100);
+  border-radius: var(--rf-radius-full);
+  font-size: var(--rf-text-xs);
+  font-weight: var(--rf-weight-medium);
+  border: 1px solid var(--rf-border);
+  background: var(--rf-surface-raised);
   white-space: nowrap;
 }
 
-.entity-chip--1 .pi-circle-fill { color: #4f8ef7; font-size: 0.5rem; }
-.entity-chip--2 .pi-circle-fill { color: #f76b4f; font-size: 0.5rem; }
+.entity-chip--1 .pi-circle-fill {
+  color: var(--rf-node-entity1);
+  font-size: 0.5rem;
+}
+.entity-chip--2 .pi-circle-fill {
+  color: var(--rf-node-entity2);
+  font-size: 0.5rem;
+}
 
 .pair-arrow {
   font-size: 0.7rem;
-  color: var(--p-text-muted-color);
+  color: var(--rf-text-subtle);
   flex-shrink: 0;
 }
 
@@ -237,10 +273,10 @@ async function runExample(example: Example) {
 
 .card-error {
   margin: 0;
-  font-size: 0.75rem;
-  color: var(--p-red-500);
+  font-size: var(--rf-text-xs);
+  color: var(--rf-danger);
   display: flex;
   align-items: center;
-  gap: 0.3rem;
+  gap: var(--rf-space-1);
 }
 </style>

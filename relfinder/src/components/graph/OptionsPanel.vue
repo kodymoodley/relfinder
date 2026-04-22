@@ -6,6 +6,8 @@
         <label class="option-label">Max Path Length</label>
         <span class="option-value">{{ modelValue.maxDistance }}</span>
       </div>
+      <!-- Max 6: at distance 6 the query fan-out (2^6 query blocks) is already
+           very large; higher values cause timeouts on most public endpoints. -->
       <Slider
         :model-value="modelValue.maxDistance"
         :min="1"
@@ -21,163 +23,184 @@
 
     <!-- Label language -->
     <div class="option-group">
-      <label class="option-label" for="lang-input">Label Language</label>
-      <p class="option-hint">
-        RDF language tag for labels (e.g. <code>en</code>, <code>de</code>, <code>fr</code>).
-        Leave empty to accept any language.
-      </p>
-      <InputText
-        id="lang-input"
-        :model-value="modelValue.language"
-        placeholder="en"
-        size="small"
-        style="width: 80px"
-        @update:model-value="update('language', $event as string)"
-      />
+      <button class="section-toggle" @click="open.language = !open.language">
+        <span class="option-label">Label Language</span>
+        <span v-if="!open.language && modelValue.language" class="section-badge">{{ modelValue.language }}</span>
+        <i class="pi pi-chevron-right toggle-chevron" :class="{ 'toggle-chevron--open': open.language }" />
+      </button>
+      <div class="section-body" :class="{ 'section-body--open': open.language }">
+        <div class="section-body-inner">
+          <p class="option-hint">
+            RDF language tag for labels (e.g. <code>en</code>, <code>de</code>, <code>fr</code>). Leave
+            empty to accept any language.
+          </p>
+          <InputText
+            id="lang-input"
+            :model-value="modelValue.language"
+            placeholder="en"
+            size="small"
+            style="width: 80px"
+            @update:model-value="update('language', $event as string)"
+          />
+        </div>
+      </div>
     </div>
 
     <!-- Custom label properties -->
     <div class="option-group">
-      <label class="option-label">Extra Label Properties</label>
-      <p class="option-hint">
-        Additional predicate IRIs to use as labels when searching entities
-        (e.g. <code>http://schema.org/alternateName</code>).
-      </p>
-
-      <div v-if="modelValue.customLabelProperties.length > 0" class="chip-list">
-        <div
-          v-for="(iri, idx) in modelValue.customLabelProperties"
-          :key="iri"
-          class="prop-chip"
-        >
-          <span class="prop-chip-label" :title="iri">{{ shortIri(iri) }}</span>
-          <button class="chip-remove" @click="removeCustomLabel(idx)" aria-label="Remove">
-            <i class="pi pi-times" />
-          </button>
+      <button class="section-toggle" @click="open.customLabels = !open.customLabels">
+        <span class="option-label">Extra Label Properties</span>
+        <span v-if="!open.customLabels && modelValue.customLabelProperties.length > 0" class="section-badge">{{ modelValue.customLabelProperties.length }}</span>
+        <i class="pi pi-chevron-right toggle-chevron" :class="{ 'toggle-chevron--open': open.customLabels }" />
+      </button>
+      <div class="section-body" :class="{ 'section-body--open': open.customLabels }">
+        <div class="section-body-inner">
+          <p class="option-hint">
+            Additional predicate IRIs to use as labels when searching entities (e.g.
+            <code>http://schema.org/alternateName</code>).
+          </p>
+          <div v-if="modelValue.customLabelProperties.length > 0" class="chip-list">
+            <div v-for="(iri, idx) in modelValue.customLabelProperties" :key="iri" class="prop-chip">
+              <span class="prop-chip-label" :title="iri">{{ shortIri(iri) }}</span>
+              <button class="chip-remove" @click="removeCustomLabel(idx)" aria-label="Remove">
+                <span aria-hidden="true">×</span>
+              </button>
+            </div>
+          </div>
+          <div class="add-prop">
+            <InputText
+              v-model="newLabelIri"
+              placeholder="https://example.org/label"
+              size="small"
+              fluid
+              @keydown.enter.prevent="addCustomLabel"
+            />
+            <Button
+              icon="pi pi-plus"
+              severity="secondary"
+              size="small"
+              :disabled="!newLabelIri.trim()"
+              @click="addCustomLabel"
+              aria-label="Add label property"
+            />
+          </div>
         </div>
-      </div>
-
-      <div class="add-prop">
-        <InputText
-          v-model="newLabelIri"
-          placeholder="https://example.org/label"
-          size="small"
-          fluid
-          @keydown.enter.prevent="addCustomLabel"
-        />
-        <Button
-          icon="pi pi-plus"
-          severity="secondary"
-          size="small"
-          :disabled="!newLabelIri.trim()"
-          @click="addCustomLabel"
-          aria-label="Add label property"
-        />
       </div>
     </div>
 
     <!-- Entity class filter -->
     <div class="option-group">
-      <label class="option-label">Entity Class Filter</label>
-      <p class="option-hint">Restrict entity search to specific RDF types. Leave empty to allow all.</p>
-
-      <div v-if="modelValue.allowedClasses.length > 0" class="chip-list">
-        <div
-          v-for="(iri, idx) in modelValue.allowedClasses"
-          :key="iri"
-          class="prop-chip"
-        >
-          <span class="prop-chip-label" :title="iri">{{ shortIri(iri) }}</span>
-          <button class="chip-remove" @click="removeClass(idx)" aria-label="Remove">
-            <i class="pi pi-times" />
-          </button>
+      <button class="section-toggle" @click="open.classFilter = !open.classFilter">
+        <span class="option-label">Entity Class Filter</span>
+        <span v-if="!open.classFilter && modelValue.allowedClasses.length > 0" class="section-badge">{{ modelValue.allowedClasses.length }}</span>
+        <i class="pi pi-chevron-right toggle-chevron" :class="{ 'toggle-chevron--open': open.classFilter }" />
+      </button>
+      <div class="section-body" :class="{ 'section-body--open': open.classFilter }">
+        <div class="section-body-inner">
+          <p class="option-hint">
+            Restrict entity search to specific RDF types. Leave empty to allow all.
+          </p>
+          <div v-if="modelValue.allowedClasses.length > 0" class="chip-list">
+            <div v-for="(iri, idx) in modelValue.allowedClasses" :key="iri" class="prop-chip">
+              <span class="prop-chip-label" :title="iri">{{ shortIri(iri) }}</span>
+              <button class="chip-remove" @click="removeClass(idx)" aria-label="Remove">
+                <span aria-hidden="true">×</span>
+              </button>
+            </div>
+          </div>
+          <div class="add-prop">
+            <Select
+              v-model="classPickerValue"
+              :options="unselectedClasses"
+              option-label="label"
+              option-value="iri"
+              placeholder="Add class filter…"
+              :loading="loadingClasses"
+              filter
+              filter-placeholder="Search types…"
+              :empty-message="loadingClasses ? 'Loading…' : classLoadError || 'No classes found'"
+              size="small"
+              fluid
+              @show="onDropdownShow"
+              @change="onClassSelect"
+            />
+          </div>
+          <Message v-if="classLoadError" severity="warn" :closable="false" class="class-error">
+            {{ classLoadError }}
+          </Message>
         </div>
       </div>
-
-      <div class="add-prop">
-        <Select
-          v-model="classPickerValue"
-          :options="unselectedClasses"
-          option-label="label"
-          option-value="iri"
-          placeholder="Add class filter…"
-          :loading="loadingClasses"
-          filter
-          filter-placeholder="Search types…"
-          :empty-message="loadingClasses ? 'Loading…' : classLoadError || 'No classes found'"
-          size="small"
-          fluid
-          @show="onDropdownShow"
-          @change="onClassSelect"
-        />
-      </div>
-
-      <Message v-if="classLoadError" severity="warn" :closable="false" class="class-error">
-        {{ classLoadError }}
-      </Message>
     </div>
 
     <!-- Ignored properties -->
     <div class="option-group">
-      <label class="option-label">Ignored Properties</label>
-      <p class="option-hint">Property IRIs excluded from all paths.</p>
-      <div class="chip-list">
-        <div
-          v-for="(iri, idx) in modelValue.ignoredProperties"
-          :key="iri"
-          class="prop-chip"
-        >
-          <span class="prop-chip-label" :title="iri">{{ shortIri(iri) }}</span>
-          <button class="chip-remove" @click="removeIgnoredProp(idx)" aria-label="Remove">
-            <i class="pi pi-times" />
-          </button>
+      <button class="section-toggle" @click="open.ignoredProps = !open.ignoredProps">
+        <span class="option-label">Ignored Properties</span>
+        <span v-if="!open.ignoredProps && modelValue.ignoredProperties.length > 0" class="section-badge">{{ modelValue.ignoredProperties.length }}</span>
+        <i class="pi pi-chevron-right toggle-chevron" :class="{ 'toggle-chevron--open': open.ignoredProps }" />
+      </button>
+      <div class="section-body" :class="{ 'section-body--open': open.ignoredProps }">
+        <div class="section-body-inner">
+          <p class="option-hint">Property IRIs excluded from all paths.</p>
+          <div class="chip-list">
+            <div v-for="(iri, idx) in modelValue.ignoredProperties" :key="iri" class="prop-chip">
+              <span class="prop-chip-label" :title="iri">{{ shortIri(iri) }}</span>
+              <button class="chip-remove" @click="removeIgnoredProp(idx)" aria-label="Remove">
+                <span aria-hidden="true">×</span>
+              </button>
+            </div>
+          </div>
+          <div class="add-prop">
+            <InputText
+              v-model="newPropIri"
+              placeholder="https://example.org/property"
+              size="small"
+              fluid
+              @keydown.enter.prevent="addIgnoredProp"
+            />
+            <Button
+              icon="pi pi-plus"
+              severity="secondary"
+              size="small"
+              :disabled="!newPropIri.trim()"
+              @click="addIgnoredProp"
+              aria-label="Add property"
+            />
+          </div>
         </div>
-      </div>
-      <div class="add-prop">
-        <InputText
-          v-model="newPropIri"
-          placeholder="https://example.org/property"
-          size="small"
-          fluid
-          @keydown.enter.prevent="addIgnoredProp"
-        />
-        <Button
-          icon="pi pi-plus"
-          severity="secondary"
-          size="small"
-          :disabled="!newPropIri.trim()"
-          @click="addIgnoredProp"
-          aria-label="Add property"
-        />
       </div>
     </div>
 
     <!-- Cycle avoidance -->
     <div class="option-group">
-      <label class="option-label">Cycle Avoidance</label>
-      <SelectButton
-        class="cycle-toggle"
-        :model-value="modelValue.avoidCycles"
-        :options="cycleOptions"
-        option-label="label"
-        option-value="value"
-        @update:model-value="update('avoidCycles', $event)"
-      />
+      <div class="switch-row">
+        <label class="option-label">Avoid Cycles</label>
+        <ToggleButton
+          :model-value="modelValue.avoidCycles !== QueryCyclesStrategy.NONE"
+          on-label="On"
+          off-label="Off"
+          on-icon="pi pi-check"
+          off-icon="pi pi-times"
+          size="small"
+          @update:model-value="update('avoidCycles', $event ? QueryCyclesStrategy.NO_INTERMEDIATE_DUPLICATES : QueryCyclesStrategy.NONE)"
+        />
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import Slider from 'primevue/slider'
 import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
 import Select from 'primevue/select'
-import SelectButton from 'primevue/selectbutton'
+import ToggleButton from 'primevue/togglebutton'
 import Message from 'primevue/message'
 import { QueryCyclesStrategy } from '@/lib/sparql/types'
 import { fetchAvailableClasses } from '@/lib/sparql/entitySearch'
 import { useConnectionStore } from '@/stores/connection'
+import { shortIri } from '@/lib/utils/iri'
 
 export interface GraphOptions {
   maxDistance: number
@@ -193,6 +216,13 @@ const emit = defineEmits<{ 'update:modelValue': [value: GraphOptions] }>()
 
 const connectionStore = useConnectionStore()
 
+const open = reactive({
+  language: false,
+  customLabels: false,
+  classFilter: false,
+  ignoredProps: false,
+})
+
 const newPropIri = ref('')
 const newLabelIri = ref('')
 const classPickerValue = ref<string | null>(null)
@@ -201,26 +231,15 @@ const loadingClasses = ref(false)
 const classesLoaded = ref(false)
 const classLoadError = ref('')
 
-const cycleOptions = [
-  { label: 'Off', value: QueryCyclesStrategy.NONE },
-  { label: 'On', value: QueryCyclesStrategy.NO_INTERMEDIATE_DUPLICATES },
-]
-
 // Only show classes not already selected
 const unselectedClasses = computed(() =>
-  availableClasses.value.filter(
-    (cls) => !props.modelValue.allowedClasses.includes(cls.iri),
-  ),
+  availableClasses.value.filter((cls) => !props.modelValue.allowedClasses.includes(cls.iri)),
 )
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function update<K extends keyof GraphOptions>(key: K, value: GraphOptions[K]) {
   emit('update:modelValue', { ...props.modelValue, [key]: value })
-}
-
-function shortIri(iri: string): string {
-  return iri.split('/').pop()?.split('#').pop() ?? iri
 }
 
 // ── Class filter ──────────────────────────────────────────────────────────────
@@ -233,6 +252,8 @@ async function loadClasses() {
   try {
     const context = connectionStore.queryContext
     const store = connectionStore.rdfStore ?? undefined
+    // In file mode context is null; the empty URL fallback is never used
+    // because Comunica queries the in-memory store directly.
     const effectiveContext = context ?? { endpointUrl: '' }
 
     const iris = await fetchAvailableClasses(effectiveContext, 50, store)
@@ -241,8 +262,7 @@ async function loadClasses() {
       .sort((a, b) => a.label.localeCompare(b.label))
     classesLoaded.value = true
   } catch (err) {
-    classLoadError.value =
-      err instanceof Error ? err.message : 'Could not load classes.'
+    classLoadError.value = err instanceof Error ? err.message : 'Could not load classes.'
   } finally {
     loadingClasses.value = false
   }
@@ -266,11 +286,23 @@ function removeClass(idx: number) {
   update('allowedClasses', updated)
 }
 
+// ── IRI validation ────────────────────────────────────────────────────────────
+
+/** Checks that an IRI is an absolute URL — rejects relative and blank values. */
+function isValidIri(iri: string): boolean {
+  try {
+    const url = new URL(iri)
+    return url.protocol === 'http:' || url.protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
 // ── Ignored properties ────────────────────────────────────────────────────────
 
 function addIgnoredProp() {
   const iri = newPropIri.value.trim()
-  if (!iri || props.modelValue.ignoredProperties.includes(iri)) return
+  if (!iri || !isValidIri(iri) || props.modelValue.ignoredProperties.includes(iri)) return
   update('ignoredProperties', [...props.modelValue.ignoredProperties, iri])
   newPropIri.value = ''
 }
@@ -285,7 +317,7 @@ function removeIgnoredProp(idx: number) {
 
 function addCustomLabel() {
   const iri = newLabelIri.value.trim()
-  if (!iri || props.modelValue.customLabelProperties.includes(iri)) return
+  if (!iri || !isValidIri(iri) || props.modelValue.customLabelProperties.includes(iri)) return
   update('customLabelProperties', [...props.modelValue.customLabelProperties, iri])
   newLabelIri.value = ''
 }
@@ -301,13 +333,25 @@ function removeCustomLabel(idx: number) {
 .options-panel {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 0;
 }
 
 .option-group {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--rf-space-2);
+  padding-top: var(--rf-space-4);
+  padding-bottom: var(--rf-space-4);
+  border-top: 1px solid var(--rf-border);
+}
+
+.option-group:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+
+.option-group:last-child {
+  padding-bottom: 0;
 }
 
 .option-header {
@@ -317,133 +361,195 @@ function removeCustomLabel(idx: number) {
 }
 
 .option-label {
-  font-size: 0.8rem;
-  font-weight: 600;
+  font-size: var(--rf-text-xs);
+  font-weight: var(--rf-weight-semibold);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--p-text-muted-color);
+  letter-spacing: 0.06em;
+  color: var(--rf-text-subtle);
 }
 
 .option-value {
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--p-primary-color);
+  font-size: var(--rf-text-sm);
+  font-weight: var(--rf-weight-bold);
+  color: var(--rf-primary);
 }
 
 .option-hint {
   margin: 0;
-  font-size: 0.78rem;
-  color: var(--p-text-muted-color);
-  line-height: 1.4;
+  font-size: var(--rf-text-xs);
+  color: var(--rf-text-muted);
+  line-height: var(--rf-leading-relaxed);
 }
 
 .distance-slider {
-  margin: 0.25rem 0;
+  margin: var(--rf-space-1) 0;
 }
 
 .slider-ticks {
   display: flex;
   justify-content: space-between;
-  font-size: 0.7rem;
-  color: var(--p-text-muted-color);
+  font-size: var(--rf-text-xs);
+  color: var(--rf-text-subtle);
   padding: 0 2px;
 }
 
 .chip-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.375rem;
+  gap: var(--rf-space-2);
 }
 
 .prop-chip {
   display: flex;
   align-items: center;
-  gap: 0.3rem;
-  padding: 0.2rem 0.5rem;
-  background: var(--p-surface-100);
-  border: 1px solid var(--p-content-border-color);
-  border-radius: 4px;
-  font-size: 0.75rem;
+  gap: var(--rf-space-1);
+  padding: var(--rf-space-1) var(--rf-space-3);
+  background: var(--rf-surface-raised);
+  border: 1px solid var(--rf-border);
+  border-radius: var(--rf-radius-sm);
+  font-size: var(--rf-text-xs);
   max-width: 200px;
+  transition: border-color var(--rf-duration-fast) var(--rf-ease-out);
+}
+
+.prop-chip:hover {
+  border-color: var(--rf-border-strong);
 }
 
 .prop-chip-label {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  color: var(--rf-text-muted);
 }
 
 .chip-remove {
   background: none;
   border: none;
-  padding: 0;
+  padding: 0 0 0 var(--rf-space-1);
   cursor: pointer;
-  color: var(--p-text-muted-color);
-  font-size: 0.6rem;
+  color: var(--rf-text-subtle);
+  font-size: 0.7rem;
+  line-height: 1;
   display: flex;
   align-items: center;
   flex-shrink: 0;
+  opacity: 0.5;
+  transition:
+    color var(--rf-duration-fast) var(--rf-ease-out),
+    opacity var(--rf-duration-fast) var(--rf-ease-out);
 }
 
 .chip-remove:hover {
-  color: var(--p-red-500);
+  color: var(--rf-danger);
+  opacity: 1;
 }
 
 .add-prop {
   display: flex;
-  gap: 0.5rem;
+  gap: var(--rf-space-2);
   align-items: center;
 }
 
 .class-error {
-  font-size: 0.78rem;
+  font-size: var(--rf-text-xs);
 }
 
 .option-hint code {
-  font-family: monospace;
+  font-family: var(--rf-font-mono);
   font-size: 0.85em;
-  background: var(--p-surface-200);
-  padding: 0.1em 0.3em;
-  border-radius: 3px;
+  background: var(--rf-surface-raised);
+  color: var(--rf-primary);
+  padding: 0.1em 0.35em;
+  border-radius: var(--rf-radius-sm);
 }
 
-/* ── Cycle avoidance toggle ───────────────────────────────────────────────── */
+/* ── Collapsible sections ────────────────────────────────────────────────── */
 
-.cycle-toggle {
-  display: inline-flex;
-}
-
-.cycle-toggle :deep(.p-selectbutton) {
-  display: inline-flex;
-  gap: 0.3rem;
+.section-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--rf-space-2);
   background: none;
   border: none;
   padding: 0;
-}
-
-.cycle-toggle :deep(.p-togglebutton) {
-  padding: 0.28rem 0.85rem;
-  font-size: 0.78rem;
-  font-weight: 500;
-  border-radius: 9999px;
-  border: 1px solid var(--p-content-border-color);
-  background: var(--p-surface-100);
-  color: var(--p-text-muted-color);
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
   cursor: pointer;
-  white-space: nowrap;
+  text-align: left;
 }
 
-.cycle-toggle :deep(.p-togglebutton:hover:not(.p-togglebutton-checked)) {
-  border-color: var(--p-primary-color);
-  color: var(--p-primary-color);
-  background: var(--p-surface-50);
+.section-toggle:hover .option-label {
+  color: var(--rf-primary);
 }
 
-.cycle-toggle :deep(.p-togglebutton-checked) {
-  background: var(--p-primary-color);
-  border-color: var(--p-primary-color);
-  color: #ffffff;
-  font-weight: 600;
+.section-badge {
+  font-size: var(--rf-text-xs);
+  font-weight: var(--rf-weight-semibold);
+  background: var(--rf-primary-soft);
+  color: var(--rf-primary);
+  border: 1px solid color-mix(in srgb, var(--rf-primary) 30%, transparent);
+  border-radius: var(--rf-radius-full);
+  padding: 0.05rem 0.45rem;
+  letter-spacing: 0.02em;
+  line-height: 1.6;
+}
+
+.toggle-chevron {
+  margin-left: auto;
+  font-size: 0.55rem;
+  color: var(--rf-text-subtle);
+  transition:
+    transform var(--rf-duration-base) var(--rf-ease-out),
+    color var(--rf-duration-fast) var(--rf-ease-out);
+  flex-shrink: 0;
+}
+
+.section-toggle:hover .toggle-chevron {
+  color: var(--rf-primary);
+}
+
+.toggle-chevron--open {
+  transform: rotate(90deg);
+}
+
+.section-body {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--rf-duration-base) var(--rf-ease-out);
+}
+
+.section-body--open {
+  grid-template-rows: 1fr;
+}
+
+.section-body-inner {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: var(--rf-space-2);
+  padding-top: var(--rf-space-2);
+}
+
+/* ── Cycle avoidance switch ───────────────────────────────────────────────── */
+
+.switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.switch-row .option-label {
+  cursor: pointer;
+}
+
+.switch-row :deep(.p-togglebutton) {
+  font-size: var(--rf-text-xs);
+  padding: 0.3rem 0.7rem;
+}
+
+.switch-row :deep(.p-togglebutton-checked) {
+  background: var(--rf-primary-soft);
+  border-color: var(--rf-primary);
+  color: var(--rf-primary);
 }
 </style>

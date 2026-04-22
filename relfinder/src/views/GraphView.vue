@@ -15,6 +15,15 @@
           />
           <Button
             v-show="!sidebarCollapsed"
+            :icon="dark ? 'pi pi-sun' : 'pi pi-moon'"
+            text
+            rounded
+            size="small"
+            @click="toggleDark"
+            :aria-label="dark ? 'Switch to light mode' : 'Switch to dark mode'"
+          />
+          <Button
+            v-show="!sidebarCollapsed"
             icon="pi pi-power-off"
             text
             rounded
@@ -33,7 +42,7 @@
             id="entity1"
             label="Entity 1"
             placeholder="Search…"
-            dot-color="#4f8ef7"
+            dot-color="#f97316"
             :allowed-classes="graphOptions.allowedClasses"
             :language="graphOptions.language"
             :custom-label-properties="graphOptions.customLabelProperties"
@@ -46,7 +55,7 @@
             id="entity2"
             label="Entity 2"
             placeholder="Search…"
-            dot-color="#f76b4f"
+            dot-color="#8b5cf6"
             :allowed-classes="graphOptions.allowedClasses"
             :language="graphOptions.language"
             :custom-label-properties="graphOptions.customLabelProperties"
@@ -61,6 +70,7 @@
             icon="pi pi-search"
             :loading="searching"
             :disabled="!entity1 || !entity2"
+            :class="{ 'ready-pulse': entity1 && entity2 && !searching }"
             fluid
             @click="onFindRelationships"
           />
@@ -70,7 +80,13 @@
         </section>
 
         <!-- Results summary -->
-        <section v-if="graph" class="sidebar-section results-summary">
+        <section
+          v-if="graph"
+          class="sidebar-section results-summary"
+          v-motion
+          :initial="{ opacity: 0, x: -12 }"
+          :enter="{ opacity: 1, x: 0, transition: { duration: 300, ease: 'easeOut' } }"
+        >
           <div class="summary-row">
             <span class="summary-label">Nodes</span>
             <Tag :value="String(graph.nodes.length)" severity="secondary" rounded />
@@ -82,18 +98,17 @@
         </section>
 
         <!-- Legend -->
-        <section v-if="graph && graph.classes.length > 0" class="sidebar-section">
+        <section
+          v-if="graph && graph.classes.length > 0"
+          class="sidebar-section"
+          v-motion
+          :initial="{ opacity: 0, x: -12 }"
+          :enter="{ opacity: 1, x: 0, transition: { duration: 300, delay: 60, ease: 'easeOut' } }"
+        >
           <p class="section-label">Legend</p>
           <div class="legend">
-            <div
-              v-for="cls in graph.classes"
-              :key="cls"
-              class="legend-item"
-            >
-              <span
-                class="legend-dot"
-                :style="{ background: classColors.get(cls) ?? '#94a3b8' }"
-              />
+            <div v-for="cls in graph.classes" :key="cls" class="legend-item">
+              <span class="legend-dot" :style="{ background: classColors.get(cls) ?? '#94a3b8' }" />
               <span class="legend-label" :title="cls">{{ shortIri(cls) }}</span>
             </div>
           </div>
@@ -118,6 +133,10 @@
         :edges="graph?.edges ?? []"
         :loading="searching"
         :class-colors="classColors"
+        :endpoint1-iri="entity1?.iri"
+        :endpoint2-iri="entity2?.iri"
+        :entity1-label="entity1?.label"
+        :entity2-label="entity2?.label"
         @node-click="selectedNode = $event"
       />
     </main>
@@ -135,6 +154,7 @@
 import { ref, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import Button from 'primevue/button'
+import { useDarkMode } from '@/composables/useDarkMode'
 import Divider from 'primevue/divider'
 import Message from 'primevue/message'
 import Tag from 'primevue/tag'
@@ -150,6 +170,7 @@ import NodeDetail from '@/components/graph/NodeDetail.vue'
 
 const router = useRouter()
 const connectionStore = useConnectionStore()
+const { dark, toggle: toggleDark } = useDarkMode()
 
 // ── State ─────────────────────────────────────────────────────────────────────
 
@@ -160,7 +181,7 @@ const searching = ref(false)
 const searchError = ref('')
 const selectedNode = ref<GraphNode | null>(null)
 const sidebarCollapsed = ref(false)
-const optionsOpen = ref(true)
+const optionsOpen = ref(false)
 
 const graphOptions = ref<GraphOptions>({
   maxDistance: 2,
@@ -177,8 +198,14 @@ const graphOptions = ref<GraphOptions>({
 // ── Class colour assignment ───────────────────────────────────────────────────
 
 const PALETTE = [
-  '#4f8ef7', '#f76b4f', '#4fc994', '#f7c94f',
-  '#a44ff7', '#4ff7f0', '#f74fa4', '#8ef74f',
+  '#06b6d4', // cyan
+  '#10b981', // emerald
+  '#a78bfa', // violet
+  '#facc15', // yellow
+  '#f472b6', // pink
+  '#f87171', // red
+  '#60a5fa', // blue
+  '#a3e635', // lime
 ]
 
 const classColors = ref(new Map<string, string>())
@@ -246,11 +273,13 @@ function onDisconnect() {
 // ── Example auto-run (from quick-start examples panel) ───────────────────────
 
 onMounted(() => {
-  const state = (history.state as Record<string, unknown>)?.example as {
-    entity1: EntitySearchResult
-    entity2: EntitySearchResult
-    options: Partial<GraphOptions>
-  } | undefined
+  const state = (history.state as Record<string, unknown>)?.example as
+    | {
+        entity1: EntitySearchResult
+        entity2: EntitySearchResult
+        options: Partial<GraphOptions>
+      }
+    | undefined
   if (!state) return
   entity1.value = state.entity1
   entity2.value = state.entity2
@@ -272,7 +301,7 @@ function shortIri(iri: string): string {
   display: flex;
   height: 100vh;
   overflow: hidden;
-  background: var(--p-surface-ground);
+  background: var(--rf-bg);
 }
 
 /* ── Sidebar ──────────────────────────────────────────────────────────────── */
@@ -282,14 +311,16 @@ function shortIri(iri: string): string {
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  background: var(--p-content-background);
-  border-right: 1px solid var(--p-content-border-color);
-  transition: width 0.2s ease;
+  background: var(--rf-surface);
+  border-right: 1px solid var(--rf-border);
+  transition: width var(--rf-duration-base) var(--rf-ease-out);
   overflow: hidden;
+  box-shadow: var(--rf-shadow-md);
+  z-index: 10;
 }
 
 .sidebar--collapsed {
-  width: 48px;
+  width: 52px;
 }
 
 .sidebar--collapsed .sidebar-header {
@@ -301,75 +332,82 @@ function shortIri(iri: string): string {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.625rem 0.75rem;
-  border-bottom: 1px solid var(--p-content-border-color);
+  padding: var(--rf-space-3) var(--rf-space-4);
+  border-bottom: 1px solid var(--rf-border);
   flex-shrink: 0;
-  min-height: 48px;
+  min-height: 52px;
+  background: linear-gradient(135deg, var(--rf-surface) 0%, var(--rf-surface-raised) 100%);
 }
 
 .app-brand {
-  font-weight: 700;
-  font-size: 1rem;
-  color: var(--p-primary-color);
+  font-family: var(--rf-font-display);
+  font-weight: var(--rf-weight-bold);
+  font-size: var(--rf-text-lg);
+  letter-spacing: -0.02em;
   white-space: nowrap;
+  background: linear-gradient(135deg, var(--rf-primary) 0%, var(--rf-accent) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .header-actions {
   display: flex;
-  gap: 0.1rem;
+  gap: var(--rf-space-1);
   flex-shrink: 0;
 }
 
 .sidebar-body {
   flex: 1;
   overflow-y: auto;
-  padding: 0.75rem 0;
+  padding: var(--rf-space-3) 0;
 }
 
 .sidebar-section {
-  padding: 0.625rem 1rem;
+  padding: var(--rf-space-3) var(--rf-space-5);
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--rf-space-2);
 }
 
 .section-label {
   margin: 0;
-  font-size: 0.75rem;
-  font-weight: 600;
+  font-size: var(--rf-text-xs);
+  font-weight: var(--rf-weight-semibold);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--p-text-muted-color);
+  letter-spacing: 0.06em;
+  color: var(--rf-text-subtle);
 }
 
 .section-label.collapsible {
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: var(--rf-space-2);
   user-select: none;
+  transition: color var(--rf-duration-fast) var(--rf-ease-out);
 }
 
 .section-label.collapsible:hover {
-  color: var(--p-primary-color);
+  color: var(--rf-primary);
 }
 
 /* ── Results summary ──────────────────────────────────────────────────────── */
 
 .results-summary {
   flex-direction: row;
-  gap: 1rem;
+  gap: var(--rf-space-4);
 }
 
 .summary-row {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: var(--rf-space-2);
 }
 
 .summary-label {
-  font-size: 0.8rem;
-  color: var(--p-text-muted-color);
+  font-size: var(--rf-text-sm);
+  color: var(--rf-text-muted);
 }
 
 /* ── Legend ───────────────────────────────────────────────────────────────── */
@@ -377,27 +415,42 @@ function shortIri(iri: string): string {
 .legend {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: var(--rf-space-2);
 }
 
 .legend-item {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--rf-space-2);
 }
 
 .legend-dot {
   width: 10px;
   height: 10px;
-  border-radius: 50%;
+  border-radius: var(--rf-radius-full);
   flex-shrink: 0;
+  box-shadow:
+    0 0 0 2px rgb(255 255 255 / 0.5),
+    0 1px 3px rgb(0 0 0 / 0.15);
 }
 
 .legend-label {
-  font-size: 0.8rem;
+  font-size: var(--rf-text-sm);
+  color: var(--rf-text-muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* ── Find Relationships pulse ─────────────────────────────────────────────── */
+
+@keyframes ready-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--rf-primary) 70%, transparent); }
+  50%       { box-shadow: 0 0 0 10px color-mix(in srgb, var(--rf-primary) 0%, transparent); }
+}
+
+.ready-pulse {
+  animation: ready-pulse 2s ease-in-out infinite;
 }
 
 /* ── Main graph area ──────────────────────────────────────────────────────── */

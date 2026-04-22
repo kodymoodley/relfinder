@@ -24,6 +24,11 @@ export default defineConfigWithVueTs(
   {
     ...pluginVitest.configs.recommended,
     files: ['src/**/__tests__/*'],
+    rules: {
+      // Dynamic titles from data-driven loops (e.g. example.title) are intentional
+      // — they make it clear which example failed in the test output.
+      'vitest/valid-title': 'off',
+    },
   },
 
   ...pluginOxlint.buildFromOxlintConfigFile('.oxlintrc.json'),

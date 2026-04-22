@@ -13,7 +13,9 @@ function noop() {}
 
 export function nextTick(fn) {
   var args = Array.prototype.slice.call(arguments, 1)
-  queueMicrotask(function () { fn.apply(null, args) })
+  queueMicrotask(function () {
+    fn.apply(null, args)
+  })
 }
 
 export var env = {}
@@ -30,10 +32,18 @@ export var removeAllListeners = noop
 export var emit = noop
 export var prependListener = noop
 export var prependOnceListener = noop
-export function listeners() { return [] }
-export function cwd() { return '/' }
-export function chdir() { throw new Error('process.chdir is not supported') }
-export function umask() { return 0 }
+export function listeners() {
+  return []
+}
+export function cwd() {
+  return '/'
+}
+export function chdir() {
+  throw new Error('process.chdir is not supported')
+}
+export function umask() {
+  return 0
+}
 
 var process = {
   nextTick: nextTick,

@@ -16,7 +16,7 @@
 import type { Store } from 'n3'
 import { executeSelect, executeSelectOnStore } from './engine'
 import { getQueries } from './queryBuilder'
-import { buildRelationshipsGraph, mergeEdgeDuplicates } from './graphBuilder'
+import { buildRelationshipsGraph, mergeEdgeDuplicates, applyLabelsAndTypes } from './graphBuilder'
 import {
   QueryCyclesStrategy,
   type QueryContext,
@@ -30,6 +30,15 @@ import {
 
 // ── Internal helpers ──────────────────────────────────────────────────────────
 
+/**
+ * Returns a SPARQL FILTER clause that restricts `?label` to the given language
+ * tag while also accepting untagged plain literals (lang = '').
+ * Returns an empty string when `language` is empty (accept any language).
+ */
+function langFilterClause(variable: string, language: string): string {
+  return language ? `FILTER (lang(${variable}) = '${language}' || lang(${variable}) = '')` : ''
+}
+
 /** Splits an array into successive chunks of at most `size` elements. */
 function chunks<T>(arr: T[], size: number): T[][] {
   const result: T[][] = []
@@ -40,14 +49,8 @@ function chunks<T>(arr: T[], size: number): T[][] {
 }
 
 /** Executes a query against either a remote endpoint or a local store. */
-async function runSelect(
-  query: string,
-  context: QueryContext,
-  store?: Store,
-) {
-  return store
-    ? executeSelectOnStore(query, store)
-    : executeSelect(query, context)
+async function runSelect(query: string, context: QueryContext, store?: Store) {
+  return store ? executeSelectOnStore(query, store) : executeSelect(query, context)
 }
 
 // ── Entity search ─────────────────────────────────────────────────────────────
@@ -60,7 +63,9 @@ async function runSelect(
  * array to return entities of any class.
  *
  * @param allowedClasses  Array of class IRIs to filter by (full IRIs, not prefixed).
- * @param limit           Maximum number of results (default 200 — avoids timeout on large endpoints).
+ * @param limit           Maximum result rows. 50 is conservative enough to stay within the
+ *                        default timeout of most public endpoints while still providing
+ *                        enough choices for the autocomplete dropdown.
  */
 export async function searchEntities(
   context: QueryContext,
@@ -82,9 +87,7 @@ export async function searchEntities(
     ? `FILTER (STRSTARTS(LCASE(STR(?label)), LCASE("${textFilter.trim().replace(/\\/g, '\\\\').replace(/"/g, '\\"')}")))`
     : ''
 
-  const langFilter = language
-    ? `FILTER (lang(?label) = '${language}' || lang(?label) = '')`
-    : ''
+  const langFilter = langFilterClause('?label', language)
 
   let query: string
 
@@ -169,9 +172,7 @@ export async function fetchAvailableClasses(
 
   const bindings = await runSelect(query, context, store)
 
-  return bindings
-    .filter((b) => b['type'])
-    .map((b) => b['type']!.value)
+  return bindings.filter((b) => b['type']).map((b) => b['type']!.value)
 }
 
 // ── Label fetching ────────────────────────────────────────────────────────────
@@ -195,12 +196,12 @@ export async function fetchLabels(
   if (iris.length === 0) return new Map()
 
   const subqueries = iris
-    .map((iri) => `{ ?p <http://www.w3.org/2000/01/rdf-schema#label> ?label FILTER(?p = <${iri}>) }`)
+    .map(
+      (iri) => `{ ?p <http://www.w3.org/2000/01/rdf-schema#label> ?label FILTER(?p = <${iri}>) }`,
+    )
     .join('\n    UNION\n    ')
 
-  const langFilter = language
-    ? `FILTER (lang(?label) = '${language}' || lang(?label) = '')`
-    : ''
+  const langFilter = langFilterClause('?label', language)
 
   const query = `
     SELECT * WHERE {
@@ -244,7 +245,10 @@ export async function fetchTypes(
   if (iris.length === 0) return new Map()
 
   const subqueries = iris
-    .map((iri) => `{ ?o <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?type FILTER(?o = <${iri}> && !isBlank(?type)) }`)
+    .map(
+      (iri) =>
+        `{ ?o <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?type FILTER(?o = <${iri}> && !isBlank(?type)) }`,
+    )
     .join('\n    UNION\n    ')
 
   const query = `
@@ -285,8 +289,10 @@ export async function fetchDataProperties(
   language = 'en',
 ): Promise<DataProperty[]> {
   const effectiveLang = language || 'en'
-  const langFilter = `FILTER (lang(?propLabel) = '${effectiveLang}' || lang(?propLabel) = '')
-      FILTER (lang(?propValue) = '${effectiveLang}' || lang(?propValue) = '')`
+  const langFilter = [
+    langFilterClause('?propLabel', effectiveLang),
+    langFilterClause('?propValue', effectiveLang),
+  ].join('\n      ')
 
   const query = `
     SELECT DISTINCT ?p ?propLabel ?propValue WHERE {
@@ -327,7 +333,8 @@ export async function fetchDataProperties(
  *
  * @param ontologyPrefix  Only types whose IRI starts with this string are
  *   recorded. Pass an empty string to accept types from any namespace.
- * @param chunkSize  Number of IRIs per label/type query batch.
+ * @param chunkSize  IRIs per label/type query batch. 50 keeps each UNION subquery
+ *   within the complexity limits of most public SPARQL endpoints.
  */
 export async function enrichGraph(
   nodes: GraphNode[],
@@ -357,17 +364,7 @@ export async function enrichGraph(
     for (const [k, v] of partial) typesMap.set(k, v)
   }
 
-  // Apply in-place (mirrors graphBuilder.applyLabelsAndTypes)
-  for (const node of nodes) {
-    const label = labelsMap.get(node.iri)
-    if (label) node.label = label
-    node.class = typesMap.get(node.iri) ?? 'Thing'
-  }
-
-  for (const edge of edges) {
-    const label = labelsMap.get(edge.iri)
-    if (label) edge.label = label
-  }
+  applyLabelsAndTypes(nodes, edges, labelsMap, typesMap)
 }
 
 /**
@@ -423,7 +420,15 @@ export async function findRelationships(
     options.allowedObjectProperties ?? [],
   )
 
-  await enrichGraph(nodes, edges, context, options.ontologyPrefix ?? '', 50, options.store, options.language ?? 'en')
+  await enrichGraph(
+    nodes,
+    edges,
+    context,
+    options.ontologyPrefix ?? '',
+    50,
+    options.store,
+    options.language ?? 'en',
+  )
 
   const mergedEdges = mergeEdgeDuplicates(edges)
   const classes = [...new Set(nodes.map((n) => n.class))]
