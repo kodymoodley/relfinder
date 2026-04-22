@@ -7,7 +7,18 @@
       :enter="{ opacity: 1, y: 0, transition: { duration: 420, ease: 'easeOut' } }"
     >
       <div class="card-header">
-        <h1 class="app-title">RelFinder</h1>
+        <div class="header-top">
+          <h1 class="app-title">RelFinder</h1>
+          <Button
+            :icon="dark ? 'pi pi-sun' : 'pi pi-moon'"
+            text
+            rounded
+            size="small"
+            class="dark-toggle"
+            @click="toggleDark"
+            :aria-label="dark ? 'Switch to light mode' : 'Switch to dark mode'"
+          />
+        </div>
         <p class="app-subtitle">Discover relationships in RDF knowledge graphs</p>
       </div>
 
@@ -47,11 +58,14 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import Button from 'primevue/button'
 import SparqlForm from '@/components/connection/SparqlForm.vue'
 import RdfFileUpload from '@/components/connection/RdfFileUpload.vue'
 import ExamplesPanel from '@/components/connection/ExamplesPanel.vue'
+import { useDarkMode } from '@/composables/useDarkMode'
 
 const activeTab = ref<'sparql' | 'file'>('sparql')
+const { dark, toggle: toggleDark } = useDarkMode()
 </script>
 
 <style scoped>
@@ -85,6 +99,18 @@ const activeTab = ref<'sparql' | 'file'>('sparql')
   overflow: hidden;
 }
 
+.header-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: var(--rf-space-1);
+}
+
+.dark-toggle {
+  margin-top: -4px;
+  color: var(--rf-text-subtle);
+}
+
 /* Accent gradient stripe at the top of the card */
 .card-header::before {
   content: '';
@@ -97,7 +123,7 @@ const activeTab = ref<'sparql' | 'file'>('sparql')
 }
 
 .app-title {
-  margin: 0 0 var(--rf-space-1);
+  margin: 0;
   font-family: var(--rf-font-display);
   font-size: var(--rf-text-2xl);
   font-weight: var(--rf-weight-bold);
@@ -159,6 +185,13 @@ const activeTab = ref<'sparql' | 'file'>('sparql')
 
 .tab-icon {
   font-size: var(--rf-text-sm);
+}
+
+/* Dark mode: brighter gradient so it reads on a near-black background */
+:global(.dark) .connection-view {
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -5%, rgb(34 211 238 / 0.08) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 85% 95%, rgb(251 191 36 / 0.06) 0%, transparent 55%);
 }
 
 /* ── Tab panel ──────────────────────────────────────────────────────────── */

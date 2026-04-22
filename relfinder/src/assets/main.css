@@ -189,3 +189,32 @@
 .p-slider-handle:hover {
   transform: scale(1.2);
 }
+
+/* ── Paginator (DataTable footer) ────────────────────────────────────────── */
+.p-paginator {
+  font-family: var(--rf-font-body);
+  font-size: var(--rf-text-xs);
+  background: var(--rf-surface-raised);
+  border-top: 1px solid var(--rf-border);
+  padding: var(--rf-space-2) var(--rf-space-3);
+}
+.p-paginator-page,
+.p-paginator-first,
+.p-paginator-prev,
+.p-paginator-next,
+.p-paginator-last {
+  min-width: 2rem;
+  height: 2rem;
+  border-radius: var(--rf-radius-sm);
+  font-size: var(--rf-text-xs);
+  transition: background var(--rf-duration-fast) var(--rf-ease-out);
+}
+.p-paginator-page.p-highlight {
+  background: var(--rf-primary);
+  color: var(--rf-text-on-primary);
+}
+
+/* ── ProgressSpinner ─────────────────────────────────────────────────────── */
+.p-progressspinner-circle {
+  stroke: var(--rf-primary) !important;
+}

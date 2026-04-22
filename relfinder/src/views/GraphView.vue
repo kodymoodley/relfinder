@@ -15,6 +15,15 @@
           />
           <Button
             v-show="!sidebarCollapsed"
+            :icon="dark ? 'pi pi-sun' : 'pi pi-moon'"
+            text
+            rounded
+            size="small"
+            @click="toggleDark"
+            :aria-label="dark ? 'Switch to light mode' : 'Switch to dark mode'"
+          />
+          <Button
+            v-show="!sidebarCollapsed"
             icon="pi pi-power-off"
             text
             rounded
@@ -149,6 +158,7 @@
 import { ref, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import Button from 'primevue/button'
+import { useDarkMode } from '@/composables/useDarkMode'
 import Divider from 'primevue/divider'
 import Message from 'primevue/message'
 import Tag from 'primevue/tag'
@@ -164,6 +174,7 @@ import NodeDetail from '@/components/graph/NodeDetail.vue'
 
 const router = useRouter()
 const connectionStore = useConnectionStore()
+const { dark, toggle: toggleDark } = useDarkMode()
 
 // ── State ─────────────────────────────────────────────────────────────────────
 

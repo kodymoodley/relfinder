@@ -345,6 +345,11 @@ defineExpose({ PALETTE })
   color: var(--rf-text-muted);
 }
 
+.empty-hint strong {
+  color: var(--rf-text);
+  font-weight: var(--rf-weight-semibold);
+}
+
 .canvas-loading p {
   margin: 0;
   font-size: var(--rf-text-sm);
