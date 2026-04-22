@@ -301,13 +301,13 @@ function removeCustomLabel(idx: number) {
 .options-panel {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: var(--rf-space-6);
 }
 
 .option-group {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--rf-space-2);
 }
 
 .option-header {
@@ -317,60 +317,66 @@ function removeCustomLabel(idx: number) {
 }
 
 .option-label {
-  font-size: 0.8rem;
-  font-weight: 600;
+  font-size: var(--rf-text-xs);
+  font-weight: var(--rf-weight-semibold);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--p-text-muted-color);
+  letter-spacing: 0.06em;
+  color: var(--rf-text-subtle);
 }
 
 .option-value {
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--p-primary-color);
+  font-size: var(--rf-text-sm);
+  font-weight: var(--rf-weight-bold);
+  color: var(--rf-primary);
 }
 
 .option-hint {
   margin: 0;
-  font-size: 0.78rem;
-  color: var(--p-text-muted-color);
-  line-height: 1.4;
+  font-size: var(--rf-text-xs);
+  color: var(--rf-text-muted);
+  line-height: var(--rf-leading-relaxed);
 }
 
 .distance-slider {
-  margin: 0.25rem 0;
+  margin: var(--rf-space-1) 0;
 }
 
 .slider-ticks {
   display: flex;
   justify-content: space-between;
-  font-size: 0.7rem;
-  color: var(--p-text-muted-color);
+  font-size: var(--rf-text-xs);
+  color: var(--rf-text-subtle);
   padding: 0 2px;
 }
 
 .chip-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.375rem;
+  gap: var(--rf-space-2);
 }
 
 .prop-chip {
   display: flex;
   align-items: center;
-  gap: 0.3rem;
-  padding: 0.2rem 0.5rem;
-  background: var(--p-surface-100);
-  border: 1px solid var(--p-content-border-color);
-  border-radius: 4px;
-  font-size: 0.75rem;
+  gap: var(--rf-space-1);
+  padding: var(--rf-space-1) var(--rf-space-3);
+  background: var(--rf-surface-raised);
+  border: 1px solid var(--rf-border);
+  border-radius: var(--rf-radius-sm);
+  font-size: var(--rf-text-xs);
   max-width: 200px;
+  transition: border-color var(--rf-duration-fast) var(--rf-ease-out);
+}
+
+.prop-chip:hover {
+  border-color: var(--rf-border-strong);
 }
 
 .prop-chip-label {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  color: var(--rf-text-muted);
 }
 
 .chip-remove {
@@ -378,33 +384,35 @@ function removeCustomLabel(idx: number) {
   border: none;
   padding: 0;
   cursor: pointer;
-  color: var(--p-text-muted-color);
+  color: var(--rf-text-subtle);
   font-size: 0.6rem;
   display: flex;
   align-items: center;
   flex-shrink: 0;
+  transition: color var(--rf-duration-fast) var(--rf-ease-out);
 }
 
 .chip-remove:hover {
-  color: var(--p-red-500);
+  color: var(--rf-danger);
 }
 
 .add-prop {
   display: flex;
-  gap: 0.5rem;
+  gap: var(--rf-space-2);
   align-items: center;
 }
 
 .class-error {
-  font-size: 0.78rem;
+  font-size: var(--rf-text-xs);
 }
 
 .option-hint code {
-  font-family: monospace;
+  font-family: var(--rf-font-mono);
   font-size: 0.85em;
-  background: var(--p-surface-200);
-  padding: 0.1em 0.3em;
-  border-radius: 3px;
+  background: var(--rf-surface-raised);
+  color: var(--rf-primary);
+  padding: 0.1em 0.35em;
+  border-radius: var(--rf-radius-sm);
 }
 
 /* ── Cycle avoidance toggle ───────────────────────────────────────────────── */
@@ -415,7 +423,7 @@ function removeCustomLabel(idx: number) {
 
 .cycle-toggle :deep(.p-selectbutton) {
   display: inline-flex;
-  gap: 0.3rem;
+  gap: var(--rf-space-1);
   background: none;
   border: none;
   padding: 0;
@@ -423,27 +431,30 @@ function removeCustomLabel(idx: number) {
 
 .cycle-toggle :deep(.p-togglebutton) {
   padding: 0.28rem 0.85rem;
-  font-size: 0.78rem;
-  font-weight: 500;
-  border-radius: 9999px;
-  border: 1px solid var(--p-content-border-color);
-  background: var(--p-surface-100);
-  color: var(--p-text-muted-color);
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  font-size: var(--rf-text-xs);
+  font-weight: var(--rf-weight-medium);
+  border-radius: var(--rf-radius-full);
+  border: 1px solid var(--rf-border);
+  background: var(--rf-surface-raised);
+  color: var(--rf-text-muted);
+  transition:
+    background var(--rf-duration-fast) var(--rf-ease-out),
+    color var(--rf-duration-fast) var(--rf-ease-out),
+    border-color var(--rf-duration-fast) var(--rf-ease-out);
   cursor: pointer;
   white-space: nowrap;
 }
 
 .cycle-toggle :deep(.p-togglebutton:hover:not(.p-togglebutton-checked)) {
-  border-color: var(--p-primary-color);
-  color: var(--p-primary-color);
-  background: var(--p-surface-50);
+  border-color: var(--rf-primary);
+  color: var(--rf-primary);
+  background: var(--rf-primary-soft);
 }
 
 .cycle-toggle :deep(.p-togglebutton-checked) {
-  background: var(--p-primary-color);
-  border-color: var(--p-primary-color);
-  color: #ffffff;
-  font-weight: 600;
+  background: var(--rf-primary);
+  border-color: var(--rf-primary);
+  color: var(--rf-text-on-primary);
+  font-weight: var(--rf-weight-semibold);
 }
 </style>

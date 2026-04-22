@@ -143,7 +143,7 @@ function onConnect() {
 .file-upload {
   display: flex;
   flex-direction: column;
-  gap: 0.875rem;
+  gap: var(--rf-space-4);
 }
 
 .drop-zone {
@@ -151,27 +151,29 @@ function onConnect() {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  padding: 2.5rem 1.5rem;
-  border: 2px dashed var(--p-content-border-color);
-  border-radius: 10px;
+  gap: var(--rf-space-2);
+  padding: var(--rf-space-10) var(--rf-space-6);
+  border: 2px dashed var(--rf-border);
+  border-radius: var(--rf-radius-lg);
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
-  background: var(--p-content-background);
+  transition:
+    border-color var(--rf-duration-base) var(--rf-ease-out),
+    background var(--rf-duration-base) var(--rf-ease-out);
+  background: var(--rf-surface);
   min-height: 160px;
   text-align: center;
 }
 
 .drop-zone:hover,
 .drop-zone--over {
-  border-color: var(--p-primary-color);
-  background: color-mix(in srgb, var(--p-primary-color) 5%, transparent);
+  border-color: var(--rf-primary);
+  background: var(--rf-primary-soft);
 }
 
 .drop-zone--loaded {
   border-style: solid;
-  border-color: var(--p-green-500);
-  background: color-mix(in srgb, var(--p-green-500) 5%, transparent);
+  border-color: var(--rf-success);
+  background: var(--rf-success-soft);
 }
 
 .hidden-input {
@@ -180,36 +182,43 @@ function onConnect() {
 
 .drop-icon {
   font-size: 2rem;
-  color: var(--p-text-muted-color);
+  color: var(--rf-text-subtle);
+  transition: color var(--rf-duration-base) var(--rf-ease-out);
+}
+
+.drop-zone:hover .drop-icon {
+  color: var(--rf-primary);
 }
 
 .drop-icon--success {
-  color: var(--p-green-500);
+  color: var(--rf-success);
 }
 
 .drop-label {
   margin: 0;
-  font-size: 0.95rem;
-  color: var(--p-text-color);
+  font-size: var(--rf-text-base);
+  font-weight: var(--rf-weight-medium);
+  color: var(--rf-text);
 }
 
 .file-name {
-  font-weight: 600;
+  font-weight: var(--rf-weight-semibold);
   word-break: break-all;
 }
 
 .drop-link {
-  color: var(--p-primary-color);
+  color: var(--rf-primary);
   text-decoration: underline;
+  font-weight: var(--rf-weight-medium);
 }
 
 .drop-hint {
   margin: 0;
-  font-size: 0.8rem;
-  color: var(--p-text-muted-color);
+  font-size: var(--rf-text-xs);
+  color: var(--rf-text-muted);
 }
 
 .open-btn {
-  margin-top: 0.25rem;
+  margin-top: var(--rf-space-1);
 }
 </style>

@@ -191,38 +191,38 @@ async function onSubmit() {
 .sparql-form {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: var(--rf-space-5);
 }
 
 .field {
   display: flex;
   flex-direction: column;
-  gap: 0.375rem;
+  gap: var(--rf-space-1);
 }
 
 .field label {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--p-text-color);
+  font-size: var(--rf-text-sm);
+  font-weight: var(--rf-weight-semibold);
+  color: var(--rf-text);
 }
 
 .required {
-  color: var(--p-red-500);
+  color: var(--rf-danger);
 }
 
 .fieldset-hint {
-  font-size: 0.8rem;
-  color: var(--p-text-muted-color);
-  margin: 0 0 1rem;
-  line-height: 1.5;
+  font-size: var(--rf-text-sm);
+  color: var(--rf-text-muted);
+  margin: 0 0 var(--rf-space-4);
+  line-height: var(--rf-leading-relaxed);
 }
 
 .error-msg {
-  color: var(--p-red-500);
-  font-size: 0.8rem;
+  color: var(--rf-danger);
+  font-size: var(--rf-text-xs);
 }
 
 .connect-btn {
-  margin-top: 0.25rem;
+  margin-top: var(--rf-space-1);
 }
 </style>

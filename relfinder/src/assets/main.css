@@ -47,6 +47,23 @@
   padding-inline: 0.7rem;
 }
 
+/* Fieldset */
+.p-fieldset {
+  border: 1px solid var(--rf-border);
+  border-radius: var(--rf-radius-md);
+}
+.p-fieldset-legend {
+  font-family: var(--rf-font-body);
+  font-size: var(--rf-text-xs);
+  font-weight: var(--rf-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--rf-text-muted);
+  border: 1px solid var(--rf-border);
+  border-radius: var(--rf-radius-sm);
+  padding: 0.2rem 0.6rem;
+}
+
 /* Select */
 .p-select-label {
   padding-block: 0.6rem;

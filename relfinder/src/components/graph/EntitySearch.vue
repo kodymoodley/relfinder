@@ -135,28 +135,28 @@ function shortClass(classIri: string): string {
 .entity-search {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--rf-space-2);
 }
 
 .field {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: var(--rf-space-1);
 }
 
 .field label {
-  font-size: 0.8rem;
-  font-weight: 600;
+  font-size: var(--rf-text-xs);
+  font-weight: var(--rf-weight-semibold);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--p-text-muted-color);
+  letter-spacing: 0.06em;
+  color: var(--rf-text-subtle);
 }
 
 .suggestion-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.5rem;
+  gap: var(--rf-space-2);
   width: 100%;
 }
 
@@ -165,30 +165,35 @@ function shortClass(classIri: string): string {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 0.875rem;
+  font-size: var(--rf-text-sm);
 }
 
 .suggestion-tag {
   flex-shrink: 0;
-  font-size: 0.7rem;
+  font-size: var(--rf-text-xs);
 }
 
 .no-results {
-  font-size: 0.85rem;
-  color: var(--p-text-muted-color);
-  padding: 0.25rem 0;
+  font-size: var(--rf-text-sm);
+  color: var(--rf-text-muted);
+  padding: var(--rf-space-1) 0;
 }
 
 .selected-chip {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.375rem 0.625rem;
-  background: var(--p-surface-100);
-  border: 1px solid var(--p-content-border-color);
-  border-radius: 20px;
-  font-size: 0.8rem;
+  gap: var(--rf-space-2);
+  padding: var(--rf-space-2) var(--rf-space-3);
+  background: var(--rf-surface-raised);
+  border: 1px solid var(--rf-border);
+  border-radius: var(--rf-radius-full);
+  font-size: var(--rf-text-sm);
   min-height: 2.25rem;
+  transition: border-color var(--rf-duration-fast) var(--rf-ease-out);
+}
+
+.selected-chip:hover {
+  border-color: var(--rf-border-strong);
 }
 
 .chip-dot {
@@ -201,21 +206,28 @@ function shortClass(classIri: string): string {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-weight: var(--rf-weight-medium);
+  color: var(--rf-text);
 }
 
 .chip-remove {
   background: none;
   border: none;
-  padding: 0;
+  padding: var(--rf-space-1);
   cursor: pointer;
-  color: var(--p-text-muted-color);
+  color: var(--rf-text-subtle);
   font-size: 0.65rem;
   display: flex;
   align-items: center;
   flex-shrink: 0;
+  border-radius: var(--rf-radius-full);
+  transition:
+    color var(--rf-duration-fast) var(--rf-ease-out),
+    background var(--rf-duration-fast) var(--rf-ease-out);
 }
 
 .chip-remove:hover {
-  color: var(--p-red-500);
+  color: var(--rf-danger);
+  background: var(--rf-danger-soft);
 }
 </style>
