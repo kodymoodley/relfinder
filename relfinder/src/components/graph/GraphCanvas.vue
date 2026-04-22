@@ -538,6 +538,21 @@ defineExpose({ PALETTE })
   align-items: center;
   justify-content: center;
   margin-bottom: var(--rf-space-2);
+  position: relative;
+}
+
+@keyframes icon-ring-pulse {
+  0%   { transform: scale(1);    opacity: 0.6; }
+  100% { transform: scale(1.75); opacity: 0; }
+}
+
+.empty-icon-wrap::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--rf-radius-full);
+  border: 2px solid var(--rf-primary);
+  animation: icon-ring-pulse 2s ease-out infinite;
 }
 
 .empty-icon {
