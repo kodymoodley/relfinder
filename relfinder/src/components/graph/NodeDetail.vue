@@ -67,6 +67,7 @@ import Message from 'primevue/message'
 import { useConnectionStore } from '@/stores/connection'
 import { fetchDataProperties } from '@/lib/sparql/entitySearch'
 import type { GraphNode, DataProperty } from '@/lib/sparql/types'
+import { shortIri } from '@/lib/utils/iri'
 
 const props = defineProps<{ node: GraphNode | null; language?: string }>()
 const emit = defineEmits<{ 'update:node': [value: GraphNode | null] }>()
@@ -95,6 +96,8 @@ watch(
     try {
       const context = connectionStore.queryContext
       const store = connectionStore.rdfStore ?? undefined
+      // When store is set (file mode), context is null. The empty endpointUrl
+      // fallback is never used — Comunica queries the store directly.
       const effectiveContext = context ?? { endpointUrl: '' }
 
       dataProps.value = await fetchDataProperties(
@@ -117,9 +120,6 @@ watch(visible, (v) => {
   if (!v) emit('update:node', null)
 })
 
-function shortIri(iri: string): string {
-  return iri.split('/').pop()?.split('#').pop() ?? iri
-}
 </script>
 
 <style scoped>

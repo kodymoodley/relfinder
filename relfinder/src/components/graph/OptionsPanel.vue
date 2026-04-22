@@ -6,6 +6,8 @@
         <label class="option-label">Max Path Length</label>
         <span class="option-value">{{ modelValue.maxDistance }}</span>
       </div>
+      <!-- Max 6: at distance 6 the query fan-out (2^6 query blocks) is already
+           very large; higher values cause timeouts on most public endpoints. -->
       <Slider
         :model-value="modelValue.maxDistance"
         :min="1"
@@ -198,6 +200,7 @@ import Message from 'primevue/message'
 import { QueryCyclesStrategy } from '@/lib/sparql/types'
 import { fetchAvailableClasses } from '@/lib/sparql/entitySearch'
 import { useConnectionStore } from '@/stores/connection'
+import { shortIri } from '@/lib/utils/iri'
 
 export interface GraphOptions {
   maxDistance: number
@@ -239,10 +242,6 @@ function update<K extends keyof GraphOptions>(key: K, value: GraphOptions[K]) {
   emit('update:modelValue', { ...props.modelValue, [key]: value })
 }
 
-function shortIri(iri: string): string {
-  return iri.split('/').pop()?.split('#').pop() ?? iri
-}
-
 // ── Class filter ──────────────────────────────────────────────────────────────
 
 async function loadClasses() {
@@ -253,6 +252,8 @@ async function loadClasses() {
   try {
     const context = connectionStore.queryContext
     const store = connectionStore.rdfStore ?? undefined
+    // In file mode context is null; the empty URL fallback is never used
+    // because Comunica queries the in-memory store directly.
     const effectiveContext = context ?? { endpointUrl: '' }
 
     const iris = await fetchAvailableClasses(effectiveContext, 50, store)
@@ -285,11 +286,23 @@ function removeClass(idx: number) {
   update('allowedClasses', updated)
 }
 
+// ── IRI validation ────────────────────────────────────────────────────────────
+
+/** Checks that an IRI is an absolute URL — rejects relative and blank values. */
+function isValidIri(iri: string): boolean {
+  try {
+    const url = new URL(iri)
+    return url.protocol === 'http:' || url.protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
 // ── Ignored properties ────────────────────────────────────────────────────────
 
 function addIgnoredProp() {
   const iri = newPropIri.value.trim()
-  if (!iri || props.modelValue.ignoredProperties.includes(iri)) return
+  if (!iri || !isValidIri(iri) || props.modelValue.ignoredProperties.includes(iri)) return
   update('ignoredProperties', [...props.modelValue.ignoredProperties, iri])
   newPropIri.value = ''
 }
@@ -304,7 +317,7 @@ function removeIgnoredProp(idx: number) {
 
 function addCustomLabel() {
   const iri = newLabelIri.value.trim()
-  if (!iri || props.modelValue.customLabelProperties.includes(iri)) return
+  if (!iri || !isValidIri(iri) || props.modelValue.customLabelProperties.includes(iri)) return
   update('customLabelProperties', [...props.modelValue.customLabelProperties, iri])
   newLabelIri.value = ''
 }

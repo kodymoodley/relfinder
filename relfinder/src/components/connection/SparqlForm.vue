@@ -81,7 +81,7 @@
 
     <Button
       type="submit"
-      label="Connect"
+      :label="connecting ? `Connecting to ${connectingHost}…` : 'Connect'"
       icon="pi pi-plug"
       :loading="connecting"
       fluid
@@ -128,6 +128,7 @@ const form = reactive<FormState>({
 
 const errors = reactive<Partial<FormState>>({})
 const connecting = ref(false)
+const connectingHost = ref('')
 const connectionError = ref('')
 const showAuth = ref(false)
 const showProxy = ref(false)
@@ -182,6 +183,7 @@ async function onSubmit() {
   connectionError.value = ''
 
   const endpointUrl = form.proxyUrl.trim() || form.endpointUrl.trim()
+  try { connectingHost.value = new URL(endpointUrl).hostname } catch { connectingHost.value = endpointUrl }
   const authHeader = form.username.trim()
     ? `Basic ${btoa(`${form.username.trim()}:${form.password}`)}`
     : undefined

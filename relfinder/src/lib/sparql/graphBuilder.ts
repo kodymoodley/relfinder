@@ -9,6 +9,7 @@
  */
 
 import type { SparqlBinding, PathCollection, GraphNode, GraphEdge, MergedEdge } from './types'
+import { shortIri } from '../utils/iri'
 
 // ── Internal helpers ──────────────────────────────────────────────────────────
 
@@ -109,7 +110,7 @@ function pathToEdges(
     if (!propTerm) continue
 
     const propIri = propTerm.value
-    const propLabel = propIri.split('/').pop() ?? propIri
+    const propLabel = shortIri(propIri)
     const targetObj = `${objectKeyPrefix}${idx + 1}`
 
     if (targetObj in path) {
@@ -204,7 +205,7 @@ function extractRelationshipEdges(
           sid: nodes.get(collection.src)!,
           tid: nodes.get(collection.dest)!,
           iri: propIri,
-          label: propIri.split('/').pop() ?? propIri,
+          label: shortIri(propIri),
         }
 
         const key = JSON.stringify(edge)
@@ -247,9 +248,7 @@ export function mergeEdgeDuplicates(edges: GraphEdge[], labelSep = '|'): MergedE
     if (existing) {
       if (!existing.iris.includes(edge.iri)) {
         existing.iris.push(edge.iri)
-        existing.label = existing.iris
-          .map((iri) => iri.split('/').pop() ?? iri)
-          .join(` ${labelSep} `)
+        existing.label = existing.iris.map(shortIri).join(` ${labelSep} `)
       }
     } else {
       edgesMap.set(key, {
@@ -285,7 +284,7 @@ export function buildRelationshipsGraph(
   const nodes: GraphNode[] = Array.from(nodeMap.entries()).map(([iri, id]) => ({
     id,
     iri,
-    label: iri.split('/').pop()?.split('#').pop() ?? iri,
+    label: shortIri(iri),
     class: 'Thing',
     isEndpoint: iri === src || iri === dest,
   }))

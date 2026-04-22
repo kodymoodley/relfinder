@@ -25,7 +25,8 @@
 
       <template v-else-if="parsing">
         <i class="pi pi-spin pi-spinner drop-icon" />
-        <p class="drop-label">Parsing…</p>
+        <p class="drop-label">Parsing {{ parsingFileName }}</p>
+        <p class="drop-hint">{{ parseElapsed }}s elapsed — large files may take a moment</p>
       </template>
 
       <template v-else-if="loadedFile">
@@ -81,14 +82,20 @@ const parseError = ref('')
 const loadedFile = ref<File | null>(null)
 const loadedStore = ref<Store | null>(null)
 const tripleCount = ref(0)
+const parsingFileName = ref('')
+const parseElapsed = ref(0)
+let parseTimer: ReturnType<typeof setInterval> | null = null
 
 // ── File handling ─────────────────────────────────────────────────────────────
 
 async function processFile(file: File) {
   parseError.value = ''
   parsing.value = true
+  parsingFileName.value = file.name
+  parseElapsed.value = 0
   loadedFile.value = null
   loadedStore.value = null
+  parseTimer = setInterval(() => { parseElapsed.value++ }, 1000)
 
   try {
     const store = await fileToStore(file)
@@ -99,6 +106,7 @@ async function processFile(file: File) {
     parseError.value = err instanceof Error ? err.message : 'Failed to parse the RDF file.'
   } finally {
     parsing.value = false
+    if (parseTimer) { clearInterval(parseTimer); parseTimer = null }
   }
 }
 

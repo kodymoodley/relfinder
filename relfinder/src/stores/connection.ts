@@ -47,8 +47,8 @@ export const useConnectionStore = defineStore('connection', () => {
 
   // ── Getters ────────────────────────────────────────────────────────────────
 
-  const isSparqlSource = computed(() => source.value?.type === 'sparql')
-  const isFileSource = computed(() => source.value?.type === 'file')
+  const isSparqlSource = computed<boolean>(() => source.value?.type === 'sparql')
+  const isFileSource = computed<boolean>(() => source.value?.type === 'file')
 
   /**
    * Returns the Authorization header value for the active SPARQL source,

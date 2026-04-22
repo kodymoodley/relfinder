@@ -135,6 +135,8 @@
         :class-colors="classColors"
         :endpoint1-iri="entity1?.iri"
         :endpoint2-iri="entity2?.iri"
+        :entity1-label="entity1?.label"
+        :entity2-label="entity2?.label"
         @node-click="selectedNode = $event"
       />
     </main>
