@@ -18,6 +18,14 @@
     <!-- Cytoscape mount point — always in the DOM so cy can attach -->
     <div ref="cyContainer" class="cy-container" :class="{ hidden: !hasGraph }" />
 
+    <!-- Select mode indicator -->
+    <Transition name="mode-badge">
+      <div v-if="selectionMode === 'select'" class="select-mode-badge">
+        <i class="pi pi-expand" />
+        Drag to select
+      </div>
+    </Transition>
+
     <!-- Toolbar (zoom controls) -->
     <div v-if="hasGraph" class="canvas-toolbar">
       <Button
@@ -60,7 +68,7 @@
       />
       <Divider layout="vertical" />
       <Button
-        v-tooltip.top="selectionMode === 'select' ? 'Back to pan mode' : 'Drag to select — focus labels on selection'"
+        v-tooltip.top="selectionMode === 'select' ? 'Back to pan mode' : 'Select subgraph'"
         icon="pi pi-expand"
         text rounded size="small"
         :style="{ color: selectionMode === 'select' ? 'var(--rf-primary)' : undefined }"
@@ -204,15 +212,36 @@ function initCytoscape() {
           color: '#ffffff',
           'text-valign': 'center',
           'text-halign': 'center',
-          'font-size': '10px',
-          'font-family': 'DM Sans, system-ui, sans-serif',
+          'font-size': '9px',
+          'font-family': 'Syne, DM Sans, system-ui, sans-serif',
+          'font-weight': 600,
           'text-wrap': 'wrap',
-          'text-max-width': '50px',
+          'text-max-width': '30px',
           width: 60,
           height: 60,
           'border-width': 0,
           'text-outline-width': 1.5,
           'text-outline-color': 'rgba(0,0,0,0.3)',
+          'transition-property': 'width height border-width border-color',
+          'transition-duration': 120,
+          'transition-timing-function': 'ease-out',
+        },
+      },
+      {
+        selector: 'node.hovered',
+        style: {
+          width: 70,
+          height: 70,
+          'border-width': 2.5,
+          'border-color': 'rgba(255,255,255,0.7)',
+          'border-style': 'solid',
+        },
+      },
+      {
+        selector: 'node[?isEndpoint].hovered',
+        style: {
+          width: 86,
+          height: 86,
         },
       },
       {
@@ -224,9 +253,9 @@ function initCytoscape() {
           'border-opacity': 0.85,
           width: 76,
           height: 76,
-          'font-size': '11px',
-          'font-weight': 'bold',
-          'text-max-width': '62px',
+          'font-size': '10px',
+          'font-weight': 700,
+          'text-max-width': '42px',
         },
       },
       {
@@ -246,13 +275,14 @@ function initCytoscape() {
           'target-arrow-color': '#a1a1aa', // --rf-edge
           'line-color': '#a1a1aa', // --rf-edge
           width: 1.5,
-          'font-size': '9px',
+          'font-size': '7px',
           'font-family': 'DM Sans, system-ui, sans-serif',
+          'font-style': 'italic',
           color: '#71717a', // --rf-edge-label
           'text-rotation': 'autorotate',
           'text-background-color': '#ffffff',
-          'text-background-opacity': 0.85,
-          'text-background-padding': '2px',
+          'text-background-opacity': 0.75,
+          'text-background-padding': '1px',
           'text-background-shape': 'roundrectangle',
         },
       },
@@ -294,6 +324,16 @@ function initCytoscape() {
     } else {
       restoreLabels()
     }
+  })
+
+  // Node hover
+  cy.on('mouseover', 'node', (evt) => {
+    evt.target.addClass('hovered')
+    if (cyContainer.value) cyContainer.value.style.cursor = 'pointer'
+  })
+  cy.on('mouseout', 'node', (evt) => {
+    evt.target.removeClass('hovered')
+    if (cyContainer.value) cyContainer.value.style.cursor = ''
   })
 
   // Node click → emit event to parent
@@ -363,6 +403,8 @@ function restoreLabels() {
   cy?.nodes().removeClass('no-label')
   if (showEdgeLabels.value) {
     cy?.edges().removeClass('no-label')
+  } else {
+    cy?.edges().addClass('no-label')
   }
 }
 
@@ -530,6 +572,44 @@ defineExpose({ PALETTE })
   margin: 0;
   font-size: var(--rf-text-sm);
   color: var(--rf-text-muted);
+}
+
+.select-mode-badge {
+  position: absolute;
+  top: var(--rf-space-4);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: var(--rf-space-2);
+  padding: 0.35rem 0.85rem;
+  background: var(--rf-surface);
+  border: 1px solid var(--rf-primary);
+  border-radius: var(--rf-radius-full);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--rf-primary) 15%, transparent), var(--rf-shadow-md);
+  font-family: var(--rf-font-body);
+  font-size: var(--rf-text-xs);
+  font-weight: var(--rf-weight-semibold);
+  color: var(--rf-primary);
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 10;
+}
+
+.select-mode-badge .pi {
+  font-size: 0.65rem;
+}
+
+.mode-badge-enter-active,
+.mode-badge-leave-active {
+  transition:
+    opacity var(--rf-duration-base) var(--rf-ease-out),
+    transform var(--rf-duration-base) var(--rf-ease-out);
+}
+.mode-badge-enter-from,
+.mode-badge-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(-6px);
 }
 
 .canvas-toolbar {
