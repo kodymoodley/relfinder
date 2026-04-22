@@ -178,7 +178,7 @@ function onConnect() {
 }
 
 .drop-icon {
-  font-size: 2rem;
+  font-size: 1.25rem;
   color: var(--rf-text-subtle);
   transition: color var(--rf-duration-base) var(--rf-ease-out);
 }
