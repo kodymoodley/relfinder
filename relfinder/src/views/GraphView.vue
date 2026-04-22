@@ -70,6 +70,7 @@
             icon="pi pi-search"
             :loading="searching"
             :disabled="!entity1 || !entity2"
+            :class="{ 'ready-pulse': entity1 && entity2 && !searching }"
             fluid
             @click="onFindRelationships"
           />
@@ -437,6 +438,17 @@ function shortIri(iri: string): string {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* ── Find Relationships pulse ─────────────────────────────────────────────── */
+
+@keyframes ready-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--rf-primary) 70%, transparent); }
+  50%       { box-shadow: 0 0 0 10px color-mix(in srgb, var(--rf-primary) 0%, transparent); }
+}
+
+.ready-pulse {
+  animation: ready-pulse 2s ease-in-out infinite;
 }
 
 /* ── Main graph area ──────────────────────────────────────────────────────── */
