@@ -13,49 +13,69 @@
       <small v-if="errors.endpointUrl" class="error-msg">{{ errors.endpointUrl }}</small>
     </div>
 
-    <Fieldset legend="Authentication (optional)" :toggleable="true" collapsed>
-      <div class="field">
-        <label for="username">Username</label>
-        <InputText
-          id="username"
-          v-model="form.username"
-          placeholder="username"
-          fluid
-          autocomplete="username"
-        />
-      </div>
-      <div class="field">
-        <label for="password">Password</label>
-        <Password
-          inputId="password"
-          v-model="form.password"
-          placeholder="password"
-          :feedback="false"
-          fluid
-          toggleMask
-          autocomplete="current-password"
-        />
-      </div>
-    </Fieldset>
+    <!-- Authentication collapsible -->
+    <div class="collapsible">
+      <button type="button" class="collapsible-toggle" @click="showAuth = !showAuth">
+        <span class="collapsible-label">Authentication</span>
+        <span class="collapsible-badge">optional</span>
+        <i :class="['pi', showAuth ? 'pi-chevron-up' : 'pi-chevron-down', 'collapsible-chevron']" />
+      </button>
+      <Transition name="collapse">
+        <div v-show="showAuth" class="collapsible-body">
+          <div class="field">
+            <label for="username">Username</label>
+            <InputText
+              id="username"
+              v-model="form.username"
+              placeholder="username"
+              fluid
+              autocomplete="username"
+            />
+          </div>
+          <div class="field">
+            <label for="password">Password</label>
+            <Password
+              inputId="password"
+              v-model="form.password"
+              placeholder="password"
+              :feedback="false"
+              fluid
+              toggleMask
+              autocomplete="current-password"
+            />
+          </div>
+        </div>
+      </Transition>
+    </div>
 
-    <Fieldset legend="CORS Proxy (optional)" :toggleable="true" collapsed>
-      <p class="fieldset-hint">
-        Only needed when your SPARQL endpoint does not support cross-origin
-        requests. Start the bundled Caddy proxy and enter its URL here.
-      </p>
-      <div class="field">
-        <label for="proxyUrl">Proxy URL</label>
-        <InputText
-          id="proxyUrl"
-          v-model="form.proxyUrl"
-          placeholder="http://localhost:8080/sparql"
-          :invalid="!!errors.proxyUrl"
-          fluid
-          autocomplete="url"
-        />
-        <small v-if="errors.proxyUrl" class="error-msg">{{ errors.proxyUrl }}</small>
-      </div>
-    </Fieldset>
+    <!-- CORS Proxy collapsible -->
+    <div class="collapsible">
+      <button type="button" class="collapsible-toggle" @click="showProxy = !showProxy">
+        <span class="collapsible-label">CORS Proxy</span>
+        <span class="collapsible-badge">optional</span>
+        <i :class="['pi', showProxy ? 'pi-chevron-up' : 'pi-chevron-down', 'collapsible-chevron']" />
+      </button>
+      <Transition name="collapse">
+        <div v-show="showProxy" class="collapsible-body">
+          <p class="fieldset-hint">
+            Only needed when your SPARQL endpoint does not support cross-origin
+            requests. Start the bundled Caddy proxy and enter its URL here.
+          </p>
+          <div class="field">
+            <label for="proxyUrl">Proxy URL</label>
+            <InputText
+              id="proxyUrl"
+              v-model="form.proxyUrl"
+              placeholder="http://localhost:8080/sparql"
+              :invalid="!!errors.proxyUrl"
+              fluid
+              autocomplete="url"
+            />
+            <small v-if="errors.proxyUrl" class="error-msg">{{ errors.proxyUrl }}</small>
+          </div>
+        </div>
+      </Transition>
+    </div>
 
     <Button
       type="submit"
@@ -78,7 +98,6 @@ import { useRouter } from 'vue-router'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import Button from 'primevue/button'
-import Fieldset from 'primevue/fieldset'
 import Message from 'primevue/message'
 import { useConnectionStore } from '@/stores/connection'
 import { executeSelect } from '@/lib/sparql/engine'
@@ -108,6 +127,8 @@ const form = reactive<FormState>({
 const errors = reactive<Partial<FormState>>({})
 const connecting = ref(false)
 const connectionError = ref('')
+const showAuth = ref(false)
+const showProxy = ref(false)
 
 // ── Validation ────────────────────────────────────────────────────────────────
 
@@ -211,10 +232,80 @@ async function onSubmit() {
 }
 
 .fieldset-hint {
-  font-size: var(--rf-text-sm);
+  font-size: var(--rf-text-xs);
   color: var(--rf-text-muted);
   margin: 0 0 var(--rf-space-4);
   line-height: var(--rf-leading-relaxed);
+}
+
+/* ── Collapsible sections ────────────────────────────────────────────────── */
+
+.collapsible {
+  border-top: 1px solid var(--rf-border);
+  padding-top: var(--rf-space-3);
+}
+
+.collapsible-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--rf-space-2);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+}
+
+.collapsible-label {
+  font-size: var(--rf-text-xs);
+  font-weight: var(--rf-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--rf-text-subtle);
+  transition: color var(--rf-duration-fast) var(--rf-ease-out);
+}
+
+.collapsible-toggle:hover .collapsible-label {
+  color: var(--rf-primary);
+}
+
+.collapsible-badge {
+  font-size: var(--rf-text-xs);
+  color: var(--rf-text-subtle);
+  background: var(--rf-surface-raised);
+  border: 1px solid var(--rf-border);
+  border-radius: var(--rf-radius-full);
+  padding: 0.05rem 0.45rem;
+  letter-spacing: 0.02em;
+  font-weight: var(--rf-weight-normal);
+}
+
+.collapsible-chevron {
+  margin-left: auto;
+  font-size: 0.6rem;
+  color: var(--rf-text-subtle);
+  transition: color var(--rf-duration-fast) var(--rf-ease-out);
+}
+
+.collapsible-toggle:hover .collapsible-chevron {
+  color: var(--rf-primary);
+}
+
+.collapsible-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--rf-space-4);
+  padding-top: var(--rf-space-4);
+}
+
+.collapse-enter-active,
+.collapse-leave-active {
+  transition: opacity var(--rf-duration-base) var(--rf-ease-out);
+}
+.collapse-enter-from,
+.collapse-leave-to {
+  opacity: 0;
 }
 
 .error-msg {
