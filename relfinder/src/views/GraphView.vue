@@ -195,14 +195,14 @@ const graphOptions = ref<GraphOptions>({
 // ── Class colour assignment ───────────────────────────────────────────────────
 
 const PALETTE = [
-  '#06b6d4',
-  '#10b981',
-  '#a78bfa',
-  '#fb923c',
-  '#f472b6',
-  '#34d399',
-  '#60a5fa',
-  '#facc15',
+  '#06b6d4', // cyan
+  '#10b981', // emerald
+  '#a78bfa', // violet
+  '#facc15', // yellow
+  '#f472b6', // pink
+  '#f87171', // red
+  '#60a5fa', // blue
+  '#a3e635', // lime
 ]
 
 const classColors = ref(new Map<string, string>())

@@ -94,20 +94,17 @@ const showEdgeLabels = ref(true)
 
 // Colour palette for node classes — matches --rf-cat-* tokens in tokens.css
 const PALETTE = [
-  '#06b6d4',
-  '#10b981',
-  '#a78bfa',
-  '#fb923c',
-  '#f472b6',
-  '#34d399',
-  '#60a5fa',
-  '#facc15',
+  '#06b6d4', // cyan
+  '#10b981', // emerald
+  '#a78bfa', // violet
+  '#facc15', // yellow
+  '#f472b6', // pink
+  '#f87171', // red
+  '#60a5fa', // blue
+  '#a3e635', // lime
 ]
 
 function nodeColor(ele: NodeSingular): string {
-  const iri = ele.data('iri') as string
-  if (iri && props.endpoint1Iri && iri === props.endpoint1Iri) return '#f97316' // --rf-node-entity1
-  if (iri && props.endpoint2Iri && iri === props.endpoint2Iri) return '#8b5cf6' // --rf-node-entity2
   return props.classColors.get(ele.data('class') as string) ?? '#71717a'
 }
 
@@ -175,9 +172,10 @@ function initCytoscape() {
       {
         selector: 'node[?isEndpoint]',
         style: {
-          'border-width': 3,
-          'border-color': 'rgba(255,255,255,0.85)',
+          'border-width': 5,
+          'border-color': '#ffffff',
           'border-style': 'solid',
+          'border-opacity': 1,
           width: 76,
           height: 76,
           'font-size': '12px',
