@@ -173,9 +173,9 @@ function initCytoscape() {
         selector: 'node[?isEndpoint]',
         style: {
           'border-width': 5,
-          'border-color': '#ffffff',
+          'border-color': '#1e293b',
           'border-style': 'solid',
-          'border-opacity': 1,
+          'border-opacity': 0.85,
           width: 76,
           height: 76,
           'font-size': '12px',
