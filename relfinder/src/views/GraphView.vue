@@ -33,7 +33,7 @@
             id="entity1"
             label="Entity 1"
             placeholder="Search…"
-            dot-color="#4f8ef7"
+            dot-color="#f97316"
             :allowed-classes="graphOptions.allowedClasses"
             :language="graphOptions.language"
             :custom-label-properties="graphOptions.customLabelProperties"
@@ -46,7 +46,7 @@
             id="entity2"
             label="Entity 2"
             placeholder="Search…"
-            dot-color="#f76b4f"
+            dot-color="#8b5cf6"
             :allowed-classes="graphOptions.allowedClasses"
             :language="graphOptions.language"
             :custom-label-properties="graphOptions.customLabelProperties"
@@ -177,8 +177,8 @@ const graphOptions = ref<GraphOptions>({
 // ── Class colour assignment ───────────────────────────────────────────────────
 
 const PALETTE = [
-  '#4f8ef7', '#f76b4f', '#4fc994', '#f7c94f',
-  '#a44ff7', '#4ff7f0', '#f74fa4', '#8ef74f',
+  '#06b6d4', '#10b981', '#a78bfa', '#fb923c',
+  '#f472b6', '#34d399', '#60a5fa', '#facc15',
 ]
 
 const classColors = ref(new Map<string, string>())
@@ -272,7 +272,7 @@ function shortIri(iri: string): string {
   display: flex;
   height: 100vh;
   overflow: hidden;
-  background: var(--p-surface-ground);
+  background: var(--rf-bg);
 }
 
 /* ── Sidebar ──────────────────────────────────────────────────────────────── */
@@ -282,14 +282,16 @@ function shortIri(iri: string): string {
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  background: var(--p-content-background);
-  border-right: 1px solid var(--p-content-border-color);
-  transition: width 0.2s ease;
+  background: var(--rf-surface);
+  border-right: 1px solid var(--rf-border);
+  transition: width var(--rf-duration-base) var(--rf-ease-out);
   overflow: hidden;
+  box-shadow: var(--rf-shadow-md);
+  z-index: 10;
 }
 
 .sidebar--collapsed {
-  width: 48px;
+  width: 52px;
 }
 
 .sidebar--collapsed .sidebar-header {
@@ -301,75 +303,82 @@ function shortIri(iri: string): string {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.625rem 0.75rem;
-  border-bottom: 1px solid var(--p-content-border-color);
+  padding: var(--rf-space-3) var(--rf-space-4);
+  border-bottom: 1px solid var(--rf-border);
   flex-shrink: 0;
-  min-height: 48px;
+  min-height: 52px;
+  background: linear-gradient(135deg, var(--rf-surface) 0%, var(--rf-surface-raised) 100%);
 }
 
 .app-brand {
-  font-weight: 700;
-  font-size: 1rem;
-  color: var(--p-primary-color);
+  font-family: var(--rf-font-display);
+  font-weight: var(--rf-weight-bold);
+  font-size: var(--rf-text-lg);
+  letter-spacing: -0.02em;
   white-space: nowrap;
+  background: linear-gradient(135deg, var(--rf-primary) 0%, var(--rf-accent) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .header-actions {
   display: flex;
-  gap: 0.1rem;
+  gap: var(--rf-space-1);
   flex-shrink: 0;
 }
 
 .sidebar-body {
   flex: 1;
   overflow-y: auto;
-  padding: 0.75rem 0;
+  padding: var(--rf-space-3) 0;
 }
 
 .sidebar-section {
-  padding: 0.625rem 1rem;
+  padding: var(--rf-space-3) var(--rf-space-5);
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--rf-space-2);
 }
 
 .section-label {
   margin: 0;
-  font-size: 0.75rem;
-  font-weight: 600;
+  font-size: var(--rf-text-xs);
+  font-weight: var(--rf-weight-semibold);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--p-text-muted-color);
+  letter-spacing: 0.06em;
+  color: var(--rf-text-subtle);
 }
 
 .section-label.collapsible {
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: var(--rf-space-2);
   user-select: none;
+  transition: color var(--rf-duration-fast) var(--rf-ease-out);
 }
 
 .section-label.collapsible:hover {
-  color: var(--p-primary-color);
+  color: var(--rf-primary);
 }
 
 /* ── Results summary ──────────────────────────────────────────────────────── */
 
 .results-summary {
   flex-direction: row;
-  gap: 1rem;
+  gap: var(--rf-space-4);
 }
 
 .summary-row {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: var(--rf-space-2);
 }
 
 .summary-label {
-  font-size: 0.8rem;
-  color: var(--p-text-muted-color);
+  font-size: var(--rf-text-sm);
+  color: var(--rf-text-muted);
 }
 
 /* ── Legend ───────────────────────────────────────────────────────────────── */
@@ -377,24 +386,26 @@ function shortIri(iri: string): string {
 .legend {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: var(--rf-space-2);
 }
 
 .legend-item {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--rf-space-2);
 }
 
 .legend-dot {
   width: 10px;
   height: 10px;
-  border-radius: 50%;
+  border-radius: var(--rf-radius-full);
   flex-shrink: 0;
+  box-shadow: 0 0 0 2px rgb(255 255 255 / 0.5), 0 1px 3px rgb(0 0 0 / 0.15);
 }
 
 .legend-label {
-  font-size: 0.8rem;
+  font-size: var(--rf-text-sm);
+  color: var(--rf-text-muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

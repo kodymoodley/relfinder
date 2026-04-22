@@ -55,42 +55,67 @@ const activeTab = ref<'sparql' | 'file'>('sparql')
   flex-direction: column;
   align-items: center;
   min-height: 100vh;
-  padding: 2rem 1rem;
-  background: var(--p-surface-ground);
+  padding: var(--rf-space-10) var(--rf-space-4) var(--rf-space-12);
+  background: var(--rf-bg);
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -5%, rgb(8 145 178 / 0.09) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 85% 95%, rgb(245 158 11 / 0.06) 0%, transparent 55%);
 }
 
 .connection-card {
   width: 100%;
   max-width: 520px;
-  background: var(--p-content-background);
-  border: 1px solid var(--p-content-border-color);
-  border-radius: 12px;
+  background: var(--rf-surface);
+  border: 1px solid var(--rf-border);
+  border-radius: var(--rf-radius-xl);
   overflow: hidden;
+  box-shadow: var(--rf-shadow-xl);
 }
 
 .card-header {
-  padding: 2rem 2rem 1.25rem;
-  border-bottom: 1px solid var(--p-content-border-color);
+  padding: var(--rf-space-8) var(--rf-space-8) var(--rf-space-6);
+  border-bottom: 1px solid var(--rf-border);
+  background: linear-gradient(160deg, var(--rf-surface) 0%, var(--rf-surface-raised) 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Accent gradient stripe at the top of the card */
+.card-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--rf-primary) 0%, var(--rf-accent) 100%);
 }
 
 .app-title {
-  margin: 0 0 0.25rem;
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: var(--p-primary-color);
+  margin: 0 0 var(--rf-space-1);
+  font-family: var(--rf-font-display);
+  font-size: var(--rf-text-2xl);
+  font-weight: var(--rf-weight-bold);
+  letter-spacing: -0.03em;
+  background: linear-gradient(135deg, var(--rf-primary) 20%, var(--rf-accent) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .app-subtitle {
   margin: 0;
-  font-size: 0.9rem;
-  color: var(--p-text-muted-color);
+  font-size: var(--rf-text-sm);
+  color: var(--rf-text-muted);
+  line-height: var(--rf-leading-relaxed);
 }
 
 /* ── Tab navigation ─────────────────────────────────────────────────────── */
 
 .tab-nav {
   display: flex;
-  border-bottom: 1px solid var(--p-content-border-color);
+  border-bottom: 1px solid var(--rf-border);
+  background: var(--rf-surface-raised);
 }
 
 .tab-btn {
@@ -98,35 +123,42 @@ const activeTab = ref<'sparql' | 'file'>('sparql')
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.375rem;
-  padding: 0.75rem 1rem;
+  gap: var(--rf-space-2);
+  padding: var(--rf-space-3) var(--rf-space-4);
   background: none;
   border: none;
   border-bottom: 2px solid transparent;
   margin-bottom: -1px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--p-text-muted-color);
+  font-family: var(--rf-font-body);
+  font-size: var(--rf-text-sm);
+  font-weight: var(--rf-weight-medium);
+  color: var(--rf-text-muted);
   cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
+  transition:
+    color var(--rf-duration-fast) var(--rf-ease-out),
+    border-color var(--rf-duration-fast) var(--rf-ease-out),
+    background var(--rf-duration-fast) var(--rf-ease-out);
 }
 
 .tab-btn:hover {
-  color: var(--p-text-color);
+  color: var(--rf-text);
+  background: var(--rf-surface);
 }
 
 .tab-btn--active {
-  color: var(--p-primary-color);
-  border-bottom-color: var(--p-primary-color);
+  color: var(--rf-primary);
+  border-bottom-color: var(--rf-primary);
+  background: var(--rf-surface);
+  font-weight: var(--rf-weight-semibold);
 }
 
 .tab-icon {
-  font-size: 0.85rem;
+  font-size: var(--rf-text-sm);
 }
 
 /* ── Tab panel ──────────────────────────────────────────────────────────── */
 
 .tab-panel {
-  padding: 1.5rem 2rem 2rem;
+  padding: var(--rf-space-6) var(--rf-space-8) var(--rf-space-8);
 }
 </style>
