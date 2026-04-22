@@ -4,7 +4,7 @@
     position="right"
     :header="node?.label ?? 'Node details'"
     class="node-detail-drawer"
-    :pt="{ root: { style: 'width: 360px' }, header: { style: 'padding-left: 1.5rem' }, content: { style: 'padding: 1.25rem 1.5rem' } }"
+    :pt="{ root: { style: 'width: 380px' } }"
   >
     <template v-if="node">
       <!-- IRI -->

@@ -18,7 +18,7 @@
  * All values reference tokens — never hardcoded colours or sizes here.
  * ────────────────────────────────────────────────────────────────────────── */
 
-/* Buttons */
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
 .p-button {
   padding-block: 0.6rem;
   padding-inline: 1.2rem;
@@ -34,7 +34,7 @@
   font-size: var(--rf-text-xs);
 }
 
-/* Text inputs */
+/* ── Text inputs ─────────────────────────────────────────────────────────── */
 .p-inputtext {
   padding-block: 0.6rem;
   padding-inline: 0.85rem;
@@ -47,7 +47,7 @@
   padding-inline: 0.7rem;
 }
 
-/* Fieldset */
+/* ── Fieldset ────────────────────────────────────────────────────────────── */
 .p-fieldset {
   border: 1px solid var(--rf-border);
   border-radius: var(--rf-radius-md);
@@ -64,7 +64,7 @@
   padding: 0.2rem 0.6rem;
 }
 
-/* Select */
+/* ── Select ──────────────────────────────────────────────────────────────── */
 .p-select-label {
   padding-block: 0.6rem;
   padding-inline: 0.85rem;
@@ -74,4 +74,118 @@
 .p-select.p-select-sm .p-select-label {
   padding-block: 0.45rem;
   padding-inline: 0.7rem;
+}
+
+/* ── Message (inline alerts) ─────────────────────────────────────────────── */
+.p-message {
+  border-radius: var(--rf-radius-md);
+  font-family: var(--rf-font-body);
+  font-size: var(--rf-text-sm);
+}
+.p-message-text {
+  font-size: var(--rf-text-sm);
+  line-height: var(--rf-leading-normal);
+}
+
+/* ── Tag (badges / type chips) ───────────────────────────────────────────── */
+.p-tag {
+  font-family: var(--rf-font-body);
+  font-size: var(--rf-text-xs);
+  font-weight: var(--rf-weight-semibold);
+  border-radius: var(--rf-radius-sm);
+  padding: 0.2em 0.55em;
+  letter-spacing: 0.02em;
+}
+
+/* ── Divider ─────────────────────────────────────────────────────────────── */
+.p-divider-horizontal {
+  margin-block: var(--rf-space-3);
+}
+.p-divider::before {
+  border-color: var(--rf-border);
+}
+
+/* ── Drawer (node detail panel) ──────────────────────────────────────────── */
+.p-drawer {
+  background: var(--rf-surface);
+  border-left: 1px solid var(--rf-border);
+  box-shadow: var(--rf-shadow-xl);
+}
+.p-drawer-header {
+  padding: var(--rf-space-5) var(--rf-space-6) var(--rf-space-4);
+  border-bottom: 1px solid var(--rf-border);
+  font-family: var(--rf-font-display);
+  font-weight: var(--rf-weight-semibold);
+  font-size: var(--rf-text-md);
+  letter-spacing: -0.01em;
+  color: var(--rf-text);
+}
+.p-drawer-content {
+  padding: var(--rf-space-5) var(--rf-space-6);
+}
+
+/* ── AutoComplete overlay ────────────────────────────────────────────────── */
+.p-autocomplete-overlay {
+  border: 1px solid var(--rf-border);
+  border-radius: var(--rf-radius-md);
+  box-shadow: var(--rf-shadow-lg);
+  font-family: var(--rf-font-body);
+  font-size: var(--rf-text-sm);
+  background: var(--rf-surface);
+}
+.p-autocomplete-option {
+  padding: var(--rf-space-2) var(--rf-space-4);
+  font-size: var(--rf-text-sm);
+}
+
+/* ── Select overlay ──────────────────────────────────────────────────────── */
+.p-select-overlay {
+  border: 1px solid var(--rf-border);
+  border-radius: var(--rf-radius-md);
+  box-shadow: var(--rf-shadow-lg);
+  font-family: var(--rf-font-body);
+  background: var(--rf-surface);
+}
+.p-select-option {
+  font-size: var(--rf-text-sm);
+  padding: var(--rf-space-2) var(--rf-space-4);
+}
+
+/* ── DataTable (node properties) ─────────────────────────────────────────── */
+.p-datatable {
+  font-family: var(--rf-font-body);
+  font-size: var(--rf-text-xs);
+  border-radius: var(--rf-radius-md);
+  overflow: hidden;
+  border: 1px solid var(--rf-border);
+}
+.p-datatable-thead > tr > th {
+  font-size: var(--rf-text-xs);
+  font-weight: var(--rf-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--rf-text-subtle);
+  padding: var(--rf-space-2) var(--rf-space-3);
+  background: var(--rf-surface-raised);
+  border-bottom: 1px solid var(--rf-border);
+}
+.p-datatable-tbody > tr > td {
+  padding: var(--rf-space-2) var(--rf-space-3);
+  border-bottom: 1px solid var(--rf-border);
+  font-size: var(--rf-text-xs);
+  vertical-align: top;
+}
+.p-datatable-tbody > tr:last-child > td {
+  border-bottom: none;
+}
+
+/* ── Slider ──────────────────────────────────────────────────────────────── */
+.p-slider-handle {
+  border-radius: var(--rf-radius-full);
+  transition:
+    box-shadow var(--rf-duration-fast) var(--rf-ease-out),
+    transform var(--rf-duration-fast) var(--rf-ease-out);
+}
+.p-slider-handle:hover {
+  transform: scale(1.2);
 }

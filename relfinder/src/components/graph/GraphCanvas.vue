@@ -2,13 +2,16 @@
   <div class="graph-canvas-wrapper">
     <!-- Empty state -->
     <div v-if="!hasGraph && !loading" class="canvas-empty">
-      <i class="pi pi-share-alt empty-icon" />
-      <p>Select two entities and click <strong>Find Relationships</strong></p>
+      <div class="empty-icon-wrap">
+        <i class="pi pi-share-alt empty-icon" />
+      </div>
+      <p class="empty-title">No graph loaded</p>
+      <p class="empty-hint">Select two entities and click <strong>Find Relationships</strong></p>
     </div>
 
     <!-- Loading overlay -->
     <div v-if="loading" class="canvas-loading">
-      <ProgressSpinner stroke-width="3" />
+      <ProgressSpinner stroke-width="3" style="width: 48px; height: 48px" />
       <p>Searching for paths…</p>
     </div>
 
@@ -306,16 +309,36 @@ defineExpose({ PALETTE })
   pointer-events: none;
 }
 
-.empty-icon {
-  font-size: 3rem;
-  color: var(--rf-text-subtle);
-  opacity: 0.5;
+.empty-icon-wrap {
+  width: 72px;
+  height: 72px;
+  border-radius: var(--rf-radius-full);
+  background: var(--rf-primary-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--rf-space-2);
 }
 
-.canvas-empty p {
+.empty-icon {
+  font-size: 2rem;
+  color: var(--rf-primary);
+  opacity: 0.7;
+}
+
+.empty-title {
   margin: 0;
-  font-size: var(--rf-text-base);
-  max-width: 260px;
+  font-family: var(--rf-font-display);
+  font-size: var(--rf-text-md);
+  font-weight: var(--rf-weight-semibold);
+  color: var(--rf-text);
+  letter-spacing: -0.01em;
+}
+
+.empty-hint {
+  margin: 0;
+  font-size: var(--rf-text-sm);
+  max-width: 220px;
   line-height: var(--rf-leading-relaxed);
   color: var(--rf-text-muted);
 }
