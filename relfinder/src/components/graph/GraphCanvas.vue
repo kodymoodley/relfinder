@@ -39,6 +39,16 @@
         @click="rerunLayout"
         aria-label="Re-run layout"
       />
+      <Divider layout="vertical" />
+      <Button
+        :icon="showEdgeLabels ? 'pi pi-eye' : 'pi pi-eye-slash'"
+        text
+        rounded
+        size="small"
+        :style="{ opacity: showEdgeLabels ? 1 : 0.45 }"
+        @click="toggleEdgeLabels"
+        :aria-label="showEdgeLabels ? 'Hide edge labels' : 'Show edge labels'"
+      />
     </div>
   </div>
 </template>
@@ -80,6 +90,7 @@ let cy: Core | null = null
 let layout: Layouts | null = null
 
 const hasGraph = ref(false)
+const showEdgeLabels = ref(true)
 
 // Colour palette for node classes — matches --rf-cat-* tokens in tokens.css
 const PALETTE = [
@@ -209,11 +220,19 @@ function initCytoscape() {
           width: 2.5,
         },
       },
+      {
+        selector: 'edge.no-label',
+        style: { label: '' },
+      },
     ],
     layout: { name: 'preset' },
   })
 
   runLayout()
+
+  if (!showEdgeLabels.value) {
+    cy.edges().addClass('no-label')
+  }
 
   // Node click → emit event to parent
   cy.on('tap', 'node', (evt) => {
@@ -276,6 +295,15 @@ function fitGraph() {
 }
 function rerunLayout() {
   runLayout()
+}
+
+function toggleEdgeLabels() {
+  showEdgeLabels.value = !showEdgeLabels.value
+  if (showEdgeLabels.value) {
+    cy?.edges().removeClass('no-label')
+  } else {
+    cy?.edges().addClass('no-label')
+  }
 }
 
 // Re-render whenever the graph data changes
