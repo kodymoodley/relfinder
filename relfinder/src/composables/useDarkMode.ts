@@ -5,7 +5,8 @@ const STORAGE_KEY = 'rf-color-scheme'
 // Module-level so all components share one instance
 const dark = ref(
   localStorage.getItem(STORAGE_KEY) === 'dark' ||
-  (!localStorage.getItem(STORAGE_KEY) && window.matchMedia('(prefers-color-scheme: dark)').matches),
+    (!localStorage.getItem(STORAGE_KEY) &&
+      window.matchMedia('(prefers-color-scheme: dark)').matches),
 )
 
 watchEffect(() => {
@@ -16,6 +17,8 @@ watchEffect(() => {
 export function useDarkMode() {
   return {
     dark,
-    toggle: () => { dark.value = !dark.value },
+    toggle: () => {
+      dark.value = !dark.value
+    },
   }
 }

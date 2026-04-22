@@ -53,13 +53,15 @@
       <button type="button" class="collapsible-toggle" @click="showProxy = !showProxy">
         <span class="collapsible-label">CORS Proxy</span>
         <span class="collapsible-badge">optional</span>
-        <i :class="['pi', showProxy ? 'pi-chevron-up' : 'pi-chevron-down', 'collapsible-chevron']" />
+        <i
+          :class="['pi', showProxy ? 'pi-chevron-up' : 'pi-chevron-down', 'collapsible-chevron']"
+        />
       </button>
       <Transition name="collapse">
         <div v-show="showProxy" class="collapsible-body">
           <p class="fieldset-hint">
-            Only needed when your SPARQL endpoint does not support cross-origin
-            requests. Start the bundled Caddy proxy and enter its URL here.
+            Only needed when your SPARQL endpoint does not support cross-origin requests. Start the
+            bundled Caddy proxy and enter its URL here.
           </p>
           <div class="field">
             <label for="proxyUrl">Proxy URL</label>
@@ -180,10 +182,9 @@ async function onSubmit() {
   connectionError.value = ''
 
   const endpointUrl = form.proxyUrl.trim() || form.endpointUrl.trim()
-  const authHeader =
-    form.username.trim()
-      ? `Basic ${btoa(`${form.username.trim()}:${form.password}`)}`
-      : undefined
+  const authHeader = form.username.trim()
+    ? `Basic ${btoa(`${form.username.trim()}:${form.password}`)}`
+    : undefined
 
   try {
     await testConnection(endpointUrl, authHeader)
@@ -197,7 +198,7 @@ async function onSubmit() {
 
     router.push({ name: 'graph' })
   } catch (err) {
-    console.error('Connection test failed:', err);
+    console.error('Connection test failed:', err)
     connectionError.value =
       err instanceof Error
         ? `Could not reach endpoint: ${err.message}`

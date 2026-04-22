@@ -106,15 +106,8 @@
         >
           <p class="section-label">Legend</p>
           <div class="legend">
-            <div
-              v-for="cls in graph.classes"
-              :key="cls"
-              class="legend-item"
-            >
-              <span
-                class="legend-dot"
-                :style="{ background: classColors.get(cls) ?? '#94a3b8' }"
-              />
+            <div v-for="cls in graph.classes" :key="cls" class="legend-item">
+              <span class="legend-dot" :style="{ background: classColors.get(cls) ?? '#94a3b8' }" />
               <span class="legend-label" :title="cls">{{ shortIri(cls) }}</span>
             </div>
           </div>
@@ -202,8 +195,14 @@ const graphOptions = ref<GraphOptions>({
 // ── Class colour assignment ───────────────────────────────────────────────────
 
 const PALETTE = [
-  '#06b6d4', '#10b981', '#a78bfa', '#fb923c',
-  '#f472b6', '#34d399', '#60a5fa', '#facc15',
+  '#06b6d4',
+  '#10b981',
+  '#a78bfa',
+  '#fb923c',
+  '#f472b6',
+  '#34d399',
+  '#60a5fa',
+  '#facc15',
 ]
 
 const classColors = ref(new Map<string, string>())
@@ -271,11 +270,13 @@ function onDisconnect() {
 // ── Example auto-run (from quick-start examples panel) ───────────────────────
 
 onMounted(() => {
-  const state = (history.state as Record<string, unknown>)?.example as {
-    entity1: EntitySearchResult
-    entity2: EntitySearchResult
-    options: Partial<GraphOptions>
-  } | undefined
+  const state = (history.state as Record<string, unknown>)?.example as
+    | {
+        entity1: EntitySearchResult
+        entity2: EntitySearchResult
+        options: Partial<GraphOptions>
+      }
+    | undefined
   if (!state) return
   entity1.value = state.entity1
   entity2.value = state.entity2
@@ -425,7 +426,9 @@ function shortIri(iri: string): string {
   height: 10px;
   border-radius: var(--rf-radius-full);
   flex-shrink: 0;
-  box-shadow: 0 0 0 2px rgb(255 255 255 / 0.5), 0 1px 3px rgb(0 0 0 / 0.15);
+  box-shadow:
+    0 0 0 2px rgb(255 255 255 / 0.5),
+    0 1px 3px rgb(0 0 0 / 0.15);
 }
 
 .legend-label {

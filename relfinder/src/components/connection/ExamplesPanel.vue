@@ -5,7 +5,9 @@
       v-motion
       :initial="{ opacity: 0, y: 16 }"
       :enter="{ opacity: 1, y: 0, transition: { duration: 360, ease: 'easeOut' } }"
-    >Quick-start examples</h2>
+    >
+      Quick-start examples
+    </h2>
     <p
       class="examples-subheading"
       v-motion
@@ -23,7 +25,11 @@
         :class="{ 'example-card--sparql': example.kind === 'sparql' }"
         v-motion
         :initial="{ opacity: 0, y: 24 }"
-        :enter="{ opacity: 1, y: 0, transition: { duration: 380, delay: 160 + idx * 70, ease: 'easeOut' } }"
+        :enter="{
+          opacity: 1,
+          y: 0,
+          transition: { duration: 380, delay: 160 + idx * 70, ease: 'easeOut' },
+        }"
       >
         <!-- Kind badge -->
         <span class="kind-badge" :class="`kind-badge--${example.kind}`">
@@ -103,13 +109,15 @@ async function runExample(example: Example) {
       name: 'graph',
       // Cast needed: HistoryState only accepts index-signature types, but the
       // data is plain-serializable at runtime so the cast is safe.
-      state: JSON.parse(JSON.stringify({
-        example: {
-          entity1: example.entity1,
-          entity2: example.entity2,
-          options: example.options,
-        },
-      })),
+      state: JSON.parse(
+        JSON.stringify({
+          example: {
+            entity1: example.entity1,
+            entity2: example.entity2,
+            options: example.options,
+          },
+        }),
+      ),
     })
   } catch (err) {
     errorId.value = example.id
@@ -246,8 +254,14 @@ async function runExample(example: Example) {
   white-space: nowrap;
 }
 
-.entity-chip--1 .pi-circle-fill { color: var(--rf-node-entity1); font-size: 0.5rem; }
-.entity-chip--2 .pi-circle-fill { color: var(--rf-node-entity2); font-size: 0.5rem; }
+.entity-chip--1 .pi-circle-fill {
+  color: var(--rf-node-entity1);
+  font-size: 0.5rem;
+}
+.entity-chip--2 .pi-circle-fill {
+  color: var(--rf-node-entity2);
+  font-size: 0.5rem;
+}
 
 .pair-arrow {
   font-size: 0.7rem;

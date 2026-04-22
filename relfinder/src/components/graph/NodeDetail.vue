@@ -34,9 +34,7 @@
           {{ propsError }}
         </Message>
 
-        <p v-else-if="dataProps.length === 0" class="props-empty">
-          No data properties found.
-        </p>
+        <p v-else-if="dataProps.length === 0" class="props-empty">No data properties found.</p>
 
         <DataTable
           v-else
@@ -99,7 +97,13 @@ watch(
       const store = connectionStore.rdfStore ?? undefined
       const effectiveContext = context ?? { endpointUrl: '' }
 
-      dataProps.value = await fetchDataProperties(node.iri, effectiveContext, 50, store, props.language ?? 'en')
+      dataProps.value = await fetchDataProperties(
+        node.iri,
+        effectiveContext,
+        50,
+        store,
+        props.language ?? 'en',
+      )
     } catch {
       propsError.value = 'Could not load properties for this node.'
     } finally {

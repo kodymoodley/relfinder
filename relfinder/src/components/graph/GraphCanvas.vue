@@ -22,9 +22,23 @@
     <div v-if="hasGraph" class="canvas-toolbar">
       <Button icon="pi pi-plus" text rounded size="small" @click="zoomIn" aria-label="Zoom in" />
       <Button icon="pi pi-minus" text rounded size="small" @click="zoomOut" aria-label="Zoom out" />
-      <Button icon="pi pi-arrows-alt" text rounded size="small" @click="fitGraph" aria-label="Fit graph" />
+      <Button
+        icon="pi pi-arrows-alt"
+        text
+        rounded
+        size="small"
+        @click="fitGraph"
+        aria-label="Fit graph"
+      />
       <Divider layout="vertical" />
-      <Button icon="pi pi-refresh" text rounded size="small" @click="rerunLayout" aria-label="Re-run layout" />
+      <Button
+        icon="pi pi-refresh"
+        text
+        rounded
+        size="small"
+        @click="rerunLayout"
+        aria-label="Re-run layout"
+      />
     </div>
   </div>
 </template>
@@ -69,8 +83,14 @@ const hasGraph = ref(false)
 
 // Colour palette for node classes — matches --rf-cat-* tokens in tokens.css
 const PALETTE = [
-  '#06b6d4', '#10b981', '#a78bfa', '#fb923c',
-  '#f472b6', '#34d399', '#60a5fa', '#facc15',
+  '#06b6d4',
+  '#10b981',
+  '#a78bfa',
+  '#fb923c',
+  '#f472b6',
+  '#34d399',
+  '#60a5fa',
+  '#facc15',
 ]
 
 function nodeColor(ele: NodeSingular): string {
@@ -85,7 +105,9 @@ function nodeColor(ele: NodeSingular): string {
 // Prefix node IDs with "n" so they are unambiguously strings. Purely numeric
 // IDs like "2" can be coerced to the number 2 inside cytoscape-d3-force's D3
 // forceLink lookup, causing a Map key mismatch and a "node not found" error.
-function nodeId(id: number) { return `n${id}` }
+function nodeId(id: number) {
+  return `n${id}`
+}
 
 function buildElements() {
   const nodeEls = props.nodes.map((n) => ({
@@ -167,11 +189,11 @@ function initCytoscape() {
           'curve-style': 'bezier',
           'target-arrow-shape': 'triangle',
           'target-arrow-color': '#a1a1aa', // --rf-edge
-          'line-color': '#a1a1aa',         // --rf-edge
+          'line-color': '#a1a1aa', // --rf-edge
           width: 1.5,
           'font-size': '9px',
           'font-family': 'DM Sans, system-ui, sans-serif',
-          color: '#71717a',                // --rf-edge-label
+          color: '#71717a', // --rf-edge-label
           'text-rotation': 'autorotate',
           'text-background-color': '#ffffff',
           'text-background-opacity': 0.85,
@@ -182,7 +204,7 @@ function initCytoscape() {
       {
         selector: 'edge:selected',
         style: {
-          'line-color': '#0891b2',         // --rf-primary
+          'line-color': '#0891b2', // --rf-primary
           'target-arrow-color': '#0891b2',
           width: 2.5,
         },
@@ -196,7 +218,11 @@ function initCytoscape() {
   // Node click → emit event to parent
   cy.on('tap', 'node', (evt) => {
     const nodeData = evt.target.data() as {
-      id: string; label: string; iri: string; class: string; isEndpoint: boolean
+      id: string
+      label: string
+      iri: string
+      class: string
+      isEndpoint: boolean
     }
     const graphNode: GraphNode = {
       id: parseInt(nodeData.id.slice(1)), // strip the "n" prefix
@@ -239,10 +265,18 @@ function runLayout() {
   layout.run()
 }
 
-function zoomIn() { cy?.zoom(cy.zoom() * 1.2) }
-function zoomOut() { cy?.zoom(cy.zoom() / 1.2) }
-function fitGraph() { cy?.fit(undefined, 40) }
-function rerunLayout() { runLayout() }
+function zoomIn() {
+  cy?.zoom(cy.zoom() * 1.2)
+}
+function zoomOut() {
+  cy?.zoom(cy.zoom() / 1.2)
+}
+function fitGraph() {
+  cy?.fit(undefined, 40)
+}
+function rerunLayout() {
+  runLayout()
+}
 
 // Re-render whenever the graph data changes
 watch(

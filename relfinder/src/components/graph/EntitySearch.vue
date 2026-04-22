@@ -26,11 +26,7 @@
         <template #option="{ option }">
           <div class="suggestion-item">
             <span class="suggestion-label">{{ option.label }}</span>
-            <Tag
-              :value="shortClass(option.class)"
-              severity="secondary"
-              class="suggestion-tag"
-            />
+            <Tag :value="shortClass(option.class)" severity="secondary" class="suggestion-tag" />
           </div>
         </template>
         <template #empty>

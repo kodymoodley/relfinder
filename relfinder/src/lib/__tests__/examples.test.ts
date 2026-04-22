@@ -40,33 +40,37 @@ function sparqlExamples(): SparqlExample[] {
 describe('TTL examples — node count between 10 and 50', () => {
   for (const example of ttlExamples()) {
     // eslint-disable-next-line vitest/valid-title
-    it(example.title, async () => {
-      const store = await parseRdfContent(example.ttlContent, 'text/turtle')
+    it(
+      example.title,
+      async () => {
+        const store = await parseRdfContent(example.ttlContent, 'text/turtle')
 
-      const graph = await findRelationships(
-        example.entity1.iri,
-        example.entity2.iri,
-        example.options.maxDistance,
-        { endpointUrl: '' },
-        {
-          ignoredProperties: example.options.ignoredProperties,
-          avoidCycles: example.options.avoidCycles,
-          store,
-          language: example.options.language,
-        },
-      )
+        const graph = await findRelationships(
+          example.entity1.iri,
+          example.entity2.iri,
+          example.options.maxDistance,
+          { endpointUrl: '' },
+          {
+            ignoredProperties: example.options.ignoredProperties,
+            avoidCycles: example.options.avoidCycles,
+            store,
+            language: example.options.language,
+          },
+        )
 
-      expect(graph.nodes.length).toBeGreaterThanOrEqual(MIN_NODES)
-      expect(graph.nodes.length).toBeLessThanOrEqual(MAX_NODES)
+        expect(graph.nodes.length).toBeGreaterThanOrEqual(MIN_NODES)
+        expect(graph.nodes.length).toBeLessThanOrEqual(MAX_NODES)
 
-      // Sanity: both endpoints must be present in the graph
-      const iris = new Set(graph.nodes.map((n) => n.iri))
-      expect(iris.has(example.entity1.iri)).toBe(true)
-      expect(iris.has(example.entity2.iri)).toBe(true)
+        // Sanity: both endpoints must be present in the graph
+        const iris = new Set(graph.nodes.map((n) => n.iri))
+        expect(iris.has(example.entity1.iri)).toBe(true)
+        expect(iris.has(example.entity2.iri)).toBe(true)
 
-      // Must have at least one edge
-      expect(graph.edges.length).toBeGreaterThanOrEqual(1)
-    }, 30_000)
+        // Must have at least one edge
+        expect(graph.edges.length).toBeGreaterThanOrEqual(1)
+      },
+      30_000,
+    )
   }
 })
 
@@ -77,28 +81,32 @@ describe.skipIf(!process.env['INTEGRATION'])(
   () => {
     for (const example of sparqlExamples()) {
       // eslint-disable-next-line vitest/valid-title
-      it(example.title, async () => {
-        const graph = await findRelationships(
-          example.entity1.iri,
-          example.entity2.iri,
-          example.options.maxDistance,
-          { endpointUrl: example.endpointUrl },
-          {
-            ignoredProperties: example.options.ignoredProperties,
-            avoidCycles: example.options.avoidCycles,
-            language: example.options.language,
-          },
-        )
+      it(
+        example.title,
+        async () => {
+          const graph = await findRelationships(
+            example.entity1.iri,
+            example.entity2.iri,
+            example.options.maxDistance,
+            { endpointUrl: example.endpointUrl },
+            {
+              ignoredProperties: example.options.ignoredProperties,
+              avoidCycles: example.options.avoidCycles,
+              language: example.options.language,
+            },
+          )
 
-        expect(graph.nodes.length).toBeGreaterThanOrEqual(MIN_NODES)
-        expect(graph.nodes.length).toBeLessThanOrEqual(MAX_NODES)
+          expect(graph.nodes.length).toBeGreaterThanOrEqual(MIN_NODES)
+          expect(graph.nodes.length).toBeLessThanOrEqual(MAX_NODES)
 
-        const iris = new Set(graph.nodes.map((n) => n.iri))
-        expect(iris.has(example.entity1.iri)).toBe(true)
-        expect(iris.has(example.entity2.iri)).toBe(true)
+          const iris = new Set(graph.nodes.map((n) => n.iri))
+          expect(iris.has(example.entity1.iri)).toBe(true)
+          expect(iris.has(example.entity2.iri)).toBe(true)
 
-        expect(graph.edges.length).toBeGreaterThanOrEqual(1)
-      }, 60_000) // DBpedia can be slow — generous timeout
+          expect(graph.edges.length).toBeGreaterThanOrEqual(1)
+        },
+        60_000,
+      ) // DBpedia can be slow — generous timeout
     }
   },
 )

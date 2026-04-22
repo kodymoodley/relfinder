@@ -200,11 +200,7 @@ export function direct(
 
   if (distance === 1) {
     variables.pred.push('?pf1')
-    return completeQuery(
-      queryConfig,
-      `${uri(entity1IRI)} ?pf1 ${uri(entity2IRI)}`,
-      variables,
-    )
+    return completeQuery(queryConfig, `${uri(entity1IRI)} ?pf1 ${uri(entity2IRI)}`, variables)
   }
 
   let coreQuery = `${uri(entity1IRI)} ?pf1 ?of1 .\n`

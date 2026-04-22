@@ -33,9 +33,7 @@ const engine = new QueryEngine()
  * when `authorizationHeader` is present. Falls back to the global `fetch`
  * when no credentials are configured.
  */
-function makeFetch(
-  authorizationHeader?: string,
-): typeof fetch {
+function makeFetch(authorizationHeader?: string): typeof fetch {
   if (!authorizationHeader) return fetch
 
   return (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
@@ -101,10 +99,7 @@ export async function executeSelect(
  * RDF.js `Source` interface at runtime but its TypeScript declarations do not
  * perfectly match Comunica's internal source union type.
  */
-export async function executeSelectOnStore(
-  query: string,
-  store: Store,
-): Promise<SparqlBinding[]> {
+export async function executeSelectOnStore(query: string, store: Store): Promise<SparqlBinding[]> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const bindingsStream = await engine.queryBindings(query, { sources: [store as any] })
   const rawBindings = await bindingsStream.toArray()

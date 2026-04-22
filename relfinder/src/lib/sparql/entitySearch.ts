@@ -40,14 +40,8 @@ function chunks<T>(arr: T[], size: number): T[][] {
 }
 
 /** Executes a query against either a remote endpoint or a local store. */
-async function runSelect(
-  query: string,
-  context: QueryContext,
-  store?: Store,
-) {
-  return store
-    ? executeSelectOnStore(query, store)
-    : executeSelect(query, context)
+async function runSelect(query: string, context: QueryContext, store?: Store) {
+  return store ? executeSelectOnStore(query, store) : executeSelect(query, context)
 }
 
 // ── Entity search ─────────────────────────────────────────────────────────────
@@ -82,9 +76,7 @@ export async function searchEntities(
     ? `FILTER (STRSTARTS(LCASE(STR(?label)), LCASE("${textFilter.trim().replace(/\\/g, '\\\\').replace(/"/g, '\\"')}")))`
     : ''
 
-  const langFilter = language
-    ? `FILTER (lang(?label) = '${language}' || lang(?label) = '')`
-    : ''
+  const langFilter = language ? `FILTER (lang(?label) = '${language}' || lang(?label) = '')` : ''
 
   let query: string
 
@@ -169,9 +161,7 @@ export async function fetchAvailableClasses(
 
   const bindings = await runSelect(query, context, store)
 
-  return bindings
-    .filter((b) => b['type'])
-    .map((b) => b['type']!.value)
+  return bindings.filter((b) => b['type']).map((b) => b['type']!.value)
 }
 
 // ── Label fetching ────────────────────────────────────────────────────────────
@@ -195,12 +185,12 @@ export async function fetchLabels(
   if (iris.length === 0) return new Map()
 
   const subqueries = iris
-    .map((iri) => `{ ?p <http://www.w3.org/2000/01/rdf-schema#label> ?label FILTER(?p = <${iri}>) }`)
+    .map(
+      (iri) => `{ ?p <http://www.w3.org/2000/01/rdf-schema#label> ?label FILTER(?p = <${iri}>) }`,
+    )
     .join('\n    UNION\n    ')
 
-  const langFilter = language
-    ? `FILTER (lang(?label) = '${language}' || lang(?label) = '')`
-    : ''
+  const langFilter = language ? `FILTER (lang(?label) = '${language}' || lang(?label) = '')` : ''
 
   const query = `
     SELECT * WHERE {
@@ -244,7 +234,10 @@ export async function fetchTypes(
   if (iris.length === 0) return new Map()
 
   const subqueries = iris
-    .map((iri) => `{ ?o <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?type FILTER(?o = <${iri}> && !isBlank(?type)) }`)
+    .map(
+      (iri) =>
+        `{ ?o <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?type FILTER(?o = <${iri}> && !isBlank(?type)) }`,
+    )
     .join('\n    UNION\n    ')
 
   const query = `
@@ -423,7 +416,15 @@ export async function findRelationships(
     options.allowedObjectProperties ?? [],
   )
 
-  await enrichGraph(nodes, edges, context, options.ontologyPrefix ?? '', 50, options.store, options.language ?? 'en')
+  await enrichGraph(
+    nodes,
+    edges,
+    context,
+    options.ontologyPrefix ?? '',
+    50,
+    options.store,
+    options.language ?? 'en',
+  )
 
   const mergedEdges = mergeEdgeDuplicates(edges)
   const classes = [...new Set(nodes.map((n) => n.class))]

@@ -23,8 +23,8 @@
     <div class="option-group">
       <label class="option-label" for="lang-input">Label Language</label>
       <p class="option-hint">
-        RDF language tag for labels (e.g. <code>en</code>, <code>de</code>, <code>fr</code>).
-        Leave empty to accept any language.
+        RDF language tag for labels (e.g. <code>en</code>, <code>de</code>, <code>fr</code>). Leave
+        empty to accept any language.
       </p>
       <InputText
         id="lang-input"
@@ -40,16 +40,12 @@
     <div class="option-group">
       <label class="option-label">Extra Label Properties</label>
       <p class="option-hint">
-        Additional predicate IRIs to use as labels when searching entities
-        (e.g. <code>http://schema.org/alternateName</code>).
+        Additional predicate IRIs to use as labels when searching entities (e.g.
+        <code>http://schema.org/alternateName</code>).
       </p>
 
       <div v-if="modelValue.customLabelProperties.length > 0" class="chip-list">
-        <div
-          v-for="(iri, idx) in modelValue.customLabelProperties"
-          :key="iri"
-          class="prop-chip"
-        >
+        <div v-for="(iri, idx) in modelValue.customLabelProperties" :key="iri" class="prop-chip">
           <span class="prop-chip-label" :title="iri">{{ shortIri(iri) }}</span>
           <button class="chip-remove" @click="removeCustomLabel(idx)" aria-label="Remove">
             <span aria-hidden="true">×</span>
@@ -79,14 +75,12 @@
     <!-- Entity class filter -->
     <div class="option-group">
       <label class="option-label">Entity Class Filter</label>
-      <p class="option-hint">Restrict entity search to specific RDF types. Leave empty to allow all.</p>
+      <p class="option-hint">
+        Restrict entity search to specific RDF types. Leave empty to allow all.
+      </p>
 
       <div v-if="modelValue.allowedClasses.length > 0" class="chip-list">
-        <div
-          v-for="(iri, idx) in modelValue.allowedClasses"
-          :key="iri"
-          class="prop-chip"
-        >
+        <div v-for="(iri, idx) in modelValue.allowedClasses" :key="iri" class="prop-chip">
           <span class="prop-chip-label" :title="iri">{{ shortIri(iri) }}</span>
           <button class="chip-remove" @click="removeClass(idx)" aria-label="Remove">
             <span aria-hidden="true">×</span>
@@ -122,11 +116,7 @@
       <label class="option-label">Ignored Properties</label>
       <p class="option-hint">Property IRIs excluded from all paths.</p>
       <div class="chip-list">
-        <div
-          v-for="(iri, idx) in modelValue.ignoredProperties"
-          :key="iri"
-          class="prop-chip"
-        >
+        <div v-for="(iri, idx) in modelValue.ignoredProperties" :key="iri" class="prop-chip">
           <span class="prop-chip-label" :title="iri">{{ shortIri(iri) }}</span>
           <button class="chip-remove" @click="removeIgnoredProp(idx)" aria-label="Remove">
             <span aria-hidden="true">×</span>
@@ -208,9 +198,7 @@ const cycleOptions = [
 
 // Only show classes not already selected
 const unselectedClasses = computed(() =>
-  availableClasses.value.filter(
-    (cls) => !props.modelValue.allowedClasses.includes(cls.iri),
-  ),
+  availableClasses.value.filter((cls) => !props.modelValue.allowedClasses.includes(cls.iri)),
 )
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -241,8 +229,7 @@ async function loadClasses() {
       .sort((a, b) => a.label.localeCompare(b.label))
     classesLoaded.value = true
   } catch (err) {
-    classLoadError.value =
-      err instanceof Error ? err.message : 'Could not load classes.'
+    classLoadError.value = err instanceof Error ? err.message : 'Could not load classes.'
   } finally {
     loadingClasses.value = false
   }

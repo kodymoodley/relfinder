@@ -19,9 +19,7 @@
 
       <template v-if="!loadedFile && !parsing">
         <i class="pi pi-upload drop-icon" />
-        <p class="drop-label">
-          Drop an RDF file here or <span class="drop-link">browse</span>
-        </p>
+        <p class="drop-label">Drop an RDF file here or <span class="drop-link">browse</span></p>
         <p class="drop-hint">Supported formats: .ttl, .n3, .nt, .nq, .trig</p>
       </template>
 
@@ -98,8 +96,7 @@ async function processFile(file: File) {
     tripleCount.value = storeSize(store)
     loadedFile.value = file
   } catch (err) {
-    parseError.value =
-      err instanceof Error ? err.message : 'Failed to parse the RDF file.'
+    parseError.value = err instanceof Error ? err.message : 'Failed to parse the RDF file.'
   } finally {
     parsing.value = false
   }

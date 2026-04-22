@@ -8,13 +8,7 @@
  * for executing the queries; this module only interprets the results.
  */
 
-import type {
-  SparqlBinding,
-  PathCollection,
-  GraphNode,
-  GraphEdge,
-  MergedEdge,
-} from './types'
+import type { SparqlBinding, PathCollection, GraphNode, GraphEdge, MergedEdge } from './types'
 
 // ── Internal helpers ──────────────────────────────────────────────────────────
 
@@ -60,7 +54,10 @@ function extractRelationshipNodes(
   dest: string,
   pathCollections: PathCollection[],
 ): Map<string, number> {
-  const nodes = new Map<string, number>([[src, 0], [dest, 1]])
+  const nodes = new Map<string, number>([
+    [src, 0],
+    [dest, 1],
+  ])
   let nodeIdx = 2
 
   for (const collection of pathCollections) {
@@ -199,10 +196,7 @@ function extractRelationshipEdges(
         // Direct single-hop connection — pathKeys[0] exists (length === 1).
         const propIri = path[pathKeys[0]!]!.value
 
-        if (
-          allowedObjectProperties.length > 0 &&
-          !allowedObjectProperties.includes(propIri)
-        ) {
+        if (allowedObjectProperties.length > 0 && !allowedObjectProperties.includes(propIri)) {
           continue
         }
 
@@ -221,12 +215,7 @@ function extractRelationshipEdges(
       } else {
         if (!isPropChainValid(path, allowedObjectProperties)) continue
 
-        for (const edge of extractPathEdges(
-          collection.src,
-          collection.dest,
-          path,
-          nodes,
-        )) {
+        for (const edge of extractPathEdges(collection.src, collection.dest, path, nodes)) {
           const key = JSON.stringify(edge)
           if (!edgeSet.has(key)) {
             edgeSet.add(key)
