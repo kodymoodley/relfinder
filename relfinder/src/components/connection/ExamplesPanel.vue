@@ -1,16 +1,29 @@
 <template>
   <div class="examples-panel">
-    <h2 class="examples-heading">Quick-start examples</h2>
-    <p class="examples-subheading">
+    <h2
+      class="examples-heading"
+      v-motion
+      :initial="{ opacity: 0, y: 16 }"
+      :enter="{ opacity: 1, y: 0, transition: { duration: 360, ease: 'easeOut' } }"
+    >Quick-start examples</h2>
+    <p
+      class="examples-subheading"
+      v-motion
+      :initial="{ opacity: 0, y: 12 }"
+      :enter="{ opacity: 1, y: 0, transition: { duration: 360, delay: 80, ease: 'easeOut' } }"
+    >
       Click any example to load the dataset and run the query instantly — no setup required.
     </p>
 
     <div class="examples-grid">
       <div
-        v-for="example in EXAMPLES"
+        v-for="(example, idx) in EXAMPLES"
         :key="example.id"
         class="example-card"
         :class="{ 'example-card--sparql': example.kind === 'sparql' }"
+        v-motion
+        :initial="{ opacity: 0, y: 24 }"
+        :enter="{ opacity: 1, y: 0, transition: { duration: 380, delay: 160 + idx * 70, ease: 'easeOut' } }"
       >
         <!-- Kind badge -->
         <span class="kind-badge" :class="`kind-badge--${example.kind}`">

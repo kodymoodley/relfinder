@@ -287,10 +287,12 @@ defineExpose({ PALETTE })
 .cy-container {
   width: 100%;
   height: 100%;
+  opacity: 1;
+  transition: opacity var(--rf-duration-base) var(--rf-ease-out);
 }
 
 .cy-container.hidden {
-  visibility: hidden;
+  opacity: 0;
   pointer-events: none;
 }
 

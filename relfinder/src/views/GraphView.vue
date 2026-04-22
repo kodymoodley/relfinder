@@ -70,7 +70,13 @@
         </section>
 
         <!-- Results summary -->
-        <section v-if="graph" class="sidebar-section results-summary">
+        <section
+          v-if="graph"
+          class="sidebar-section results-summary"
+          v-motion
+          :initial="{ opacity: 0, x: -12 }"
+          :enter="{ opacity: 1, x: 0, transition: { duration: 300, ease: 'easeOut' } }"
+        >
           <div class="summary-row">
             <span class="summary-label">Nodes</span>
             <Tag :value="String(graph.nodes.length)" severity="secondary" rounded />
@@ -82,7 +88,13 @@
         </section>
 
         <!-- Legend -->
-        <section v-if="graph && graph.classes.length > 0" class="sidebar-section">
+        <section
+          v-if="graph && graph.classes.length > 0"
+          class="sidebar-section"
+          v-motion
+          :initial="{ opacity: 0, x: -12 }"
+          :enter="{ opacity: 1, x: 0, transition: { duration: 300, delay: 60, ease: 'easeOut' } }"
+        >
           <p class="section-label">Legend</p>
           <div class="legend">
             <div

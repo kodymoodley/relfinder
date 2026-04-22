@@ -1,6 +1,11 @@
 <template>
   <main class="connection-view">
-    <div class="connection-card">
+    <div
+      class="connection-card"
+      v-motion
+      :initial="{ opacity: 0, y: 32 }"
+      :enter="{ opacity: 1, y: 0, transition: { duration: 420, ease: 'easeOut' } }"
+    >
       <div class="card-header">
         <h1 class="app-title">RelFinder</h1>
         <p class="app-subtitle">Discover relationships in RDF knowledge graphs</p>
