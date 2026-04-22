@@ -39,7 +39,6 @@ function sparqlExamples(): SparqlExample[] {
 
 describe('TTL examples — node count between 10 and 50', () => {
   for (const example of ttlExamples()) {
-    // eslint-disable-next-line vitest/valid-title
     it(
       example.title,
       async () => {
@@ -80,7 +79,7 @@ describe.skipIf(!process.env['INTEGRATION'])(
   'DBpedia SPARQL examples — node count between 10 and 50 [INTEGRATION]',
   () => {
     for (const example of sparqlExamples()) {
-      // eslint-disable-next-line vitest/valid-title
+       
       it(
         example.title,
         async () => {
