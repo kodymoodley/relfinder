@@ -185,7 +185,7 @@ const searching = ref(false)
 const searchError = ref('')
 const selectedNode = ref<GraphNode | null>(null)
 const sidebarCollapsed = ref(false)
-const optionsOpen = ref(true)
+const optionsOpen = ref(false)
 
 const graphOptions = ref<GraphOptions>({
   maxDistance: 2,
