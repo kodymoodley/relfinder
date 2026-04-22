@@ -20,41 +20,80 @@
 
     <!-- Toolbar (zoom controls) -->
     <div v-if="hasGraph" class="canvas-toolbar">
-      <Button icon="pi pi-plus" text rounded size="small" @click="zoomIn" aria-label="Zoom in" />
-      <Button icon="pi pi-minus" text rounded size="small" @click="zoomOut" aria-label="Zoom out" />
       <Button
+        v-tooltip.top="'Zoom in'"
+        icon="pi pi-plus"
+        text rounded size="small"
+        @click="zoomIn"
+        aria-label="Zoom in"
+      />
+      <Button
+        v-tooltip.top="'Zoom out'"
+        icon="pi pi-minus"
+        text rounded size="small"
+        @click="zoomOut"
+        aria-label="Zoom out"
+      />
+      <Button
+        v-tooltip.top="'Fit graph to screen'"
         icon="pi pi-arrows-alt"
-        text
-        rounded
-        size="small"
+        text rounded size="small"
         @click="fitGraph"
         aria-label="Fit graph"
       />
       <Divider layout="vertical" />
       <Button
+        v-tooltip.top="'Re-run force layout'"
         icon="pi pi-refresh"
-        text
-        rounded
-        size="small"
+        text rounded size="small"
         @click="rerunLayout"
         aria-label="Re-run layout"
       />
       <Divider layout="vertical" />
       <Button
+        v-tooltip.top="showEdgeLabels ? 'Hide edge labels' : 'Show edge labels'"
         :icon="showEdgeLabels ? 'pi pi-eye' : 'pi pi-eye-slash'"
-        text
-        rounded
-        size="small"
+        text rounded size="small"
         :style="{ opacity: showEdgeLabels ? 1 : 0.45 }"
         @click="toggleEdgeLabels"
         :aria-label="showEdgeLabels ? 'Hide edge labels' : 'Show edge labels'"
       />
+      <Divider layout="vertical" />
+      <Button
+        v-tooltip.top="selectionMode === 'select' ? 'Back to pan mode' : 'Drag to select — focus labels on selection'"
+        icon="pi pi-expand"
+        text rounded size="small"
+        :style="{ color: selectionMode === 'select' ? 'var(--rf-primary)' : undefined }"
+        @click="toggleSelectionMode"
+        :aria-label="selectionMode === 'select' ? 'Back to pan mode' : 'Box select to focus labels'"
+      />
+      <template v-if="hasSelection">
+        <Divider layout="vertical" />
+        <Button
+          v-tooltip.top="'Filter subgraph'"
+          icon="pi pi-filter"
+          text rounded size="small"
+          @click="cropToSelection"
+          aria-label="Crop to selection"
+        />
+      </template>
+      <template v-if="cropHistory.length > 0">
+        <Divider layout="vertical" />
+        <Button
+          v-tooltip.top="'Undo filtering'"
+          icon="pi pi-undo"
+          text rounded size="small"
+          @click="undoCrop"
+          aria-label="Undo crop"
+        />
+      </template>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { useDarkMode } from '@/composables/useDarkMode'
 import cytoscape from 'cytoscape'
 import type { Core, NodeSingular, Layouts } from 'cytoscape'
 import d3Force from 'cytoscape-d3-force'
@@ -89,8 +128,13 @@ const cyContainer = ref<HTMLElement | null>(null)
 let cy: Core | null = null
 let layout: Layouts | null = null
 
+const { dark } = useDarkMode()
+
 const hasGraph = ref(false)
 const showEdgeLabels = ref(true)
+const selectionMode = ref<'pan' | 'select'>('pan')
+const hasSelection = ref(false)
+const cropHistory = ref<cytoscape.ElementDefinition[][]>([])
 
 // Colour palette for node classes — matches --rf-cat-* tokens in tokens.css
 const PALETTE = [
@@ -145,6 +189,8 @@ function initCytoscape() {
   if (!cyContainer.value) return
 
   cy?.destroy()
+  cropHistory.value = []
+  hasSelection.value = false
 
   cy = cytoscape({
     container: cyContainer.value,
@@ -185,10 +231,9 @@ function initCytoscape() {
       {
         selector: 'node:selected',
         style: {
-          'background-color': '#f59e0b', // --rf-node-selected / amber-500
-          'border-width': 3,
-          'border-color': 'rgba(255,255,255,0.85)',
-          'border-opacity': 1,
+          'background-color': dark.value ? '#e2e8f0' : '#0f172a',
+          color: dark.value ? '#0f172a' : '#ffffff',
+          'text-outline-width': 0,
         },
       },
       {
@@ -219,11 +264,13 @@ function initCytoscape() {
         },
       },
       {
-        selector: 'edge.no-label',
+        selector: '.no-label',
         style: { label: '' },
       },
     ],
     layout: { name: 'preset' },
+    userPanningEnabled: true,
+    boxSelectionEnabled: false,
   })
 
   runLayout()
@@ -231,6 +278,22 @@ function initCytoscape() {
   if (!showEdgeLabels.value) {
     cy.edges().addClass('no-label')
   }
+
+  if (selectionMode.value === 'select') {
+    cy.userPanningEnabled(false)
+    cy.boxSelectionEnabled(true)
+  }
+
+  cy.on('select unselect', () => {
+    const selected = cy!.elements(':selected')
+    hasSelection.value = selected.length > 0
+    if (selected.length > 0) {
+      cy!.elements().addClass('no-label')
+      selected.removeClass('no-label')
+    } else {
+      restoreLabels()
+    }
+  })
 
   // Node click → emit event to parent
   cy.on('tap', 'node', (evt) => {
@@ -295,6 +358,47 @@ function rerunLayout() {
   runLayout()
 }
 
+function restoreLabels() {
+  cy?.nodes().removeClass('no-label')
+  if (showEdgeLabels.value) {
+    cy?.edges().removeClass('no-label')
+  }
+}
+
+function cropToSelection() {
+  if (!cy) return
+  const selected = cy.elements(':selected')
+  if (selected.length === 0) return
+  cropHistory.value.push(cy.elements().jsons() as cytoscape.ElementDefinition[])
+  cy.elements().not(':selected').remove()
+  cy.elements().unselect()
+  hasSelection.value = false
+  restoreLabels()
+}
+
+function undoCrop() {
+  if (!cy || cropHistory.value.length === 0) return
+  const snapshot = cropHistory.value.pop()!
+  cy.elements().remove()
+  cy.add(snapshot)
+  hasSelection.value = false
+  restoreLabels()
+}
+
+function toggleSelectionMode() {
+  selectionMode.value = selectionMode.value === 'pan' ? 'select' : 'pan'
+  if (!cy) return
+  if (selectionMode.value === 'select') {
+    cy.userPanningEnabled(false)
+    cy.boxSelectionEnabled(true)
+  } else {
+    cy.userPanningEnabled(true)
+    cy.boxSelectionEnabled(false)
+    cy.elements().unselect()
+    restoreLabels()
+  }
+}
+
 function toggleEdgeLabels() {
   showEdgeLabels.value = !showEdgeLabels.value
   if (showEdgeLabels.value) {
@@ -303,6 +407,17 @@ function toggleEdgeLabels() {
     cy?.edges().addClass('no-label')
   }
 }
+
+watch(dark, (isDark) => {
+  if (!cy) return
+  cy.style()
+    .selector('node:selected')
+    .style({
+      'background-color': isDark ? '#e2e8f0' : '#0f172a',
+      color: isDark ? '#0f172a' : '#ffffff',
+    })
+    .update()
+})
 
 // Re-render whenever the graph data changes
 watch(

@@ -214,6 +214,13 @@
   color: var(--rf-text-on-primary);
 }
 
+/* ── Tooltip ─────────────────────────────────────────────────────────────── */
+.p-tooltip-text {
+  padding: 0.4rem 0.75rem;
+  font-family: var(--rf-font-body);
+  font-size: var(--rf-text-xs);
+}
+
 /* ── ProgressSpinner ─────────────────────────────────────────────────────── */
 .p-progressspinner-circle {
   stroke: var(--rf-primary) !important;
