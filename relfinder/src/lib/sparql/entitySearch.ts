@@ -118,6 +118,7 @@ export async function searchEntities(
     const builtinLabelProps = [
       'http://www.w3.org/2000/01/rdf-schema#label',
       'http://www.w3.org/2004/02/skos/core#prefLabel',
+      'http://www.w3.org/2004/02/skos/core#altLabel',
       'http://xmlns.com/foaf/0.1/name',
       'http://schema.org/name',
       'http://purl.org/dc/elements/1.1/title',
@@ -265,6 +266,7 @@ export async function fetchInstancesByClass(
     const labelProps = [
       'http://www.w3.org/2000/01/rdf-schema#label',
       'http://www.w3.org/2004/02/skos/core#prefLabel',
+      'http://www.w3.org/2004/02/skos/core#altLabel',
       'http://xmlns.com/foaf/0.1/name',
       'http://schema.org/name',
       'http://purl.org/dc/elements/1.1/title',
