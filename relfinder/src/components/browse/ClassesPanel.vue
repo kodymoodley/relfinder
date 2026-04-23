@@ -13,7 +13,7 @@
         v-model="searchQuery"
         type="text"
         class="search-input"
-        placeholder="Filter classes or instances…"
+        placeholder="Search classes and instances…"
         :disabled="loading"
       />
       <button
@@ -26,7 +26,7 @@
       </button>
     </div>
 
-    <!-- ── Loading ─────────────────────────────────────────────────────────── -->
+    <!-- ── Loading (initial class load) ───────────────────────────────────── -->
     <div v-if="loading" class="panel-feedback">
       <i class="pi pi-spin pi-spinner feedback-icon" />
       <span>Loading classes…</span>
@@ -37,71 +37,117 @@
       {{ error }}
     </Message>
 
-    <!-- ── Empty ───────────────────────────────────────────────────────────── -->
-    <div v-else-if="filteredClasses.length === 0" class="panel-feedback">
-      <i class="pi pi-info-circle feedback-icon" />
-      <span>{{ searchQuery ? 'No classes match your filter.' : 'No typed entities found.' }}</span>
-    </div>
-
-    <!-- ── Class list ──────────────────────────────────────────────────────── -->
-    <ul v-else class="class-list">
-      <li v-for="cls in filteredClasses" :key="cls.iri">
-        <!-- Class row -->
-        <button
-          class="class-row"
-          :class="{ 'class-row--active': expandedClass === cls.iri }"
-          :title="cls.iri"
-          @click="toggleClass(cls)"
-        >
-          <i
-            class="pi class-chevron"
-            :class="expandedClass === cls.iri ? 'pi-chevron-down' : 'pi-chevron-right'"
-          />
-          <span class="class-name">{{ cls.label }}</span>
-          <span class="class-count">{{ cls.count.toLocaleString() }}</span>
-        </button>
-
-        <!-- Instance list (expanded) -->
-        <div v-if="expandedClass === cls.iri" class="instance-section">
-          <div v-if="instancesLoading" class="instance-feedback">
-            <i class="pi pi-spin pi-spinner" />
-            <span>Loading instances…</span>
-          </div>
-          <div v-else-if="instancesError" class="instance-feedback instance-feedback--error">
-            {{ instancesError }}
-          </div>
-          <div
-            v-else-if="filteredInstances.length === 0"
-            class="instance-feedback"
+    <!-- ── Search results (flat list) ──────────────────────────────────────── -->
+    <template v-else-if="searchQuery">
+      <div v-if="searchMatches.length === 0" class="panel-feedback">
+        <i class="pi pi-info-circle feedback-icon" />
+        <span>No matches for "{{ searchQuery }}".</span>
+      </div>
+      <ul v-else class="class-list">
+        <li v-for="item in searchMatches" :key="item.iri">
+          <!-- Class match — click to expand -->
+          <button
+            v-if="item.type === 'class'"
+            class="class-row"
+            :class="{ 'class-row--active': expandedClass === item.iri }"
+            :title="item.iri"
+            @click="toggleClass(item as ClassInfo)"
           >
-            {{ searchQuery ? 'No instances match your filter.' : 'No instances found.' }}
-          </div>
-          <ul v-else class="instance-list">
-            <li
-              v-for="inst in filteredInstances"
-              :key="inst.iri"
-              class="instance-item"
-              :class="{ 'instance-item--pinned': pinnedStore.isPinned(inst.iri) }"
-              :title="inst.iri"
+            <i
+              class="pi class-chevron"
+              :class="instancesLoading && expandedClass === item.iri ? 'pi-spin pi-spinner' : 'pi-tag'"
+            />
+            <span class="class-name">{{ item.label }}</span>
+            <span class="class-count">{{ (item as ClassInfo).count.toLocaleString() }}</span>
+          </button>
+
+          <!-- Instance match — pin button -->
+          <div
+            v-else
+            class="instance-item"
+            :class="{ 'instance-item--pinned': pinnedStore.isPinned(item.iri) }"
+            :title="item.iri"
+          >
+            <div class="instance-info">
+              <span class="instance-label">{{ item.label }}</span>
+              <span class="instance-class">{{ shortIri(item.classIri!) }}</span>
+            </div>
+            <button
+              class="pin-btn"
+              :class="{ 'pin-btn--active': pinnedStore.isPinned(item.iri) }"
+              :disabled="pinnedStore.isFull && !pinnedStore.isPinned(item.iri)"
+              :aria-label="pinnedStore.isPinned(item.iri) ? 'Unpin entity' : 'Pin entity'"
+              @click.stop="togglePin(item.iri, item.label, item.classIri!)"
             >
-              <span class="instance-label">{{ inst.label }}</span>
-              <button
-                class="pin-btn"
-                :class="{ 'pin-btn--active': pinnedStore.isPinned(inst.iri) }"
-                :disabled="pinnedStore.isFull && !pinnedStore.isPinned(inst.iri)"
-                :aria-label="pinnedStore.isPinned(inst.iri) ? 'Unpin entity' : 'Pin entity'"
-                @click.stop="togglePin(inst, expandedClass!)"
+              <i class="pi" :class="pinnedStore.isPinned(item.iri) ? 'pi-bookmark-fill' : 'pi-bookmark'" />
+            </button>
+          </div>
+        </li>
+      </ul>
+    </template>
+
+    <!-- ── Accordion (no search) ───────────────────────────────────────────── -->
+    <template v-else>
+      <div v-if="classes.length === 0" class="panel-feedback">
+        <i class="pi pi-info-circle feedback-icon" />
+        <span>No typed entities found.</span>
+      </div>
+      <ul v-else class="class-list">
+        <li v-for="cls in classes" :key="cls.iri">
+          <button
+            class="class-row"
+            :class="{ 'class-row--active': expandedClass === cls.iri }"
+            :title="cls.iri"
+            @click="toggleClass(cls)"
+          >
+            <i
+              class="pi class-chevron"
+              :class="
+                instancesLoading && expandedClass === cls.iri
+                  ? 'pi-spin pi-spinner'
+                  : expandedClass === cls.iri
+                    ? 'pi-chevron-down'
+                    : 'pi-chevron-right'
+              "
+            />
+            <span class="class-name">{{ cls.label }}</span>
+            <span class="class-count">{{ cls.count.toLocaleString() }}</span>
+          </button>
+
+          <div v-if="expandedClass === cls.iri" class="instance-section">
+            <div v-if="instancesLoading" class="instance-feedback">
+              <span>Fetching instances…</span>
+            </div>
+            <div v-else-if="instancesError" class="instance-feedback instance-feedback--error">
+              {{ instancesError }}
+            </div>
+            <div v-else-if="currentInstances.length === 0" class="instance-feedback">
+              No instances found.
+            </div>
+            <ul v-else class="instance-list">
+              <li
+                v-for="inst in currentInstances"
+                :key="inst.iri"
+                class="instance-item"
+                :class="{ 'instance-item--pinned': pinnedStore.isPinned(inst.iri) }"
+                :title="inst.iri"
               >
-                <i
-                  class="pi"
-                  :class="pinnedStore.isPinned(inst.iri) ? 'pi-bookmark-fill' : 'pi-bookmark'"
-                />
-              </button>
-            </li>
-          </ul>
-        </div>
-      </li>
-    </ul>
+                <span class="instance-label">{{ inst.label }}</span>
+                <button
+                  class="pin-btn"
+                  :class="{ 'pin-btn--active': pinnedStore.isPinned(inst.iri) }"
+                  :disabled="pinnedStore.isFull && !pinnedStore.isPinned(inst.iri)"
+                  :aria-label="pinnedStore.isPinned(inst.iri) ? 'Unpin entity' : 'Pin entity'"
+                  @click.stop="togglePin(inst.iri, inst.label, cls.iri)"
+                >
+                  <i class="pi" :class="pinnedStore.isPinned(inst.iri) ? 'pi-bookmark-fill' : 'pi-bookmark'" />
+                </button>
+              </li>
+            </ul>
+          </div>
+        </li>
+      </ul>
+    </template>
   </div>
 </template>
 
@@ -111,6 +157,8 @@ import Message from 'primevue/message'
 import { useConnectionStore } from '@/stores/connection'
 import { usePinnedStore } from '@/stores/pinned'
 import { fetchClassesWithCounts, fetchInstancesByClass } from '@/lib/sparql/entitySearch'
+import { cacheGet } from '@/lib/cache/queryCache'
+import { shortIri } from '@/lib/utils/iri'
 import type { ClassInfo } from '@/lib/sparql/types'
 
 const connectionStore = useConnectionStore()
@@ -142,32 +190,48 @@ onMounted(async () => {
 
 const searchQuery = ref('')
 
-const filteredClasses = computed(() => {
-  if (!searchQuery.value) return classes.value
+// Flat items combining all classes and all instances loaded so far.
+// Grows as the user expands classes — each expansion adds to the pool.
+type FlatItem =
+  | (ClassInfo & { type: 'class'; classIri?: undefined })
+  | { type: 'instance'; iri: string; label: string; classIri: string }
+
+const flatItems = computed<FlatItem[]>(() => {
+  const items: FlatItem[] = classes.value.map((c) => ({ ...c, type: 'class' as const }))
+  for (const [classIri, insts] of cachedInstances.value) {
+    for (const inst of insts) {
+      items.push({ type: 'instance', iri: inst.iri, label: inst.label, classIri })
+    }
+  }
+  return items
+})
+
+const searchMatches = computed<FlatItem[]>(() => {
+  if (!searchQuery.value) return []
   const q = searchQuery.value.toLowerCase()
-  return classes.value.filter((c) => c.label.toLowerCase().includes(q) || c.iri.toLowerCase().includes(q))
+  return flatItems.value.filter(
+    (item) => item.label.toLowerCase().includes(q) || item.iri.toLowerCase().includes(q),
+  )
 })
 
 // ── Instance expansion ────────────────────────────────────────────────────────
 
+// Persists loaded instances across expand/collapse so they remain searchable.
+const cachedInstances = ref(new Map<string, Array<{ iri: string; label: string }>>())
+
 const expandedClass = ref<string | null>(null)
-const instances = ref<Array<{ iri: string; label: string }>>([])
 const instancesLoading = ref(false)
 const instancesError = ref('')
 
-const filteredInstances = computed(() => {
-  if (!searchQuery.value) return instances.value
-  const q = searchQuery.value.toLowerCase()
-  return instances.value.filter(
-    (i) => i.label.toLowerCase().includes(q) || i.iri.toLowerCase().includes(q),
-  )
-})
+const currentInstances = computed(() =>
+  expandedClass.value ? (cachedInstances.value.get(expandedClass.value) ?? []) : [],
+)
 
-function togglePin(inst: { iri: string; label: string }, classIri: string) {
-  if (pinnedStore.isPinned(inst.iri)) {
-    pinnedStore.unpin(inst.iri)
+function togglePin(iri: string, label: string, classIri: string) {
+  if (pinnedStore.isPinned(iri)) {
+    pinnedStore.unpin(iri)
   } else {
-    pinnedStore.pin({ iri: inst.iri, label: inst.label, class: classIri })
+    pinnedStore.pin({ iri, label, class: classIri })
   }
 }
 
@@ -178,15 +242,26 @@ async function toggleClass(cls: ClassInfo) {
   }
 
   expandedClass.value = cls.iri
-  instancesLoading.value = true
   instancesError.value = ''
-  instances.value = []
+
+  if (cachedInstances.value.has(cls.iri)) return  // already loaded, no spinner needed
 
   const ctx = connectionStore.queryContext
   const store = connectionStore.rdfStore ?? undefined
+  const sourceKey = store ? 'file' : (ctx?.endpointUrl ?? '')
+  const cacheKey = `instances:${sourceKey}:${cls.iri}`
 
+  if (cacheGet(cacheKey)) {
+    // Module-level cache hit — resolves instantly
+    const result = await fetchInstancesByClass(cls.iri, ctx ?? { endpointUrl: '' }, store)
+    cachedInstances.value.set(cls.iri, result)
+    return
+  }
+
+  instancesLoading.value = true
   try {
-    instances.value = await fetchInstancesByClass(cls.iri, ctx ?? { endpointUrl: '' }, store)
+    const result = await fetchInstancesByClass(cls.iri, ctx ?? { endpointUrl: '' }, store)
+    cachedInstances.value.set(cls.iri, result)
   } catch (err) {
     instancesError.value = err instanceof Error ? err.message : 'Failed to load instances.'
   } finally {
@@ -413,8 +488,22 @@ async function toggleClass(cls: ClassInfo) {
   transition: background var(--rf-duration-fast) var(--rf-ease-out);
 }
 
+/* In search results mode, remove the indent */
+.class-list > li > .instance-item {
+  padding-left: var(--rf-space-5);
+}
+
 .instance-item:hover {
   background: var(--rf-surface-raised);
+}
+
+.instance-item--pinned {
+  background: var(--rf-primary-soft);
+}
+
+.instance-item--pinned .instance-label {
+  color: var(--rf-primary);
+  font-weight: var(--rf-weight-medium);
 }
 
 .instance-label {
@@ -426,14 +515,24 @@ async function toggleClass(cls: ClassInfo) {
   flex: 1;
 }
 
-.instance-item--pinned {
-  background: var(--rf-primary-soft);
+/* Class name shown below the label in search results */
+.instance-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
 }
 
-.instance-item--pinned .instance-label {
-  color: var(--rf-primary);
-  font-weight: var(--rf-weight-medium);
+.instance-class {
+  font-size: var(--rf-text-xs);
+  color: var(--rf-text-subtle);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
+
+/* ── Pin button ─────────────────────────────────────────────────────────── */
 
 .pin-btn {
   background: none;

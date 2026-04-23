@@ -72,6 +72,7 @@
 
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
+import { toRaw } from 'vue'
 import { usePinnedStore } from '@/stores/pinned'
 import { shortIri } from '@/lib/utils/iri'
 import type { ExploredPair } from '@/stores/pinned'
@@ -86,8 +87,8 @@ function navigateToGraph(pair: { entity1: { iri: string; label: string; class: s
     name: 'graph',
     state: {
       example: {
-        entity1: pair.entity1,
-        entity2: pair.entity2,
+        entity1: toRaw(pair.entity1),
+        entity2: toRaw(pair.entity2),
         options: {},
       },
     },

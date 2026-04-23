@@ -3,16 +3,18 @@
     <!-- ── Sidebar ──────────────────────────────────────────────────────────── -->
     <aside class="sidebar" :class="{ 'sidebar--collapsed': sidebarCollapsed }">
       <div class="sidebar-header">
-        <span v-show="!sidebarCollapsed" class="app-brand">RelFinder</span>
-        <div class="header-actions">
+        <div v-show="!sidebarCollapsed" class="header-left">
           <Button
-            :icon="sidebarCollapsed ? 'pi pi-chevron-right' : 'pi pi-chevron-left'"
+            icon="pi pi-arrow-left"
             text
             rounded
             size="small"
-            @click="sidebarCollapsed = !sidebarCollapsed"
-            :aria-label="sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'"
+            aria-label="Back to browser"
+            @click="router.push({ name: 'browse' })"
           />
+          <span class="app-brand">RelFinder</span>
+        </div>
+        <div class="header-actions">
           <Button
             v-show="!sidebarCollapsed"
             :icon="dark ? 'pi pi-sun' : 'pi pi-moon'"
@@ -31,6 +33,14 @@
             severity="danger"
             @click="onDisconnect"
             aria-label="Disconnect"
+          />
+          <Button
+            icon="pi pi-bars"
+            text
+            rounded
+            size="small"
+            @click="sidebarCollapsed = !sidebarCollapsed"
+            :aria-label="sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'"
           />
         </div>
       </div>
@@ -324,8 +334,8 @@ function shortIri(iri: string): string {
 }
 
 .sidebar--collapsed .sidebar-header {
-  justify-content: center;
-  padding-inline: 0;
+  justify-content: flex-end;
+  padding-inline: var(--rf-space-2);
 }
 
 .sidebar-header {
@@ -337,6 +347,13 @@ function shortIri(iri: string): string {
   flex-shrink: 0;
   min-height: 52px;
   background: linear-gradient(135deg, var(--rf-surface) 0%, var(--rf-surface-raised) 100%);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--rf-space-1);
+  min-width: 0;
 }
 
 .app-brand {
