@@ -11,6 +11,7 @@
         <div class="section-body-inner">
           <Select
             v-if="availableLanguages && availableLanguages.length > 0"
+            inputId="opt-language"
             :model-value="modelValue.language"
             :options="langOptions"
             option-label="label"
@@ -54,6 +55,7 @@
           </div>
           <div class="add-prop">
             <Select
+              inputId="opt-class-filter"
               v-model="classPickerValue"
               :options="unselectedClasses"
               option-label="label"
@@ -62,6 +64,7 @@
               :loading="!graphClasses && loadingClasses"
               filter
               filter-placeholder="Search types…"
+              :filter-input-props="{ id: 'opt-class-filter-search', 'aria-label': 'Search node types' }"
               :empty-message="loadingClasses ? 'Loading…' : classLoadError || (graphClasses?.length === 0 ? 'No classes in current graph' : 'No classes found')"
               size="small"
               fluid

@@ -67,6 +67,7 @@ import { useConnectionStore } from '@/stores/connection'
 import { searchEntities } from '@/lib/sparql/entitySearch'
 import type { EntitySearchResult } from '@/lib/sparql/types'
 import { shortIri } from '@/lib/utils/iri'
+import { cacheGet, cacheSet } from '@/lib/cache/queryCache'
 
 const props = defineProps<{
   id: string
@@ -95,11 +96,16 @@ const searching = ref(false)
 const currentQuery = ref('')
 const statusMessage = ref('')
 let statusClearTimer: ReturnType<typeof setTimeout> | null = null
+let debounceTimer: ReturnType<typeof setTimeout> | null = null
 
 // ── Search ────────────────────────────────────────────────────────────────────
 
-async function onSearch(event: { query: string }) {
-  const query = event.query.trim()
+function onSearch(event: { query: string }) {
+  if (debounceTimer) clearTimeout(debounceTimer)
+  debounceTimer = setTimeout(() => runSearch(event.query.trim()), 400)
+}
+
+async function runSearch(query: string) {
   currentQuery.value = query
   searching.value = true
   statusMessage.value = ''
@@ -109,16 +115,26 @@ async function onSearch(event: { query: string }) {
     const context = connectionStore.queryContext
     const store = connectionStore.rdfStore ?? undefined
     const effectiveContext = context ?? { endpointUrl: '' }
+    const lang = props.language ?? 'en'
+    const classes = props.allowedClasses ?? []
+    const cacheKey = `search:${effectiveContext.endpointUrl}:${lang}:${classes.join(',')}:${query}`
 
-    suggestions.value = await searchEntities(
-      effectiveContext,
-      props.allowedClasses ?? [],
-      store,
-      50,
-      query,
-      props.language ?? 'en',
-      props.customLabelProperties ?? [],
-    )
+    const cached = cacheGet<EntitySearchResult[]>(cacheKey)
+    if (cached) {
+      suggestions.value = cached
+    } else {
+      const results = await searchEntities(
+        effectiveContext,
+        classes,
+        store,
+        50,
+        query,
+        lang,
+        props.customLabelProperties ?? [],
+      )
+      cacheSet(cacheKey, results)
+      suggestions.value = results
+    }
 
     if (suggestions.value.length === 0) {
       statusMessage.value = `No results for "${query}"`

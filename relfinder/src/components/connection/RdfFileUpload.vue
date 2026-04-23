@@ -10,10 +10,12 @@
       @click="fileInput?.click()"
     >
       <input
+        id="rdf-file-upload"
         ref="fileInput"
         type="file"
         :accept="acceptedExtensions"
         class="hidden-input"
+        aria-label="Upload RDF file"
         @change="onFileChange"
       />
 

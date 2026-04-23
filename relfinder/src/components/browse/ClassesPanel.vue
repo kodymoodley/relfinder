@@ -15,6 +15,7 @@
         type="text"
         class="search-input"
         placeholder="Search classes and instances…"
+        aria-label="Search classes and instances"
         :disabled="loading"
       />
       <button
