@@ -131,7 +131,7 @@
         <section class="sidebar-section">
           <p class="section-label collapsible" @click="optionsOpen = !optionsOpen">
             <i :class="['pi', optionsOpen ? 'pi-chevron-down' : 'pi-chevron-right']" />
-            Query Options
+            Graph Filters
           </p>
           <OptionsPanel v-if="optionsOpen" v-model="graphOptions" :available-languages="availableLanguages" :graph-classes="graph?.classes" />
         </section>
@@ -338,24 +338,6 @@ watch(
   },
 )
 
-// All other options: full re-query (debounced to absorb slider/toggle bursts).
-// A computed serialises only the re-query-relevant fields so that a language-only
-// change produces an identical string and never triggers this watch.
-const _requerySignal = computed(() =>
-  JSON.stringify({
-    maxDistance: graphOptions.value.maxDistance,
-    ignoredProperties: graphOptions.value.ignoredProperties,
-    avoidCycles: graphOptions.value.avoidCycles,
-    customLabelProperties: graphOptions.value.customLabelProperties,
-  }),
-)
-
-let optionsTimer: ReturnType<typeof setTimeout> | null = null
-watch(_requerySignal, () => {
-  if (!entity1.value || !entity2.value) return
-  if (optionsTimer) clearTimeout(optionsTimer)
-  optionsTimer = setTimeout(onFindRelationships, 500)
-})
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

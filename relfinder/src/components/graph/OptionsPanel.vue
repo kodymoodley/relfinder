@@ -1,26 +1,5 @@
 <template>
   <div class="options-panel">
-    <!-- Max distance -->
-    <div class="option-group">
-      <div class="option-header">
-        <label class="option-label">Max Path Length</label>
-        <span class="option-value">{{ modelValue.maxDistance }}</span>
-      </div>
-      <!-- Max 6: at distance 6 the query fan-out (2^6 query blocks) is already
-           very large; higher values cause timeouts on most public endpoints. -->
-      <Slider
-        :model-value="modelValue.maxDistance"
-        :min="1"
-        :max="6"
-        :step="1"
-        class="distance-slider"
-        @update:model-value="update('maxDistance', $event as number)"
-      />
-      <div class="slider-ticks">
-        <span v-for="n in 6" :key="n">{{ n }}</span>
-      </div>
-    </div>
-
     <!-- Label language -->
     <div class="option-group">
       <button class="section-toggle" @click="open.language = !open.language">
@@ -53,49 +32,7 @@
       </div>
     </div>
 
-    <!-- Custom label properties -->
-    <div class="option-group">
-      <button class="section-toggle" @click="open.customLabels = !open.customLabels">
-        <span class="option-label">Extra Label Properties</span>
-        <span v-if="!open.customLabels && modelValue.customLabelProperties.length > 0" class="section-badge">{{ modelValue.customLabelProperties.length }}</span>
-        <i class="pi pi-chevron-right toggle-chevron" :class="{ 'toggle-chevron--open': open.customLabels }" />
-      </button>
-      <div class="section-body" :class="{ 'section-body--open': open.customLabels }">
-        <div class="section-body-inner">
-          <p class="option-hint">
-            Additional predicate IRIs to use as labels when searching entities (e.g.
-            <code>http://schema.org/alternateName</code>).
-          </p>
-          <div v-if="modelValue.customLabelProperties.length > 0" class="chip-list">
-            <div v-for="(iri, idx) in modelValue.customLabelProperties" :key="iri" class="prop-chip">
-              <span class="prop-chip-label" :title="iri">{{ shortIri(iri) }}</span>
-              <button class="chip-remove" @click="removeCustomLabel(idx)" aria-label="Remove">
-                <span aria-hidden="true">×</span>
-              </button>
-            </div>
-          </div>
-          <div class="add-prop">
-            <InputText
-              v-model="newLabelIri"
-              placeholder="https://example.org/label"
-              size="small"
-              fluid
-              @keydown.enter.prevent="addCustomLabel"
-            />
-            <Button
-              icon="pi pi-plus"
-              severity="secondary"
-              size="small"
-              :disabled="!newLabelIri.trim()"
-              @click="addCustomLabel"
-              aria-label="Add label property"
-            />
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Entity class filter -->
+    <!-- Hide node types -->
     <div class="option-group">
       <button class="section-toggle" @click="open.classFilter = !open.classFilter">
         <span class="option-label">Hide Node Types</span>
@@ -139,70 +76,12 @@
       </div>
     </div>
 
-    <!-- Ignored properties -->
-    <div class="option-group">
-      <button class="section-toggle" @click="open.ignoredProps = !open.ignoredProps">
-        <span class="option-label">Ignored Properties</span>
-        <span v-if="!open.ignoredProps && modelValue.ignoredProperties.length > 0" class="section-badge">{{ modelValue.ignoredProperties.length }}</span>
-        <i class="pi pi-chevron-right toggle-chevron" :class="{ 'toggle-chevron--open': open.ignoredProps }" />
-      </button>
-      <div class="section-body" :class="{ 'section-body--open': open.ignoredProps }">
-        <div class="section-body-inner">
-          <p class="option-hint">Property IRIs excluded from all paths.</p>
-          <div class="chip-list">
-            <div v-for="(iri, idx) in modelValue.ignoredProperties" :key="iri" class="prop-chip">
-              <span class="prop-chip-label" :title="iri">{{ shortIri(iri) }}</span>
-              <button class="chip-remove" @click="removeIgnoredProp(idx)" aria-label="Remove">
-                <span aria-hidden="true">×</span>
-              </button>
-            </div>
-          </div>
-          <div class="add-prop">
-            <InputText
-              v-model="newPropIri"
-              placeholder="https://example.org/property"
-              size="small"
-              fluid
-              @keydown.enter.prevent="addIgnoredProp"
-            />
-            <Button
-              icon="pi pi-plus"
-              severity="secondary"
-              size="small"
-              :disabled="!newPropIri.trim()"
-              @click="addIgnoredProp"
-              aria-label="Add property"
-            />
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Cycle avoidance -->
-    <div class="option-group">
-      <div class="switch-row">
-        <label class="option-label">Avoid Cycles</label>
-        <ToggleButton
-          :model-value="modelValue.avoidCycles !== QueryCyclesStrategy.NONE"
-          on-label="On"
-          off-label="Off"
-          on-icon="pi pi-check"
-          off-icon="pi pi-times"
-          size="small"
-          @update:model-value="update('avoidCycles', $event ? QueryCyclesStrategy.NO_INTERMEDIATE_DUPLICATES : QueryCyclesStrategy.NONE)"
-        />
-      </div>
-    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed } from 'vue'
-import Slider from 'primevue/slider'
-import InputText from 'primevue/inputtext'
-import Button from 'primevue/button'
 import Select from 'primevue/select'
-import ToggleButton from 'primevue/togglebutton'
 import Message from 'primevue/message'
 import { QueryCyclesStrategy } from '@/lib/sparql/types'
 import { fetchAvailableClasses } from '@/lib/sparql/entitySearch'
@@ -234,13 +113,9 @@ const connectionStore = useConnectionStore()
 
 const open = reactive({
   language: false,
-  customLabels: false,
   classFilter: false,
-  ignoredProps: false,
 })
 
-const newPropIri = ref('')
-const newLabelIri = ref('')
 const classPickerValue = ref<string | null>(null)
 const _endpointClasses = ref<{ iri: string; label: string }[]>([])
 const loadingClasses = ref(false)
@@ -328,47 +203,7 @@ function removeClass(idx: number) {
   update('hiddenClasses', updated)
 }
 
-// ── IRI validation ────────────────────────────────────────────────────────────
 
-/** Checks that an IRI is an absolute URL — rejects relative and blank values. */
-function isValidIri(iri: string): boolean {
-  try {
-    const url = new URL(iri)
-    return url.protocol === 'http:' || url.protocol === 'https:'
-  } catch {
-    return false
-  }
-}
-
-// ── Ignored properties ────────────────────────────────────────────────────────
-
-function addIgnoredProp() {
-  const iri = newPropIri.value.trim()
-  if (!iri || !isValidIri(iri) || props.modelValue.ignoredProperties.includes(iri)) return
-  update('ignoredProperties', [...props.modelValue.ignoredProperties, iri])
-  newPropIri.value = ''
-}
-
-function removeIgnoredProp(idx: number) {
-  const updated = [...props.modelValue.ignoredProperties]
-  updated.splice(idx, 1)
-  update('ignoredProperties', updated)
-}
-
-// ── Custom label properties ───────────────────────────────────────────────────
-
-function addCustomLabel() {
-  const iri = newLabelIri.value.trim()
-  if (!iri || !isValidIri(iri) || props.modelValue.customLabelProperties.includes(iri)) return
-  update('customLabelProperties', [...props.modelValue.customLabelProperties, iri])
-  newLabelIri.value = ''
-}
-
-function removeCustomLabel(idx: number) {
-  const updated = [...props.modelValue.customLabelProperties]
-  updated.splice(idx, 1)
-  update('customLabelProperties', updated)
-}
 </script>
 
 <style scoped>

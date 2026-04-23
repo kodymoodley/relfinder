@@ -44,6 +44,15 @@
       <p v-if="!pinnedStore.isFull" class="cta-hint">Pin one more entity to explore.</p>
     </div>
 
+    <!-- ── Query options ──────────────────────────────────────────────────────── -->
+    <div class="query-options-section">
+      <button class="query-options-toggle" @click="optionsOpen = !optionsOpen">
+        <span class="query-options-title">Query Options</span>
+        <i class="pi toggle-chevron" :class="optionsOpen ? 'pi-chevron-down' : 'pi-chevron-right'" />
+      </button>
+      <QueryOptionsPanel v-if="optionsOpen" v-model="queryOptions" />
+    </div>
+
     <!-- ── Pair history ──────────────────────────────────────────────────────── -->
     <div v-if="pinnedStore.history.length > 0" class="history-section">
       <div class="history-header">
@@ -72,15 +81,29 @@
 
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
-import { toRaw } from 'vue'
+import { ref, toRaw } from 'vue'
 import { usePinnedStore } from '@/stores/pinned'
 import { shortIri } from '@/lib/utils/iri'
 import type { ExploredPair } from '@/stores/pinned'
+import QueryOptionsPanel from './QueryOptionsPanel.vue'
+import type { QueryConfig } from './QueryOptionsPanel.vue'
+import { QueryCyclesStrategy } from '@/lib/sparql/types'
 
 const DOT_COLORS = ['#f97316', '#8b5cf6'] as const
 
 const router = useRouter()
 const pinnedStore = usePinnedStore()
+
+const optionsOpen = ref(false)
+const queryOptions = ref<QueryConfig>({
+  maxDistance: 2,
+  ignoredProperties: [
+    'http://www.w3.org/1999/02/22-rdf-syntax-ns#type',
+    'http://www.w3.org/2004/02/skos/core#subject',
+  ],
+  avoidCycles: QueryCyclesStrategy.NO_INTERMEDIATE_DUPLICATES,
+  customLabelProperties: [],
+})
 
 function navigateToGraph(pair: { entity1: { iri: string; label: string; class: string }; entity2: { iri: string; label: string; class: string } }) {
   router.push({
@@ -89,7 +112,7 @@ function navigateToGraph(pair: { entity1: { iri: string; label: string; class: s
       example: {
         entity1: toRaw(pair.entity1),
         entity2: toRaw(pair.entity2),
-        options: {},
+        options: toRaw(queryOptions.value),
       },
     },
   })
@@ -292,6 +315,42 @@ function onReExplore(pair: ExploredPair) {
   font-size: var(--rf-text-xs);
   color: var(--rf-text-subtle);
   text-align: center;
+}
+
+/* ── Query options ───────────────────────────────────────────────────────── */
+
+.query-options-section {
+  border-top: 1px solid var(--rf-border);
+}
+
+.query-options-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--rf-space-3) var(--rf-space-5);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: var(--rf-font-body);
+}
+
+.query-options-toggle:hover .query-options-title {
+  color: var(--rf-primary);
+}
+
+.query-options-title {
+  font-size: var(--rf-text-xs);
+  font-weight: var(--rf-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--rf-text-subtle);
+  transition: color var(--rf-duration-fast) var(--rf-ease-out);
+}
+
+.toggle-chevron {
+  font-size: 0.55rem;
+  color: var(--rf-text-subtle);
 }
 
 /* ── History ─────────────────────────────────────────────────────────────── */
