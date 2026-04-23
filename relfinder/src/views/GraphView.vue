@@ -212,6 +212,9 @@ const graphOptions = ref<GraphOptions>({
   allowedClasses: [],
   language: '',
   customLabelProperties: [],
+  // Merge any preset options from browse navigation synchronously so the
+  // options watch below never sees a spurious change on first render.
+  ..._historyExample?.options,
 })
 
 // ── Class colour assignment ───────────────────────────────────────────────────
@@ -292,12 +295,21 @@ function onDisconnect() {
 // ── Auto-run when entities are preset (from browse or examples panel) ────────
 
 onMounted(() => {
-  if (!_historyExample) return
-  if (_historyExample.options) {
-    graphOptions.value = { ...graphOptions.value, ..._historyExample.options }
-  }
-  onFindRelationships()
+  if (_historyExample) onFindRelationships()
 })
+
+// ── Re-run on options change ──────────────────────────────────────────────────
+
+let optionsTimer: ReturnType<typeof setTimeout> | null = null
+watch(
+  graphOptions,
+  () => {
+    if (!entity1.value || !entity2.value) return
+    if (optionsTimer) clearTimeout(optionsTimer)
+    optionsTimer = setTimeout(onFindRelationships, 500)
+  },
+  { deep: true },
+)
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
