@@ -44,14 +44,23 @@
     </header>
 
     <!-- ── Body ───────────────────────────────────────────────────────────── -->
-    <div class="browse-body">
+    <div ref="bodyEl" class="browse-body">
       <!-- Left panel: class list -->
       <aside class="panel panel--classes">
         <ClassesPanel />
       </aside>
 
+      <!-- Draggable divider -->
+      <div
+        class="resize-handle"
+        :class="{ 'resize-handle--dragging': dragging }"
+        @mousedown.prevent="startDrag"
+      >
+        <span class="resize-grip" />
+      </div>
+
       <!-- Right panel: pinned entities -->
-      <aside class="panel panel--pinned">
+      <aside class="panel panel--pinned" :style="{ width: rightWidth + 'px' }">
         <PinnedPanel />
       </aside>
     </div>
@@ -59,6 +68,7 @@
 </template>
 
 <script setup lang="ts">
+import { ref, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import { useDarkMode } from '@/composables/useDarkMode'
@@ -74,6 +84,46 @@ function onDisconnect() {
   connectionStore.disconnect()
   router.push({ name: 'connection' })
 }
+
+// ── Resize handle ─────────────────────────────────────────────────────────────
+
+const RIGHT_MIN = 180
+const RIGHT_MAX = 600
+const RIGHT_DEFAULT = 320
+
+const bodyEl = ref<HTMLElement | null>(null)
+const rightWidth = ref(RIGHT_DEFAULT)
+const dragging = ref(false)
+
+let dragStartX = 0
+let dragStartWidth = 0
+
+function startDrag(e: MouseEvent) {
+  dragging.value = true
+  dragStartX = e.clientX
+  dragStartWidth = rightWidth.value
+  document.body.style.userSelect = 'none'
+  document.body.style.cursor = 'col-resize'
+  document.addEventListener('mousemove', onDrag)
+  document.addEventListener('mouseup', stopDrag)
+}
+
+function onDrag(e: MouseEvent) {
+  const delta = dragStartX - e.clientX
+  const containerWidth = bodyEl.value?.offsetWidth ?? window.innerWidth
+  const max = Math.min(RIGHT_MAX, containerWidth - 200)
+  rightWidth.value = Math.max(RIGHT_MIN, Math.min(max, dragStartWidth + delta))
+}
+
+function stopDrag() {
+  dragging.value = false
+  document.body.style.userSelect = ''
+  document.body.style.cursor = ''
+  document.removeEventListener('mousemove', onDrag)
+  document.removeEventListener('mouseup', stopDrag)
+}
+
+onUnmounted(stopDrag)
 </script>
 
 <style scoped>
@@ -124,27 +174,58 @@ function onDisconnect() {
 /* ── Body ───────────────────────────────────────────────────────────────── */
 
 .browse-body {
-  display: grid;
-  grid-template-columns: 1fr 320px;
+  display: flex;
   flex: 1;
   overflow: hidden;
-  gap: 0;
 }
 
 .panel {
   overflow: hidden;
-  border-right: 1px solid var(--rf-border);
+  flex-shrink: 0;
 }
 
 .panel--classes {
+  flex: 1;
   display: flex;
   flex-direction: column;
+  min-width: 200px;
 }
 
 .panel--pinned {
   display: flex;
   flex-direction: column;
-  border-right: none;
   background: var(--rf-surface);
+}
+
+/* ── Resize handle ───────────────────────────────────────────────────────── */
+
+.resize-handle {
+  width: 5px;
+  flex-shrink: 0;
+  background: var(--rf-border);
+  cursor: col-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--rf-duration-fast) var(--rf-ease-out);
+  position: relative;
+}
+
+.resize-handle:hover,
+.resize-handle--dragging {
+  background: var(--rf-primary);
+}
+
+.resize-grip {
+  width: 3px;
+  height: 24px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--rf-text-subtle) 40%, transparent);
+  pointer-events: none;
+}
+
+.resize-handle:hover .resize-grip,
+.resize-handle--dragging .resize-grip {
+  background: color-mix(in srgb, #fff 60%, transparent);
 }
 </style>
