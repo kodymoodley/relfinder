@@ -8,11 +8,19 @@ export interface PinnedEntity {
   class: string
 }
 
+export interface ExploredPair {
+  entity1: PinnedEntity
+  entity2: PinnedEntity
+  exploredAt: number
+}
+
 /** Maximum pins — matches the two-entity constraint in the graph view. */
 const MAX_PINS = 2
+const MAX_HISTORY = 10
 
 export const usePinnedStore = defineStore('pinned', () => {
   const pins = ref<PinnedEntity[]>([])
+  const history = ref<ExploredPair[]>([])
 
   const isFull = computed(() => pins.value.length >= MAX_PINS)
 
@@ -29,9 +37,21 @@ export const usePinnedStore = defineStore('pinned', () => {
     pins.value = pins.value.filter((p) => p.iri !== iri)
   }
 
-  function clear(): void {
+  function recordPair(entity1: PinnedEntity, entity2: PinnedEntity): void {
+    history.value.unshift({ entity1, entity2, exploredAt: Date.now() })
+    if (history.value.length > MAX_HISTORY) {
+      history.value = history.value.slice(0, MAX_HISTORY)
+    }
+  }
+
+  function clearPins(): void {
     pins.value = []
   }
 
-  return { pins, isFull, isPinned, pin, unpin, clear }
+  function clear(): void {
+    pins.value = []
+    history.value = []
+  }
+
+  return { pins, history, isFull, isPinned, pin, unpin, recordPair, clearPins, clear }
 })

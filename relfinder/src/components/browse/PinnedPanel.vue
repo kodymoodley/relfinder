@@ -1,16 +1,19 @@
 <template>
   <div class="pinned-panel">
+    <!-- ── Header ──────────────────────────────────────────────────────────── -->
     <div class="panel-header">
       <span class="panel-title">Pinned</span>
       <span class="panel-badge">{{ pinnedStore.pins.length }}/2</span>
     </div>
 
-    <div v-if="pinnedStore.pins.length === 0" class="panel-empty">
+    <!-- ── Empty state ─────────────────────────────────────────────────────── -->
+    <div v-if="pinnedStore.pins.length === 0 && pinnedStore.history.length === 0" class="panel-empty">
       <i class="pi pi-bookmark empty-icon" />
       <p class="empty-text">Pin up to 2 entities from the class list to explore their relationship.</p>
     </div>
 
-    <ul v-else class="pin-list">
+    <!-- ── Pin list ─────────────────────────────────────────────────────────── -->
+    <ul v-if="pinnedStore.pins.length > 0" class="pin-list">
       <li
         v-for="(pin, index) in pinnedStore.pins"
         :key="pin.iri"
@@ -21,16 +24,13 @@
           <span class="pin-label" :title="pin.iri">{{ pin.label }}</span>
           <span class="pin-class">{{ shortIri(pin.class) }}</span>
         </div>
-        <button
-          class="pin-remove"
-          aria-label="Unpin"
-          @click="pinnedStore.unpin(pin.iri)"
-        >
+        <button class="pin-remove" aria-label="Unpin" @click="pinnedStore.unpin(pin.iri)">
           <i class="pi pi-times" />
         </button>
       </li>
     </ul>
 
+    <!-- ── Explore CTA ──────────────────────────────────────────────────────── -->
     <div v-if="pinnedStore.pins.length > 0" class="cta-section">
       <button
         class="explore-btn"
@@ -41,9 +41,31 @@
         <span>Explore relationship</span>
         <i class="pi pi-arrow-right" />
       </button>
-      <p v-if="!pinnedStore.isFull" class="cta-hint">
-        Pin one more entity to explore.
-      </p>
+      <p v-if="!pinnedStore.isFull" class="cta-hint">Pin one more entity to explore.</p>
+    </div>
+
+    <!-- ── Pair history ──────────────────────────────────────────────────────── -->
+    <div v-if="pinnedStore.history.length > 0" class="history-section">
+      <div class="history-header">
+        <span class="history-title">Recent</span>
+        <button class="history-clear" @click="pinnedStore.history.splice(0)">Clear</button>
+      </div>
+      <ul class="history-list">
+        <li
+          v-for="pair in pinnedStore.history"
+          :key="pair.exploredAt"
+          class="history-item"
+          :title="`${pair.entity1.iri} ↔ ${pair.entity2.iri}`"
+          @click="onReExplore(pair)"
+        >
+          <div class="history-pair">
+            <span class="history-label">{{ pair.entity1.label }}</span>
+            <i class="pi pi-arrows-h history-arrow" />
+            <span class="history-label">{{ pair.entity2.label }}</span>
+          </div>
+          <i class="pi pi-external-link history-link-icon" />
+        </li>
+      </ul>
     </div>
   </div>
 </template>
@@ -52,28 +74,36 @@
 import { useRouter } from 'vue-router'
 import { usePinnedStore } from '@/stores/pinned'
 import { shortIri } from '@/lib/utils/iri'
+import type { ExploredPair } from '@/stores/pinned'
 
 const DOT_COLORS = ['#f97316', '#8b5cf6'] as const
 
 const router = useRouter()
 const pinnedStore = usePinnedStore()
 
-function onExplore() {
-  const [p1, p2] = pinnedStore.pins
-  if (!p1 || !p2) return
-
-  pinnedStore.clear()
-
+function navigateToGraph(pair: { entity1: { iri: string; label: string; class: string }; entity2: { iri: string; label: string; class: string } }) {
   router.push({
     name: 'graph',
     state: {
       example: {
-        entity1: { iri: p1.iri, label: p1.label, class: p1.class },
-        entity2: { iri: p2.iri, label: p2.label, class: p2.class },
+        entity1: pair.entity1,
+        entity2: pair.entity2,
         options: {},
       },
     },
   })
+}
+
+function onExplore() {
+  const [p1, p2] = pinnedStore.pins
+  if (!p1 || !p2) return
+  pinnedStore.recordPair(p1, p2)
+  pinnedStore.clearPins()
+  navigateToGraph({ entity1: p1, entity2: p2 })
+}
+
+function onReExplore(pair: ExploredPair) {
+  navigateToGraph(pair)
 }
 </script>
 
@@ -82,6 +112,7 @@ function onExplore() {
   display: flex;
   flex-direction: column;
   height: 100%;
+  overflow-y: auto;
 }
 
 /* ── Header ─────────────────────────────────────────────────────────────── */
@@ -144,7 +175,6 @@ function onExplore() {
   list-style: none;
   margin: 0;
   padding: var(--rf-space-3) 0 0;
-  flex: 1;
 }
 
 .pin-item {
@@ -208,12 +238,11 @@ function onExplore() {
 /* ── CTA ─────────────────────────────────────────────────────────────────── */
 
 .cta-section {
-  padding: var(--rf-space-4) var(--rf-space-4) var(--rf-space-5);
+  padding: var(--rf-space-4);
   display: flex;
   flex-direction: column;
   gap: var(--rf-space-2);
   border-top: 1px solid var(--rf-border);
-  flex-shrink: 0;
 }
 
 .explore-btn {
@@ -243,10 +272,12 @@ function onExplore() {
   border-color: var(--rf-primary);
   color: #fff;
   cursor: pointer;
+  animation: ready-pulse 2s ease-in-out infinite;
 }
 
 .explore-btn--ready:hover {
   filter: brightness(1.08);
+  animation: none;
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--rf-primary) 30%, transparent);
 }
 
@@ -255,18 +286,102 @@ function onExplore() {
   50%       { box-shadow: 0 0 0 8px color-mix(in srgb, var(--rf-primary) 0%, transparent); }
 }
 
-.explore-btn--ready {
-  animation: ready-pulse 2s ease-in-out infinite;
-}
-
-.explore-btn--ready:hover {
-  animation: none;
-}
-
 .cta-hint {
   margin: 0;
   font-size: var(--rf-text-xs);
   color: var(--rf-text-subtle);
   text-align: center;
+}
+
+/* ── History ─────────────────────────────────────────────────────────────── */
+
+.history-section {
+  border-top: 1px solid var(--rf-border);
+  padding-top: var(--rf-space-1);
+}
+
+.history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--rf-space-3) var(--rf-space-5) var(--rf-space-1);
+}
+
+.history-title {
+  font-size: var(--rf-text-xs);
+  font-weight: var(--rf-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--rf-text-subtle);
+}
+
+.history-clear {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-size: var(--rf-text-xs);
+  color: var(--rf-text-subtle);
+  font-family: var(--rf-font-body);
+  transition: color var(--rf-duration-fast) var(--rf-ease-out);
+}
+
+.history-clear:hover {
+  color: var(--rf-danger);
+}
+
+.history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 var(--rf-space-3);
+}
+
+.history-item {
+  display: flex;
+  align-items: center;
+  gap: var(--rf-space-2);
+  padding: var(--rf-space-2) var(--rf-space-4);
+  cursor: pointer;
+  transition: background var(--rf-duration-fast) var(--rf-ease-out);
+}
+
+.history-item:hover {
+  background: var(--rf-surface-raised);
+}
+
+.history-item:hover .history-link-icon {
+  opacity: 1;
+}
+
+.history-pair {
+  display: flex;
+  align-items: center;
+  gap: var(--rf-space-1);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.history-label {
+  font-size: var(--rf-text-xs);
+  color: var(--rf-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 90px;
+}
+
+.history-arrow {
+  font-size: 0.6rem;
+  color: var(--rf-text-subtle);
+  flex-shrink: 0;
+}
+
+.history-link-icon {
+  font-size: 0.6rem;
+  color: var(--rf-text-subtle);
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity var(--rf-duration-fast) var(--rf-ease-out);
 }
 </style>
