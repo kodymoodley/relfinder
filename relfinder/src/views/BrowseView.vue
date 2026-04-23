@@ -15,6 +15,15 @@
       </div>
       <div class="header-right">
         <Button
+          label="Open graph"
+          icon="pi pi-arrow-right"
+          icon-pos="right"
+          text
+          size="small"
+          aria-label="Skip to graph view"
+          @click="router.push({ name: 'graph' })"
+        />
+        <Button
           :icon="dark ? 'pi pi-sun' : 'pi pi-moon'"
           text
           rounded

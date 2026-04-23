@@ -52,36 +52,18 @@
       </div>
     </div>
 
-    <!-- Browse link — shown once a connection is active -->
-    <Transition name="browse-fade">
-      <div v-if="connectionStore.isConnected" class="browse-cta">
-        <Button
-          label="Browse entities"
-          icon="pi pi-compass"
-          icon-pos="right"
-          size="small"
-          text
-          @click="router.push({ name: 'browse' })"
-        />
-      </div>
-    </Transition>
-
     <ExamplesPanel />
   </main>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import SparqlForm from '@/components/connection/SparqlForm.vue'
 import RdfFileUpload from '@/components/connection/RdfFileUpload.vue'
 import ExamplesPanel from '@/components/connection/ExamplesPanel.vue'
 import { useDarkMode } from '@/composables/useDarkMode'
-import { useConnectionStore } from '@/stores/connection'
 
-const router = useRouter()
-const connectionStore = useConnectionStore()
 const activeTab = ref<'sparql' | 'file'>('sparql')
 const { dark, toggle: toggleDark } = useDarkMode()
 </script>
@@ -218,20 +200,4 @@ const { dark, toggle: toggleDark } = useDarkMode()
   padding: var(--rf-space-6) var(--rf-space-8) var(--rf-space-8);
 }
 
-/* ── Browse CTA ─────────────────────────────────────────────────────────── */
-
-.browse-cta {
-  display: flex;
-  justify-content: center;
-  margin-top: var(--rf-space-3);
-}
-
-.browse-fade-enter-active,
-.browse-fade-leave-active {
-  transition: opacity var(--rf-duration-base) var(--rf-ease-out);
-}
-.browse-fade-enter-from,
-.browse-fade-leave-to {
-  opacity: 0;
-}
 </style>

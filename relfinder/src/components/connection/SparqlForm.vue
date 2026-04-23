@@ -198,7 +198,7 @@ async function onSubmit() {
       proxyUrl: form.proxyUrl.trim(),
     })
 
-    router.push({ name: 'graph' })
+    router.push({ name: 'browse' })
   } catch (err) {
     console.error('Connection test failed:', err)
     connectionError.value =

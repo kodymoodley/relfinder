@@ -140,7 +140,7 @@ function onConnect() {
     store: loadedStore.value,
   })
 
-  router.push({ name: 'graph' })
+  router.push({ name: 'browse' })
 }
 </script>
 
