@@ -129,6 +129,14 @@ export interface EntitySearchResult {
   class: string
 }
 
+export interface ClassInfo {
+  iri: string
+  /** Short display name derived from the IRI fragment or last path segment. */
+  label: string
+  /** Number of instances with this rdf:type. */
+  count: number
+}
+
 export interface DataProperty {
   iri: string
   label: string

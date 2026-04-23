@@ -45,9 +45,9 @@
 
     <!-- ── Body ───────────────────────────────────────────────────────────── -->
     <div class="browse-body">
-      <!-- Left panel: class list (populated in Task 3) -->
+      <!-- Left panel: class list -->
       <aside class="panel panel--classes">
-        <p class="panel-placeholder">Classes panel — coming in Task 3</p>
+        <ClassesPanel />
       </aside>
 
       <!-- Right panel: pinned entities + history (populated in Tasks 5 & 6) -->
@@ -63,6 +63,7 @@ import { useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import { useDarkMode } from '@/composables/useDarkMode'
 import { useConnectionStore } from '@/stores/connection'
+import ClassesPanel from '@/components/browse/ClassesPanel.vue'
 
 const router = useRouter()
 const connectionStore = useConnectionStore()
@@ -130,12 +131,20 @@ function onDisconnect() {
 }
 
 .panel {
-  overflow-y: auto;
-  padding: var(--rf-space-5);
+  overflow: hidden;
   border-right: 1px solid var(--rf-border);
 }
 
+.panel--classes {
+  display: flex;
+  flex-direction: column;
+}
+
 .panel--pinned {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: var(--rf-space-5);
   border-right: none;
   background: var(--rf-surface);
 }

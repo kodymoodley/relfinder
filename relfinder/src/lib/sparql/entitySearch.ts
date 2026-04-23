@@ -17,10 +17,13 @@ import type { Store } from 'n3'
 import { executeSelect, executeSelectOnStore } from './engine'
 import { getQueries } from './queryBuilder'
 import { buildRelationshipsGraph, mergeEdgeDuplicates, applyLabelsAndTypes } from './graphBuilder'
+import { shortIri } from '../utils/iri'
+import { cacheGet, cacheSet } from '../cache/queryCache'
 import {
   QueryCyclesStrategy,
   type QueryContext,
   type EntitySearchResult,
+  type ClassInfo,
   type DataProperty,
   type GraphNode,
   type RelationshipGraph,
@@ -173,6 +176,49 @@ export async function fetchAvailableClasses(
   const bindings = await runSelect(query, context, store)
 
   return bindings.filter((b) => b['type']).map((b) => b['type']!.value)
+}
+
+// ── Class discovery with counts ───────────────────────────────────────────────
+
+/**
+ * Returns all distinct `rdf:type` values used in the source, sorted by
+ * descending instance count.
+ *
+ * Results are cached for the session (5-minute TTL) since the class catalogue
+ * of a knowledge graph changes rarely. The cache is invalidated automatically
+ * when the user disconnects.
+ *
+ * @param limit  Max classes to return. 500 is enough for any practical KG while
+ *   keeping the GROUP BY result set manageable.
+ */
+export async function fetchClassesWithCounts(
+  context: QueryContext,
+  store?: Store,
+  limit = 500,
+): Promise<ClassInfo[]> {
+  const cacheKey = store ? 'classes:file' : `classes:${context.endpointUrl}`
+  const cached = cacheGet<ClassInfo[]>(cacheKey)
+  if (cached) return cached
+
+  const query = `
+    SELECT ?type (COUNT(?s) AS ?count) WHERE {
+      ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?type .
+      FILTER (isIRI(?type))
+    } GROUP BY ?type ORDER BY DESC(?count) LIMIT ${limit}
+  `
+
+  const bindings = await runSelect(query, context, store)
+
+  const result: ClassInfo[] = bindings
+    .filter((b) => b['type'] && b['count'])
+    .map((b) => ({
+      iri: b['type']!.value,
+      label: shortIri(b['type']!.value),
+      count: parseInt(b['count']!.value, 10),
+    }))
+
+  cacheSet(cacheKey, result)
+  return result
 }
 
 // ── Label fetching ────────────────────────────────────────────────────────────
