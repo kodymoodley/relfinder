@@ -50,9 +50,9 @@
         <ClassesPanel />
       </aside>
 
-      <!-- Right panel: pinned entities + history (populated in Tasks 5 & 6) -->
+      <!-- Right panel: pinned entities -->
       <aside class="panel panel--pinned">
-        <p class="panel-placeholder">Pinned entities — coming in Task 5</p>
+        <PinnedPanel />
       </aside>
     </div>
   </div>
@@ -64,6 +64,7 @@ import Button from 'primevue/button'
 import { useDarkMode } from '@/composables/useDarkMode'
 import { useConnectionStore } from '@/stores/connection'
 import ClassesPanel from '@/components/browse/ClassesPanel.vue'
+import PinnedPanel from '@/components/browse/PinnedPanel.vue'
 
 const router = useRouter()
 const connectionStore = useConnectionStore()
@@ -143,15 +144,7 @@ function onDisconnect() {
 .panel--pinned {
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
-  padding: var(--rf-space-5);
   border-right: none;
   background: var(--rf-surface);
-}
-
-.panel-placeholder {
-  font-size: var(--rf-text-sm);
-  color: var(--rf-text-subtle);
-  font-style: italic;
 }
 </style>

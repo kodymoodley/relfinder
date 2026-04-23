@@ -81,9 +81,22 @@
               v-for="inst in filteredInstances"
               :key="inst.iri"
               class="instance-item"
+              :class="{ 'instance-item--pinned': pinnedStore.isPinned(inst.iri) }"
               :title="inst.iri"
             >
               <span class="instance-label">{{ inst.label }}</span>
+              <button
+                class="pin-btn"
+                :class="{ 'pin-btn--active': pinnedStore.isPinned(inst.iri) }"
+                :disabled="pinnedStore.isFull && !pinnedStore.isPinned(inst.iri)"
+                :aria-label="pinnedStore.isPinned(inst.iri) ? 'Unpin entity' : 'Pin entity'"
+                @click.stop="togglePin(inst, expandedClass!)"
+              >
+                <i
+                  class="pi"
+                  :class="pinnedStore.isPinned(inst.iri) ? 'pi-bookmark-fill' : 'pi-bookmark'"
+                />
+              </button>
             </li>
           </ul>
         </div>
@@ -96,10 +109,12 @@
 import { ref, computed, onMounted } from 'vue'
 import Message from 'primevue/message'
 import { useConnectionStore } from '@/stores/connection'
+import { usePinnedStore } from '@/stores/pinned'
 import { fetchClassesWithCounts, fetchInstancesByClass } from '@/lib/sparql/entitySearch'
 import type { ClassInfo } from '@/lib/sparql/types'
 
 const connectionStore = useConnectionStore()
+const pinnedStore = usePinnedStore()
 
 // ── Class list ────────────────────────────────────────────────────────────────
 
@@ -147,6 +162,14 @@ const filteredInstances = computed(() => {
     (i) => i.label.toLowerCase().includes(q) || i.iri.toLowerCase().includes(q),
   )
 })
+
+function togglePin(inst: { iri: string; label: string }, classIri: string) {
+  if (pinnedStore.isPinned(inst.iri)) {
+    pinnedStore.unpin(inst.iri)
+  } else {
+    pinnedStore.pin({ iri: inst.iri, label: inst.label, class: classIri })
+  }
+}
 
 async function toggleClass(cls: ClassInfo) {
   if (expandedClass.value === cls.iri) {
@@ -383,7 +406,10 @@ async function toggleClass(cls: ClassInfo) {
 }
 
 .instance-item {
-  padding: var(--rf-space-1) var(--rf-space-5) var(--rf-space-1) calc(var(--rf-space-5) + 1.25rem);
+  display: flex;
+  align-items: center;
+  gap: var(--rf-space-2);
+  padding: var(--rf-space-1) var(--rf-space-3) var(--rf-space-1) calc(var(--rf-space-5) + 1.25rem);
   transition: background var(--rf-duration-fast) var(--rf-ease-out);
 }
 
@@ -397,6 +423,49 @@ async function toggleClass(cls: ClassInfo) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  display: block;
+  flex: 1;
+}
+
+.instance-item--pinned {
+  background: var(--rf-primary-soft);
+}
+
+.instance-item--pinned .instance-label {
+  color: var(--rf-primary);
+  font-weight: var(--rf-weight-medium);
+}
+
+.pin-btn {
+  background: none;
+  border: none;
+  padding: 2px 4px;
+  cursor: pointer;
+  color: var(--rf-text-subtle);
+  font-size: 0.65rem;
+  line-height: 1;
+  flex-shrink: 0;
+  border-radius: var(--rf-radius-sm);
+  opacity: 0;
+  transition:
+    opacity var(--rf-duration-fast) var(--rf-ease-out),
+    color var(--rf-duration-fast) var(--rf-ease-out);
+}
+
+.instance-item:hover .pin-btn {
+  opacity: 1;
+}
+
+.pin-btn--active {
+  opacity: 1;
+  color: var(--rf-primary);
+}
+
+.pin-btn:hover:not(:disabled) {
+  color: var(--rf-primary);
+}
+
+.pin-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
 }
 </style>

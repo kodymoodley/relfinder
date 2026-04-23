@@ -10,6 +10,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { Store } from 'n3'
 import { cacheInvalidate } from '@/lib/cache/queryCache'
+import { usePinnedStore } from './pinned'
 
 export type SourceType = 'sparql' | 'file'
 
@@ -107,6 +108,7 @@ export const useConnectionStore = defineStore('connection', () => {
     sessionStorage.removeItem('rf:endpointUrl')
     sessionStorage.removeItem('rf:proxyUrl')
     cacheInvalidate()
+    usePinnedStore().clear()
   }
 
   /**
