@@ -48,10 +48,10 @@
       </Transition>
 
       <!-- Chip replaces the input once an entity is selected -->
-      <div v-if="selectedEntity" class="selected-chip">
+      <div v-if="selectedEntity" class="selected-chip" :class="{ 'selected-chip--locked': !!initialEntity }">
         <i class="pi pi-circle-fill chip-dot" :style="{ color: dotColor }" />
         <span class="chip-label" :title="selectedEntity.iri">{{ selectedEntity.label }}</span>
-        <button class="chip-remove" @click="onClear" aria-label="Remove">
+        <button v-if="!initialEntity" class="chip-remove" @click="onClear" aria-label="Remove">
           <i class="pi pi-times" />
         </button>
       </div>
@@ -72,14 +72,12 @@ const props = defineProps<{
   id: string
   label: string
   placeholder?: string
-  /** CSS colour used for the dot indicator — lets the parent colour-code entities */
   dotColor?: string
-  /** RDF class IRIs to restrict search to. Empty = all classes. */
   allowedClasses?: string[]
-  /** RDF language tag for label matching (e.g. 'en'). Empty = any language. */
   language?: string
-  /** Extra predicate IRIs to recognise as labels in addition to the built-in set. */
   customLabelProperties?: string[]
+  /** Pre-fills the selection; when set the field is shown in a locked/disabled state. */
+  initialEntity?: EntitySearchResult | null
 }>()
 
 const emit = defineEmits<{
@@ -91,7 +89,7 @@ const connectionStore = useConnectionStore()
 // Separate refs: inputText drives the AutoComplete input; selectedEntity drives
 // the chip. Using v-if on the AutoComplete means these never conflict.
 const inputText = ref<string | EntitySearchResult>('')
-const selectedEntity = ref<EntitySearchResult | null>(null)
+const selectedEntity = ref<EntitySearchResult | null>(props.initialEntity ?? null)
 const suggestions = ref<EntitySearchResult[]>([])
 const searching = ref(false)
 const currentQuery = ref('')
@@ -254,6 +252,15 @@ function onClear() {
 
 .selected-chip:hover {
   border-color: var(--rf-border-strong);
+}
+
+.selected-chip--locked {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.selected-chip--locked:hover {
+  border-color: var(--rf-border);
 }
 
 .chip-dot {

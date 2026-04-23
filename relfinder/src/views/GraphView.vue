@@ -50,12 +50,13 @@
         <section class="sidebar-section">
           <EntitySearch
             id="entity1"
-            label="Entity 1"
+            label="Source"
             placeholder="Search…"
             dot-color="#f97316"
             :allowed-classes="graphOptions.allowedClasses"
             :language="graphOptions.language"
             :custom-label-properties="graphOptions.customLabelProperties"
+            :initial-entity="presetEntity1"
             @select="entity1 = $event"
           />
         </section>
@@ -63,12 +64,13 @@
         <section class="sidebar-section">
           <EntitySearch
             id="entity2"
-            label="Entity 2"
+            label="Target"
             placeholder="Search…"
             dot-color="#8b5cf6"
             :allowed-classes="graphOptions.allowedClasses"
             :language="graphOptions.language"
             :custom-label-properties="graphOptions.customLabelProperties"
+            :initial-entity="presetEntity2"
             @select="entity2 = $event"
           />
         </section>
@@ -184,8 +186,15 @@ const { dark, toggle: toggleDark } = useDarkMode()
 
 // ── State ─────────────────────────────────────────────────────────────────────
 
-const entity1 = ref<EntitySearchResult | null>(null)
-const entity2 = ref<EntitySearchResult | null>(null)
+// Read synchronously so EntitySearch receives preset values on first render.
+const _historyExample = (history.state as Record<string, unknown>)?.example as
+  | { entity1: EntitySearchResult; entity2: EntitySearchResult; options?: Partial<GraphOptions> }
+  | undefined
+
+const presetEntity1 = ref<EntitySearchResult | null>(_historyExample?.entity1 ?? null)
+const presetEntity2 = ref<EntitySearchResult | null>(_historyExample?.entity2 ?? null)
+const entity1 = ref<EntitySearchResult | null>(presetEntity1.value)
+const entity2 = ref<EntitySearchResult | null>(presetEntity2.value)
 const graph = ref<RelationshipGraph | null>(null)
 const searching = ref(false)
 const searchError = ref('')
@@ -280,21 +289,12 @@ function onDisconnect() {
   router.push({ name: 'connection' })
 }
 
-// ── Example auto-run (from quick-start examples panel) ───────────────────────
+// ── Auto-run when entities are preset (from browse or examples panel) ────────
 
 onMounted(() => {
-  const state = (history.state as Record<string, unknown>)?.example as
-    | {
-        entity1: EntitySearchResult
-        entity2: EntitySearchResult
-        options: Partial<GraphOptions>
-      }
-    | undefined
-  if (!state) return
-  entity1.value = state.entity1
-  entity2.value = state.entity2
-  if (state.options) {
-    graphOptions.value = { ...graphOptions.value, ...state.options }
+  if (!_historyExample) return
+  if (_historyExample.options) {
+    graphOptions.value = { ...graphOptions.value, ..._historyExample.options }
   }
   onFindRelationships()
 })
