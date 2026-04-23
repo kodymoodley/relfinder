@@ -111,7 +111,7 @@
 
         <!-- Legend -->
         <section
-          v-if="graph && graph.classes.length > 0"
+          v-if="displayClasses.length > 0"
           class="sidebar-section"
           v-motion
           :initial="{ opacity: 0, x: -12 }"
@@ -119,7 +119,7 @@
         >
           <p class="section-label">Legend</p>
           <div class="legend">
-            <div v-for="cls in graph.classes" :key="cls" class="legend-item">
+            <div v-for="cls in displayClasses" :key="cls" class="legend-item">
               <span class="legend-dot" :style="{ background: classColors.get(cls) ?? '#94a3b8' }" />
               <span class="legend-label" :title="cls">{{ shortIri(cls) }}</span>
             </div>
@@ -232,6 +232,11 @@ const PALETTE = [
 const classColors = ref(new Map<string, string>())
 
 // ── Client-side display filtering ─────────────────────────────────────────────
+
+const displayClasses = computed(() => {
+  if (!graph.value) return []
+  return graph.value.classes.filter((c) => !graphOptions.value.hiddenClasses.includes(c))
+})
 
 const displayNodes = computed(() => {
   if (!graph.value) return []
