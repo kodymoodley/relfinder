@@ -98,17 +98,17 @@
     <!-- Entity class filter -->
     <div class="option-group">
       <button class="section-toggle" @click="open.classFilter = !open.classFilter">
-        <span class="option-label">Entity Class Filter</span>
-        <span v-if="!open.classFilter && modelValue.allowedClasses.length > 0" class="section-badge">{{ modelValue.allowedClasses.length }}</span>
+        <span class="option-label">Hide Node Types</span>
+        <span v-if="!open.classFilter && modelValue.hiddenClasses.length > 0" class="section-badge">{{ modelValue.hiddenClasses.length }}</span>
         <i class="pi pi-chevron-right toggle-chevron" :class="{ 'toggle-chevron--open': open.classFilter }" />
       </button>
       <div class="section-body" :class="{ 'section-body--open': open.classFilter }">
         <div class="section-body-inner">
           <p class="option-hint">
-            Restrict entity search to specific RDF types. Leave empty to allow all.
+            Select node types to remove from the graph view. Changes apply instantly without re-querying.
           </p>
-          <div v-if="modelValue.allowedClasses.length > 0" class="chip-list">
-            <div v-for="(iri, idx) in modelValue.allowedClasses" :key="iri" class="prop-chip">
+          <div v-if="modelValue.hiddenClasses.length > 0" class="chip-list">
+            <div v-for="(iri, idx) in modelValue.hiddenClasses" :key="iri" class="prop-chip">
               <span class="prop-chip-label" :title="iri">{{ shortIri(iri) }}</span>
               <button class="chip-remove" @click="removeClass(idx)" aria-label="Remove">
                 <span aria-hidden="true">×</span>
@@ -122,17 +122,17 @@
               option-label="label"
               option-value="iri"
               placeholder="Add class filter…"
-              :loading="loadingClasses"
+              :loading="!graphClasses && loadingClasses"
               filter
               filter-placeholder="Search types…"
-              :empty-message="loadingClasses ? 'Loading…' : classLoadError || 'No classes found'"
+              :empty-message="loadingClasses ? 'Loading…' : classLoadError || (graphClasses?.length === 0 ? 'No classes in current graph' : 'No classes found')"
               size="small"
               fluid
               @show="onDropdownShow"
               @change="onClassSelect"
             />
           </div>
-          <Message v-if="classLoadError" severity="warn" :closable="false" class="class-error">
+          <Message v-if="!graphClasses && classLoadError" severity="warn" :closable="false" class="class-error">
             {{ classLoadError }}
           </Message>
         </div>
@@ -214,15 +214,19 @@ export interface GraphOptions {
   ignoredProperties: string[]
   avoidCycles: QueryCyclesStrategy
   allowedClasses: string[]
+  /** Class IRIs whose nodes should be hidden from the displayed graph. */
+  hiddenClasses: string[]
   language: string
   customLabelProperties: string[]
 }
 
 const props = defineProps<{
   modelValue: GraphOptions
-  /** Distinct language tags present in the current graph's labels. When provided,
-   *  a dropdown replaces the free-text input. */
+  /** Distinct language tags present in the current graph's labels. */
   availableLanguages?: string[]
+  /** rdf:type IRIs present in the current graph. When provided, the class
+   *  filter dropdown is populated from these instead of querying the endpoint. */
+  graphClasses?: string[]
 }>()
 const emit = defineEmits<{ 'update:modelValue': [value: GraphOptions] }>()
 
@@ -238,14 +242,23 @@ const open = reactive({
 const newPropIri = ref('')
 const newLabelIri = ref('')
 const classPickerValue = ref<string | null>(null)
-const availableClasses = ref<{ iri: string; label: string }[]>([])
+const _endpointClasses = ref<{ iri: string; label: string }[]>([])
 const loadingClasses = ref(false)
 const classesLoaded = ref(false)
 const classLoadError = ref('')
 
-// Only show classes not already selected
+const availableClasses = computed<{ iri: string; label: string }[]>(() => {
+  if (props.graphClasses) {
+    return props.graphClasses
+      .map((iri) => ({ iri, label: shortIri(iri) }))
+      .sort((a, b) => a.label.localeCompare(b.label))
+  }
+  return _endpointClasses.value
+})
+
+// Only show classes not already hidden
 const unselectedClasses = computed(() =>
-  availableClasses.value.filter((cls) => !props.modelValue.allowedClasses.includes(cls.iri)),
+  availableClasses.value.filter((cls) => !props.modelValue.hiddenClasses.includes(cls.iri)),
 )
 
 const _displayNames = new Intl.DisplayNames(['en'], { type: 'language' })
@@ -287,7 +300,7 @@ async function loadClasses() {
     const effectiveContext = context ?? { endpointUrl: '' }
 
     const iris = await fetchAvailableClasses(effectiveContext, 50, store)
-    availableClasses.value = iris
+    _endpointClasses.value = iris
       .map((iri) => ({ iri, label: shortIri(iri) }))
       .sort((a, b) => a.label.localeCompare(b.label))
     classesLoaded.value = true
@@ -299,21 +312,20 @@ async function loadClasses() {
 }
 
 function onDropdownShow() {
-  if (!classesLoaded.value) loadClasses()
+  if (!props.graphClasses && !classesLoaded.value) loadClasses()
 }
 
 function onClassSelect(event: { value: string }) {
   const iri = event.value
-  if (!iri || props.modelValue.allowedClasses.includes(iri)) return
-  update('allowedClasses', [...props.modelValue.allowedClasses, iri])
-  // Reset the picker so the same class can be re-added after removal
+  if (!iri || props.modelValue.hiddenClasses.includes(iri)) return
+  update('hiddenClasses', [...props.modelValue.hiddenClasses, iri])
   classPickerValue.value = null
 }
 
 function removeClass(idx: number) {
-  const updated = [...props.modelValue.allowedClasses]
+  const updated = [...props.modelValue.hiddenClasses]
   updated.splice(idx, 1)
-  update('allowedClasses', updated)
+  update('hiddenClasses', updated)
 }
 
 // ── IRI validation ────────────────────────────────────────────────────────────

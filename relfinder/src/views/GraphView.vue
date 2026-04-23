@@ -133,7 +133,7 @@
             <i :class="['pi', optionsOpen ? 'pi-chevron-down' : 'pi-chevron-right']" />
             Query Options
           </p>
-          <OptionsPanel v-if="optionsOpen" v-model="graphOptions" :available-languages="availableLanguages" />
+          <OptionsPanel v-if="optionsOpen" v-model="graphOptions" :available-languages="availableLanguages" :graph-classes="graph?.classes" />
         </section>
       </div>
     </aside>
@@ -141,8 +141,8 @@
     <!-- ── Graph canvas ─────────────────────────────────────────────────────── -->
     <main class="graph-main">
       <GraphCanvas
-        :nodes="graph?.nodes ?? []"
-        :edges="graph?.edges ?? []"
+        :nodes="displayNodes"
+        :edges="displayEdges"
         :loading="searching"
         :class-colors="classColors"
         :endpoint1-iri="entity1?.iri"
@@ -210,10 +210,9 @@ const graphOptions = ref<GraphOptions>({
   ],
   avoidCycles: QueryCyclesStrategy.NO_INTERMEDIATE_DUPLICATES,
   allowedClasses: [],
+  hiddenClasses: [],
   language: '',
   customLabelProperties: [],
-  // Merge any preset options from browse navigation synchronously so the
-  // options watch below never sees a spurious change on first render.
   ..._historyExample?.options,
 })
 
@@ -231,6 +230,22 @@ const PALETTE = [
 ]
 
 const classColors = ref(new Map<string, string>())
+
+// ── Client-side display filtering ─────────────────────────────────────────────
+
+const displayNodes = computed(() => {
+  if (!graph.value) return []
+  const hidden = graphOptions.value.hiddenClasses
+  if (hidden.length === 0) return graph.value.nodes
+  return graph.value.nodes.filter((n) => !hidden.includes(n.class))
+})
+
+const displayEdges = computed(() => {
+  if (!graph.value) return []
+  if (graphOptions.value.hiddenClasses.length === 0) return graph.value.edges
+  const visibleIds = new Set(displayNodes.value.map((n) => n.id))
+  return graph.value.edges.filter((e) => visibleIds.has(e.sid) && visibleIds.has(e.tid))
+})
 
 const availableLanguages = computed(() => {
   if (!graph.value) return []
@@ -326,7 +341,6 @@ const _requerySignal = computed(() =>
     maxDistance: graphOptions.value.maxDistance,
     ignoredProperties: graphOptions.value.ignoredProperties,
     avoidCycles: graphOptions.value.avoidCycles,
-    allowedClasses: graphOptions.value.allowedClasses,
     customLabelProperties: graphOptions.value.customLabelProperties,
   }),
 )
