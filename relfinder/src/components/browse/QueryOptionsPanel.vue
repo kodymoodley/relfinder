@@ -7,6 +7,7 @@
         <span class="option-value">{{ modelValue.maxDistance }}</span>
       </div>
       <Slider
+        inputId="qop-max-distance"
         :model-value="modelValue.maxDistance"
         :min="1"
         :max="6"
@@ -55,6 +56,7 @@
           </div>
           <div class="add-prop">
             <InputText
+              id="qop-ignored-prop"
               v-model="newPropIri"
               placeholder="https://example.org/property"
               size="small"
@@ -97,6 +99,7 @@
           </div>
           <div class="add-prop">
             <InputText
+              id="qop-label-prop"
               v-model="newLabelIri"
               placeholder="https://example.org/label"
               size="small"

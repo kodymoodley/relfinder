@@ -82,6 +82,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed } from 'vue'
 import Select from 'primevue/select'
+import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
 import { QueryCyclesStrategy } from '@/lib/sparql/types'
 import { fetchAvailableClasses } from '@/lib/sparql/entitySearch'

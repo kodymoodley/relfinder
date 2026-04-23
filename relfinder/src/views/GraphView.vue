@@ -440,6 +440,7 @@ function shortIri(iri: string): string {
   cursor: pointer;
   display: flex;
   align-items: center;
+  margin-bottom: var(--rf-space-2);
   gap: var(--rf-space-2);
   user-select: none;
   transition: color var(--rf-duration-fast) var(--rf-ease-out);

@@ -81,7 +81,7 @@
 
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
-import { ref, toRaw } from 'vue'
+import { ref } from 'vue'
 import { usePinnedStore } from '@/stores/pinned'
 import { shortIri } from '@/lib/utils/iri'
 import type { ExploredPair } from '@/stores/pinned'
@@ -109,11 +109,11 @@ function navigateToGraph(pair: { entity1: { iri: string; label: string; class: s
   router.push({
     name: 'graph',
     state: {
-      example: {
-        entity1: toRaw(pair.entity1),
-        entity2: toRaw(pair.entity2),
-        options: toRaw(queryOptions.value),
-      },
+      example: JSON.parse(JSON.stringify({
+        entity1: pair.entity1,
+        entity2: pair.entity2,
+        options: queryOptions.value,
+      })),
     },
   })
 }

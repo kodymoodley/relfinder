@@ -10,6 +10,7 @@
     <div class="search-bar">
       <i class="pi pi-search search-icon" />
       <input
+        id="classes-search"
         v-model="searchQuery"
         type="text"
         class="search-input"

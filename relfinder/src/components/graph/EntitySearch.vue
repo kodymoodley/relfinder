@@ -1,7 +1,7 @@
 <template>
   <div class="entity-search">
     <div class="field">
-      <label :for="`entity-${id}-input`">{{ label }}</label>
+      <label>{{ label }}</label>
 
       <!--
         AutoComplete is only mounted while no entity is selected.
@@ -169,6 +169,8 @@ function onClear() {
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--rf-text-subtle);
+  margin-bottom: var(--rf-space-2);
+  display: block;
 }
 
 .suggestion-item {
