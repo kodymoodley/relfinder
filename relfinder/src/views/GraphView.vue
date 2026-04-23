@@ -171,7 +171,7 @@ import Divider from 'primevue/divider'
 import Message from 'primevue/message'
 import Tag from 'primevue/tag'
 import { useConnectionStore } from '@/stores/connection'
-import { findRelationships } from '@/lib/sparql/entitySearch'
+import { findRelationships, refreshGraphLabels } from '@/lib/sparql/entitySearch'
 import { QueryCyclesStrategy } from '@/lib/sparql/types'
 import type { EntitySearchResult, RelationshipGraph, GraphNode } from '@/lib/sparql/types'
 import EntitySearch from '@/components/graph/EntitySearch.vue'
@@ -300,9 +300,25 @@ onMounted(() => {
 
 // ── Re-run on options change ──────────────────────────────────────────────────
 
+// Language-only change: re-apply labels from the stored allLabels map — no
+// network calls needed since all language tags were fetched up front.
+watch(
+  () => graphOptions.value.language,
+  (lang) => {
+    if (graph.value) refreshGraphLabels(graph.value, lang)
+  },
+)
+
+// All other options: full re-query (debounced to absorb slider/toggle bursts).
 let optionsTimer: ReturnType<typeof setTimeout> | null = null
 watch(
-  graphOptions,
+  () => ({
+    maxDistance: graphOptions.value.maxDistance,
+    ignoredProperties: graphOptions.value.ignoredProperties,
+    avoidCycles: graphOptions.value.avoidCycles,
+    allowedClasses: graphOptions.value.allowedClasses,
+    customLabelProperties: graphOptions.value.customLabelProperties,
+  }),
   () => {
     if (!entity1.value || !entity2.value) return
     if (optionsTimer) clearTimeout(optionsTimer)

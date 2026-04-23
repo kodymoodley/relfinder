@@ -78,6 +78,14 @@ export interface PathCollection {
   paths: SparqlBinding[]
 }
 
+// ── Label model ───────────────────────────────────────────────────────────────
+
+/** A single label value paired with its RDF language tag ('' = untagged). */
+export interface LabelEntry {
+  value: string
+  lang: string
+}
+
 // ── Graph model ───────────────────────────────────────────────────────────────
 
 export interface GraphNode {
@@ -119,6 +127,12 @@ export interface RelationshipGraph {
   edges: MergedEdge[]
   /** Distinct rdf:type IRIs present in the graph — used to colour nodes. */
   classes: string[]
+  /**
+   * All label values fetched for every node and edge IRI, keyed by IRI.
+   * Stored so that a language change can re-apply labels client-side
+   * without re-running the path traversal queries.
+   */
+  allLabels: Map<string, LabelEntry[]>
 }
 
 // ── Entity search ─────────────────────────────────────────────────────────────

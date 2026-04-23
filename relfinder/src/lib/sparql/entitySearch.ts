@@ -19,6 +19,7 @@ import { getQueries } from './queryBuilder'
 import { buildRelationshipsGraph, mergeEdgeDuplicates, applyLabelsAndTypes } from './graphBuilder'
 import { shortIri } from '../utils/iri'
 import { cacheGet, cacheSet } from '../cache/queryCache'
+import type { LabelEntry } from './types'
 import {
   QueryCyclesStrategy,
   type QueryContext,
@@ -306,21 +307,20 @@ export async function fetchInstancesByClass(
 // ── Label fetching ────────────────────────────────────────────────────────────
 
 /**
- * Fetches `rdfs:label` values for a batch of IRIs.
+ * Fetches label values for a batch of IRIs across ALL language tags.
  *
- * Uses UNION subqueries rather than VALUES to maximise compatibility across
- * SPARQL 1.1 endpoints.
+ * Returning every available language in one query lets the UI switch display
+ * language purely client-side without re-running the path traversal.
  *
- * Ported from `SPARQLEndpoint.label_for_entities()`.
+ * Uses UNION subqueries rather than VALUES for broad endpoint compatibility.
  *
- * @returns A map of IRI → label string (English preferred; falls back to no-lang).
+ * @returns A map of IRI → all label entries (value + lang tag).
  */
 export async function fetchLabels(
   iris: string[],
   context: QueryContext,
   store?: Store,
-  language = 'en',
-): Promise<Map<string, string>> {
+): Promise<Map<string, LabelEntry[]>> {
   if (iris.length === 0) return new Map()
 
   const subqueries = iris
@@ -329,25 +329,45 @@ export async function fetchLabels(
     )
     .join('\n    UNION\n    ')
 
-  const langFilter = langFilterClause('?label', language)
-
   const query = `
     SELECT * WHERE {
       ${subqueries}
-      ${langFilter}
     }
   `
 
   const bindings = await runSelect(query, context, store)
 
-  const labelsMap = new Map<string, string>()
+  const labelsMap = new Map<string, LabelEntry[]>()
   for (const b of bindings) {
     const p = b['p']
     const label = b['label']
-    if (p && label) labelsMap.set(p.value, label.value)
+    if (!p || !label) continue
+    const entry: LabelEntry = { value: label.value, lang: label.lang ?? '' }
+    const existing = labelsMap.get(p.value)
+    if (existing) existing.push(entry)
+    else labelsMap.set(p.value, [entry])
   }
 
   return labelsMap
+}
+
+/**
+ * Picks the best label from a set of multi-language entries for the given tag.
+ *
+ * Priority: exact language match → untagged literal → 'en' → first available.
+ */
+function pickLabel(entries: LabelEntry[], language: string): string | undefined {
+  if (language) {
+    const exact = entries.find((e) => e.lang === language)
+    if (exact) return exact.value
+  }
+  const untagged = entries.find((e) => e.lang === '')
+  if (untagged) return untagged.value
+  if (language !== 'en') {
+    const en = entries.find((e) => e.lang === 'en')
+    if (en) return en.value
+  }
+  return entries[0]?.value
 }
 
 // ── Type fetching ─────────────────────────────────────────────────────────────
@@ -472,17 +492,23 @@ export async function enrichGraph(
   chunkSize = 50,
   store?: Store,
   language = 'en',
-): Promise<void> {
+): Promise<Map<string, LabelEntry[]>> {
   const propIris = edges.map((e) => e.iri)
   const nodeIris = nodes.map((n) => n.iri)
+  const allLabelIris = [...new Set([...propIris, ...nodeIris])]
 
-  const allLabelIris = [...propIris, ...nodeIris]
-
-  // Merge chunked label results
-  const labelsMap = new Map<string, string>()
+  // Fetch all language tags in one pass per chunk
+  const allLabels = new Map<string, LabelEntry[]>()
   for (const chunk of chunks(allLabelIris, chunkSize)) {
-    const partial = await fetchLabels(chunk, context, store, language)
-    for (const [k, v] of partial) labelsMap.set(k, v)
+    const partial = await fetchLabels(chunk, context, store)
+    for (const [k, v] of partial) allLabels.set(k, v)
+  }
+
+  // Resolve to a single label per IRI for the requested language
+  const resolvedLabels = new Map<string, string>()
+  for (const [iri, entries] of allLabels) {
+    const label = pickLabel(entries, language)
+    if (label) resolvedLabels.set(iri, label)
   }
 
   // Merge chunked type results
@@ -492,7 +518,9 @@ export async function enrichGraph(
     for (const [k, v] of partial) typesMap.set(k, v)
   }
 
-  applyLabelsAndTypes(nodes, edges, labelsMap, typesMap)
+  applyLabelsAndTypes(nodes, edges, resolvedLabels, typesMap)
+
+  return allLabels
 }
 
 /**
@@ -552,7 +580,7 @@ export async function findRelationships(
     options.allowedObjectProperties ?? [],
   )
 
-  await enrichGraph(
+  const allLabels = await enrichGraph(
     nodes,
     edges,
     context,
@@ -565,5 +593,32 @@ export async function findRelationships(
   const mergedEdges = mergeEdgeDuplicates(edges)
   const classes = [...new Set(nodes.map((n) => n.class))]
 
-  return { nodes, edges: mergedEdges, classes }
+  return { nodes, edges: mergedEdges, classes, allLabels }
+}
+
+/**
+ * Re-applies display labels to all nodes and edges in an existing graph for a
+ * different language tag — no network calls, uses the `allLabels` map stored
+ * at query time.
+ *
+ * Call this instead of re-running `findRelationships` when only the language
+ * preference changes.
+ */
+export function refreshGraphLabels(graph: RelationshipGraph, language: string): void {
+  for (const node of graph.nodes) {
+    const entries = graph.allLabels.get(node.iri)
+    if (entries) {
+      const label = pickLabel(entries, language)
+      if (label) node.label = label
+    }
+  }
+  for (const edge of graph.edges) {
+    const labels = edge.iris
+      .map((iri) => {
+        const entries = graph.allLabels.get(iri)
+        return entries ? pickLabel(entries, language) : undefined
+      })
+      .filter(Boolean) as string[]
+    if (labels.length > 0) edge.label = labels.join(' | ')
+  }
 }
