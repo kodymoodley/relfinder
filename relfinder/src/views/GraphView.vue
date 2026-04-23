@@ -133,7 +133,7 @@
             <i :class="['pi', optionsOpen ? 'pi-chevron-down' : 'pi-chevron-right']" />
             Query Options
           </p>
-          <OptionsPanel v-if="optionsOpen" v-model="graphOptions" />
+          <OptionsPanel v-if="optionsOpen" v-model="graphOptions" :available-languages="availableLanguages" />
         </section>
       </div>
     </aside>
@@ -163,7 +163,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import { useDarkMode } from '@/composables/useDarkMode'
@@ -231,6 +231,15 @@ const PALETTE = [
 ]
 
 const classColors = ref(new Map<string, string>())
+
+const availableLanguages = computed(() => {
+  if (!graph.value) return []
+  const langs = new Set<string>()
+  for (const entries of graph.value.allLabels.values()) {
+    for (const entry of entries) langs.add(entry.lang)
+  }
+  return [...langs].sort()
+})
 
 watch(
   () => graph.value?.classes,
@@ -310,22 +319,24 @@ watch(
 )
 
 // All other options: full re-query (debounced to absorb slider/toggle bursts).
-let optionsTimer: ReturnType<typeof setTimeout> | null = null
-watch(
-  () => ({
+// A computed serialises only the re-query-relevant fields so that a language-only
+// change produces an identical string and never triggers this watch.
+const _requerySignal = computed(() =>
+  JSON.stringify({
     maxDistance: graphOptions.value.maxDistance,
     ignoredProperties: graphOptions.value.ignoredProperties,
     avoidCycles: graphOptions.value.avoidCycles,
     allowedClasses: graphOptions.value.allowedClasses,
     customLabelProperties: graphOptions.value.customLabelProperties,
   }),
-  () => {
-    if (!entity1.value || !entity2.value) return
-    if (optionsTimer) clearTimeout(optionsTimer)
-    optionsTimer = setTimeout(onFindRelationships, 500)
-  },
-  { deep: true },
 )
+
+let optionsTimer: ReturnType<typeof setTimeout> | null = null
+watch(_requerySignal, () => {
+  if (!entity1.value || !entity2.value) return
+  if (optionsTimer) clearTimeout(optionsTimer)
+  optionsTimer = setTimeout(onFindRelationships, 500)
+})
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

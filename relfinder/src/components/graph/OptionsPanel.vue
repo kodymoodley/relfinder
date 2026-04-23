@@ -30,11 +30,18 @@
       </button>
       <div class="section-body" :class="{ 'section-body--open': open.language }">
         <div class="section-body-inner">
-          <p class="option-hint">
-            RDF language tag for labels (e.g. <code>en</code>, <code>de</code>, <code>fr</code>). Leave
-            empty to accept any language.
-          </p>
+          <Select
+            v-if="availableLanguages && availableLanguages.length > 0"
+            :model-value="modelValue.language"
+            :options="langOptions"
+            option-label="label"
+            option-value="value"
+            size="small"
+            fluid
+            @update:model-value="update('language', $event as string)"
+          />
           <InputText
+            v-else
             id="lang-input"
             :model-value="modelValue.language"
             placeholder="en"
@@ -211,7 +218,12 @@ export interface GraphOptions {
   customLabelProperties: string[]
 }
 
-const props = defineProps<{ modelValue: GraphOptions }>()
+const props = defineProps<{
+  modelValue: GraphOptions
+  /** Distinct language tags present in the current graph's labels. When provided,
+   *  a dropdown replaces the free-text input. */
+  availableLanguages?: string[]
+}>()
 const emit = defineEmits<{ 'update:modelValue': [value: GraphOptions] }>()
 
 const connectionStore = useConnectionStore()
@@ -235,6 +247,13 @@ const classLoadError = ref('')
 const unselectedClasses = computed(() =>
   availableClasses.value.filter((cls) => !props.modelValue.allowedClasses.includes(cls.iri)),
 )
+
+const langOptions = computed(() => [
+  { label: 'Any', value: '' },
+  ...(props.availableLanguages ?? [])
+    .filter((l) => l !== '')
+    .map((l) => ({ label: l, value: l })),
+])
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
