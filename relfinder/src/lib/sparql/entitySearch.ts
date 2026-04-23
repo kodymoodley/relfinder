@@ -221,6 +221,86 @@ export async function fetchClassesWithCounts(
   return result
 }
 
+// ── Instance loading ──────────────────────────────────────────────────────────
+
+/**
+ * Fetches up to `limit` instances of a given class with their preferred label.
+ *
+ * Falls back to `shortIri()` when no label is found. Results are cached for
+ * the session so repeated expand/collapse cycles are free.
+ *
+ * @param limit  300 gives a comfortable working set while staying well within
+ *   the default result-size limits of public endpoints.
+ */
+export async function fetchInstancesByClass(
+  classIri: string,
+  context: QueryContext,
+  store?: Store,
+  limit = 300,
+  language = 'en',
+): Promise<Array<{ iri: string; label: string }>> {
+  const sourceKey = store ? 'file' : context.endpointUrl
+  const cacheKey = `instances:${sourceKey}:${classIri}`
+  const cached = cacheGet<Array<{ iri: string; label: string }>>(cacheKey)
+  if (cached) return cached
+
+  const langFilter = langFilterClause('?label', language)
+
+  let query: string
+
+  if (store) {
+    query = `
+      SELECT DISTINCT ?s ?label WHERE {
+        ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <${classIri}> .
+        OPTIONAL {
+          ?s ?lp ?label .
+          FILTER (isLiteral(?label) && (
+            datatype(?label) = <http://www.w3.org/2001/XMLSchema#string> ||
+            lang(?label) != ''
+          ))
+        }
+      } LIMIT ${limit}
+    `
+  } else {
+    const labelProps = [
+      'http://www.w3.org/2000/01/rdf-schema#label',
+      'http://www.w3.org/2004/02/skos/core#prefLabel',
+      'http://xmlns.com/foaf/0.1/name',
+      'http://schema.org/name',
+      'http://purl.org/dc/elements/1.1/title',
+      'http://purl.org/dc/terms/title',
+    ].map((p) => `<${p}>`).join('\n        ')
+
+    query = `
+      SELECT DISTINCT ?s ?label WHERE {
+        ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <${classIri}> .
+        OPTIONAL {
+          VALUES ?lp { ${labelProps} }
+          ?s ?lp ?label .
+          ${langFilter}
+        }
+      } LIMIT ${limit}
+    `
+  }
+
+  const bindings = await runSelect(query, context, store)
+
+  const seen = new Set<string>()
+  const result: Array<{ iri: string; label: string }> = []
+
+  for (const b of bindings) {
+    const s = b['s']
+    if (!s) continue
+    const iri = s.value
+    if (seen.has(iri)) continue
+    seen.add(iri)
+    result.push({ iri, label: b['label']?.value ?? shortIri(iri) })
+  }
+
+  cacheSet(cacheKey, result)
+  return result
+}
+
 // ── Label fetching ────────────────────────────────────────────────────────────
 
 /**
