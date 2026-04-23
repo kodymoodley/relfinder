@@ -248,11 +248,22 @@ const unselectedClasses = computed(() =>
   availableClasses.value.filter((cls) => !props.modelValue.allowedClasses.includes(cls.iri)),
 )
 
+const _displayNames = new Intl.DisplayNames(['en'], { type: 'language' })
+
+function langLabel(code: string): string {
+  try {
+    const name = _displayNames.of(code)
+    return name && name !== code ? `${name} (${code})` : code
+  } catch {
+    return code
+  }
+}
+
 const langOptions = computed(() => [
   { label: 'Any', value: '' },
   ...(props.availableLanguages ?? [])
     .filter((l) => l !== '')
-    .map((l) => ({ label: l, value: l })),
+    .map((l) => ({ label: langLabel(l), value: l })),
 ])
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
