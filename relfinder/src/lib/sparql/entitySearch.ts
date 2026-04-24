@@ -223,6 +223,70 @@ export async function fetchClassesWithCounts(
   return result
 }
 
+// ── Graph size estimation ─────────────────────────────────────────────────────
+
+/**
+ * Returns an approximate node count for the connected graph.
+ * For local N3 stores the quad count is used as a fast proxy.
+ * For SPARQL endpoints the count of distinct IRI subjects is queried and
+ * cached for 10 minutes so repeated calls are free.
+ */
+export async function estimateGraphNodeCount(
+  context: QueryContext,
+  store?: Store,
+): Promise<number> {
+  if (store) return store.size
+  const cacheKey = `nodecount:${context.endpointUrl}`
+  const cached = cacheGet<number>(cacheKey)
+  if (cached !== null) return cached
+  try {
+    const rows = await runSelect(
+      `SELECT (COUNT(DISTINCT ?s) AS ?n) WHERE { ?s ?p ?o . FILTER(isIRI(?s)) }`,
+      context,
+    )
+    const count = parseInt(rows[0]?.['n']?.value ?? '0', 10)
+    cacheSet(cacheKey, count, 10 * 60 * 1000)
+    return count
+  } catch {
+    return 0
+  }
+}
+
+// ── Intermediate type discovery ───────────────────────────────────────────────
+
+/**
+ * Given a set of already-discovered entity pairs, finds the most common
+ * rdf:type values of nodes that act as 2-hop intermediates between them.
+ * Used to suggest path-type constraints after an unconstrained discovery run.
+ */
+export async function fetchIntermediateTypesForPairs(
+  pairs: Array<{ entity1: { iri: string }; entity2: { iri: string } }>,
+  context: QueryContext,
+  store?: Store,
+): Promise<Array<{ iri: string; label: string; count: number }>> {
+  if (pairs.length === 0) return []
+  const valuesClause = pairs.map((p) => `(<${p.entity1.iri}> <${p.entity2.iri}>)`).join(' ')
+  const query = `
+    SELECT DISTINCT ?midType (COUNT(*) AS ?n) WHERE {
+      VALUES (?e1 ?e2) { ${valuesClause} }
+      ?e1 ?p1 ?mid . ?mid ?p2 ?e2 .
+      ?mid a ?midType . FILTER(isIRI(?midType))
+    } GROUP BY ?midType ORDER BY DESC(?n) LIMIT 15
+  `
+  try {
+    const rows = await runSelect(query, context, store)
+    return rows
+      .filter((r) => r['midType'])
+      .map((r) => ({
+        iri: r['midType']!.value,
+        label: shortIri(r['midType']!.value),
+        count: parseInt(r['n']?.value ?? '1', 10),
+      }))
+  } catch {
+    return []
+  }
+}
+
 // ── Instance loading ──────────────────────────────────────────────────────────
 
 /**

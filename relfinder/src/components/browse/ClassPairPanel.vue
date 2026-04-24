@@ -134,6 +134,66 @@
         <p class="feedback-text">No connections found within the configured max path length.</p>
       </div>
 
+      <!-- ── Large-graph type-constraint panel ───────────────────────── -->
+      <div
+        v-if="allDone && isLargeGraph && !forceFullAlgorithm && (suggestedTypes.length > 0 || constraintTypesLoading)"
+        class="constraint-panel"
+      >
+        <div class="constraint-header">
+          <i class="pi pi-bolt constraint-icon" />
+          <span class="constraint-title">Speed up next search</span>
+        </div>
+        <p class="constraint-desc">
+          These node types were found on connecting paths. Restricting to them will
+          significantly reduce search time. Deselect any you don't need.
+        </p>
+
+        <div v-if="constraintTypesLoading" class="constraint-loading">
+          <i class="pi pi-spin pi-spinner" /> Analysing paths…
+        </div>
+        <div v-else class="constraint-types">
+          <button
+            v-for="t in suggestedTypes"
+            :key="t.iri"
+            class="type-chip"
+            :class="{ 'type-chip--active': activeConstraintTypes.includes(t.iri) }"
+            :title="t.iri"
+            @click="toggleConstraintType(t.iri)"
+          >
+            {{ t.label }}
+            <span class="type-chip-count">{{ t.count }}</span>
+          </button>
+        </div>
+
+        <button
+          class="refine-btn"
+          :disabled="activeConstraintTypes.length === 0 || discovering"
+          @click="findNew"
+        >
+          <i class="pi pi-search" />
+          Search with selected types
+        </button>
+
+        <button class="full-algo-link" @click="forceFullAlgorithm = true">
+          Use full algorithm instead
+        </button>
+      </div>
+
+      <!-- ── Full-algorithm warning (large graph) ─────────────────────── -->
+      <div v-if="isLargeGraph && forceFullAlgorithm" class="full-algo-warning">
+        <i class="pi pi-exclamation-triangle warning-icon" />
+        <div class="warning-body">
+          <strong>Full algorithm active</strong>
+          <span>
+            This graph has more than 10,000 nodes. The unconstrained path search may be very
+            slow or time out on large public endpoints.
+          </span>
+        </div>
+        <button class="warning-dismiss" @click="forceFullAlgorithm = false">
+          <i class="pi pi-times" />
+        </button>
+      </div>
+
       <!-- Find new examples once all strategies are done -->
       <div v-if="allDone && pairs.length > 0" class="find-new-row">
         <button class="find-new-btn" @click="findNew">
@@ -162,16 +222,37 @@ import { useRouter } from 'vue-router'
 import Select from 'primevue/select'
 import Button from 'primevue/button'
 import { useConnectionStore } from '@/stores/connection'
-import { fetchClassesWithCounts, findRelationships } from '@/lib/sparql/entitySearch'
+import {
+  fetchClassesWithCounts,
+  findRelationships,
+  estimateGraphNodeCount,
+  fetchIntermediateTypesForPairs,
+} from '@/lib/sparql/entitySearch'
 import InstancePairSection from './InstancePairSection.vue'
 import { discoverClassPairs } from '@/lib/sparql/classPairDiscovery'
-import { cacheSet } from '@/lib/cache/queryCache'
+import { cacheSet, cacheGet } from '@/lib/cache/queryCache'
 import { shortIri } from '@/lib/utils/iri'
 import type { ClassInfo, DiscoveredPair } from '@/lib/sparql/types'
 import { QueryCyclesStrategy } from '@/lib/sparql/types'
 
 const router = useRouter()
 const connectionStore = useConnectionStore()
+
+// ── Session persistence ───────────────────────────────────────────────────────
+
+const SESSION_KEY = 'classpairs:ui-session'
+
+interface PairsSession {
+  c1: string | null
+  c2: string | null
+  pairs: DiscoveredPair[]
+  allDone: boolean
+  hasSearched: boolean
+  discoveryOffset: number
+  suggestedTypes: Array<{ iri: string; label: string; count: number }>
+  activeConstraintTypes: string[]
+  forceFullAlgorithm: boolean
+}
 
 // ── Panel mode ────────────────────────────────────────────────────────────────
 
@@ -193,12 +274,45 @@ onMounted(async () => {
   const ctx = connectionStore.queryContext
   const store = connectionStore.rdfStore ?? undefined
   if (!ctx && !store) return
+  const effectiveCtx = ctx ?? { endpointUrl: '' }
   classesLoading.value = true
-  try {
-    classes.value = await fetchClassesWithCounts(ctx ?? { endpointUrl: '' }, store)
-  } finally {
-    classesLoading.value = false
+  // Run class loading and graph-size check in parallel
+  const [fetchedClasses, nodeCount] = await Promise.allSettled([
+    fetchClassesWithCounts(effectiveCtx, store),
+    estimateGraphNodeCount(effectiveCtx, store),
+  ])
+  classesLoading.value = false
+  if (fetchedClasses.status === 'fulfilled') classes.value = fetchedClasses.value
+  isLargeGraph.value = nodeCount.status === 'fulfilled' ? nodeCount.value > 10_000 : false
+
+  // Restore pair results from the previous visit so the user doesn't lose them
+  const saved = cacheGet<PairsSession>(SESSION_KEY)
+  if (saved?.hasSearched) {
+    c1.value = saved.c1
+    c2.value = saved.c2
+    pairs.value = saved.pairs
+    allDone.value = saved.allDone
+    hasSearched.value = saved.hasSearched
+    discoveryOffset.value = saved.discoveryOffset
+    suggestedTypes.value = saved.suggestedTypes
+    activeConstraintTypes.value = saved.activeConstraintTypes
+    forceFullAlgorithm.value = saved.forceFullAlgorithm
   }
+})
+
+onUnmounted(() => {
+  cancelDiscovery?.()
+  cacheSet<PairsSession>(SESSION_KEY, {
+    c1: c1.value,
+    c2: c2.value,
+    pairs: [...pairs.value],
+    allDone: allDone.value,
+    hasSearched: hasSearched.value,
+    discoveryOffset: discoveryOffset.value,
+    suggestedTypes: [...suggestedTypes.value],
+    activeConstraintTypes: [...activeConstraintTypes.value],
+    forceFullAlgorithm: forceFullAlgorithm.value,
+  }, 30 * 60 * 1000)
 })
 
 // ── Selection ─────────────────────────────────────────────────────────────────
@@ -211,14 +325,39 @@ function swap() {
 }
 
 function onSelectionChange() {
-  // Cancel any in-flight discovery when the class selection changes
-  if (discovering.value) {
-    cancelDiscovery?.()
-    discovering.value = false
-    pairs.value = []
-    allDone.value = false
-    hasSearched.value = false
-  }
+  cancelDiscovery?.()
+  discovering.value = false
+  pairs.value = []
+  allDone.value = false
+  hasSearched.value = false
+  suggestedTypes.value = []
+  activeConstraintTypes.value = []
+}
+
+// ── Graph size + path-type constraints ───────────────────────────────────────
+
+const isLargeGraph = ref<boolean | null>(null)
+const forceFullAlgorithm = ref(false)
+const suggestedTypes = ref<Array<{ iri: string; label: string; count: number }>>([])
+const activeConstraintTypes = ref<string[]>([])
+const constraintTypesLoading = ref(false)
+
+async function loadIntermediateTypes() {
+  if (!pairs.value.length) return
+  constraintTypesLoading.value = true
+  const ctx = connectionStore.queryContext
+  const store = connectionStore.rdfStore ?? undefined
+  const effectiveCtx = ctx ?? { endpointUrl: '' }
+  suggestedTypes.value = await fetchIntermediateTypesForPairs(pairs.value, effectiveCtx, store)
+  // Pre-select all discovered types
+  activeConstraintTypes.value = suggestedTypes.value.map((t) => t.iri)
+  constraintTypesLoading.value = false
+}
+
+function toggleConstraintType(iri: string) {
+  const idx = activeConstraintTypes.value.indexOf(iri)
+  if (idx === -1) activeConstraintTypes.value.push(iri)
+  else activeConstraintTypes.value.splice(idx, 1)
 }
 
 // ── Discovery ─────────────────────────────────────────────────────────────────
@@ -231,6 +370,11 @@ const discoveryOffset = ref(0)
 
 let cancelDiscovery: (() => void) | null = null
 
+function effectiveConstraintTypes(): string[] {
+  if (!isLargeGraph.value || forceFullAlgorithm.value) return []
+  return activeConstraintTypes.value
+}
+
 function startDiscovery() {
   if (!c1.value || !c2.value) return
   cancelDiscovery?.()
@@ -238,21 +382,32 @@ function startDiscovery() {
   discovering.value = true
   allDone.value = false
   hasSearched.value = true
+  suggestedTypes.value = []
+
+  const constraintTypes = effectiveConstraintTypes()
 
   cancelDiscovery = discoverClassPairs(
     c1.value,
     c2.value,
     connectionStore.queryContext,
     connectionStore.rdfStore ?? undefined,
-    { maxDistance: 3, pairLimit: 6, offset: discoveryOffset.value },
+    {
+      maxDistance: 3,
+      pairLimit: 6,
+      offset: discoveryOffset.value,
+      allowedIntermediateTypes: constraintTypes,
+    },
     (pair) => {
       pairs.value.push(pair)
-      // Start pre-warming immediately so the cache is likely ready when user clicks Explore
       prewarmPair(pair)
     },
     () => {
       discovering.value = false
       allDone.value = true
+      // After an unconstrained run on a large graph, infer intermediate types
+      if (isLargeGraph.value && !forceFullAlgorithm.value && constraintTypes.length === 0) {
+        loadIntermediateTypes()
+      }
     },
   )
 }
@@ -261,8 +416,6 @@ function findNew() {
   discoveryOffset.value++
   startDiscovery()
 }
-
-onUnmounted(() => cancelDiscovery?.())
 
 // ── Background pre-warming ────────────────────────────────────────────────────
 //
@@ -642,6 +795,186 @@ function pairKey(pair: DiscoveredPair): string {
   font-size: var(--rf-text-xs);
   color: var(--rf-text-subtle);
   line-height: var(--rf-leading-relaxed);
+}
+
+/* ── Constraint panel (large-graph type suggestion) ─────────────────────── */
+
+.constraint-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--rf-space-3);
+  margin: 0 var(--rf-space-4) var(--rf-space-2);
+  padding: var(--rf-space-3) var(--rf-space-4);
+  background: color-mix(in srgb, var(--rf-primary) 6%, var(--rf-surface));
+  border: 1px solid color-mix(in srgb, var(--rf-primary) 25%, transparent);
+  border-radius: var(--rf-radius-md);
+}
+
+.constraint-header {
+  display: flex;
+  align-items: center;
+  gap: var(--rf-space-2);
+}
+
+.constraint-icon {
+  font-size: var(--rf-text-sm);
+  color: var(--rf-primary);
+}
+
+.constraint-title {
+  font-size: var(--rf-text-xs);
+  font-weight: var(--rf-weight-semibold);
+  color: var(--rf-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.constraint-desc {
+  margin: 0;
+  font-size: var(--rf-text-xs);
+  color: var(--rf-text-muted);
+  line-height: var(--rf-leading-relaxed);
+}
+
+.constraint-loading {
+  font-size: var(--rf-text-xs);
+  color: var(--rf-text-subtle);
+  display: flex;
+  align-items: center;
+  gap: var(--rf-space-2);
+}
+
+.constraint-types {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--rf-space-2);
+}
+
+.type-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--rf-space-1);
+  padding: 0.15rem 0.55rem;
+  border: 1px solid var(--rf-border);
+  border-radius: var(--rf-radius-full);
+  background: var(--rf-surface);
+  font-family: var(--rf-font-body);
+  font-size: var(--rf-text-xs);
+  color: var(--rf-text-subtle);
+  cursor: pointer;
+  transition:
+    background var(--rf-duration-fast) var(--rf-ease-out),
+    border-color var(--rf-duration-fast) var(--rf-ease-out),
+    color var(--rf-duration-fast) var(--rf-ease-out);
+}
+
+.type-chip--active {
+  background: var(--rf-primary-soft);
+  border-color: color-mix(in srgb, var(--rf-primary) 40%, transparent);
+  color: var(--rf-primary);
+}
+
+.type-chip-count {
+  font-size: 0.65rem;
+  opacity: 0.7;
+}
+
+.refine-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--rf-space-2);
+  padding: var(--rf-space-2) var(--rf-space-3);
+  background: var(--rf-primary);
+  border: none;
+  border-radius: var(--rf-radius-sm);
+  font-family: var(--rf-font-body);
+  font-size: var(--rf-text-xs);
+  font-weight: var(--rf-weight-medium);
+  color: #fff;
+  cursor: pointer;
+  transition: opacity var(--rf-duration-fast) var(--rf-ease-out);
+}
+
+.refine-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.refine-btn:not(:disabled):hover {
+  opacity: 0.88;
+}
+
+.full-algo-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: var(--rf-font-body);
+  font-size: var(--rf-text-xs);
+  color: var(--rf-text-subtle);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  align-self: flex-start;
+  transition: color var(--rf-duration-fast) var(--rf-ease-out);
+}
+
+.full-algo-link:hover {
+  color: var(--rf-text);
+}
+
+/* ── Full-algorithm warning ───────────────────────────────────────────────── */
+
+.full-algo-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--rf-space-3);
+  margin: 0 var(--rf-space-4) var(--rf-space-2);
+  padding: var(--rf-space-3) var(--rf-space-3);
+  background: color-mix(in srgb, var(--rf-warning, #f59e0b) 10%, var(--rf-surface));
+  border: 1px solid color-mix(in srgb, var(--rf-warning, #f59e0b) 40%, transparent);
+  border-radius: var(--rf-radius-md);
+}
+
+.warning-icon {
+  font-size: var(--rf-text-sm);
+  color: var(--rf-warning, #f59e0b);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.warning-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--rf-space-1);
+  font-size: var(--rf-text-xs);
+}
+
+.warning-body strong {
+  color: var(--rf-text);
+  font-weight: var(--rf-weight-semibold);
+}
+
+.warning-body span {
+  color: var(--rf-text-muted);
+  line-height: var(--rf-leading-relaxed);
+}
+
+.warning-dismiss {
+  background: none;
+  border: none;
+  padding: var(--rf-space-1);
+  cursor: pointer;
+  color: var(--rf-text-subtle);
+  font-size: 0.65rem;
+  flex-shrink: 0;
+  border-radius: var(--rf-radius-sm);
+  transition: color var(--rf-duration-fast) var(--rf-ease-out);
+}
+
+.warning-dismiss:hover {
+  color: var(--rf-text);
 }
 
 /* ── Transition ──────────────────────────────────────────────────────────── */

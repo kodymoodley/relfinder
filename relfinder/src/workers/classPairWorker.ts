@@ -56,11 +56,11 @@ function emit(msg: ClassPairWorkerOutput) {
 self.onmessage = async (event: MessageEvent<ClassPairWorkerInput>) => {
   if (event.data.type !== 'start') return
 
-  const { strategy, c1, c2, endpointUrl, authorizationHeader, offset, pairLimit, maxSubgraphNodes } =
+  const { strategy, c1, c2, endpointUrl, authorizationHeader, offset, pairLimit, maxSubgraphNodes, allowedIntermediateTypes } =
     event.data
 
   const runQuery = makeFetchQuery(endpointUrl, authorizationHeader)
-  const cfg: StrategyConfig = { c1, c2, offset, pairLimit, maxSubgraphNodes }
+  const cfg: StrategyConfig = { c1, c2, offset, pairLimit, maxSubgraphNodes, allowedIntermediateTypes }
 
   try {
     const gen =

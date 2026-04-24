@@ -21,6 +21,8 @@ export interface StrategyConfig {
   pairLimit: number
   /** Maximum intermediate nodes in the subgraph before discarding a pair. 0 = no check. */
   maxSubgraphNodes: number
+  /** When non-empty, intermediate nodes must be instances of one of these types. */
+  allowedIntermediateTypes: string[]
 }
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -46,6 +48,13 @@ const LABEL_OPT = (entityVar: string, labelVar: string) =>
   `OPTIONAL { ?${entityVar} <${RDFS_LABEL}> ?${labelVar} . FILTER(lang(?${labelVar}) = 'en' || lang(?${labelVar}) = '') }`
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
+
+/** Builds a VALUES+type triple that constrains ?nodeVar to the allowed types. */
+function typeConstraint(nodeVar: string, bindVar: string, types: string[]): string {
+  if (!types.length) return ''
+  const vals = types.map((t) => `<${t}>`).join(' ')
+  return `?${nodeVar} a ?${bindVar} . VALUES ?${bindVar} { ${vals} }`
+}
 
 function shortIri(iri: string): string {
   return iri.split('/').pop()?.split('#').pop() ?? iri
@@ -118,10 +127,12 @@ export async function* strategyDirect2(
   cfg: StrategyConfig,
   runQuery: RunQuery,
 ): AsyncGenerator<DiscoveredPair> {
+  const midTypeClause = typeConstraint('mid', 'midT', cfg.allowedIntermediateTypes)
   const q = `
     SELECT DISTINCT ?e1 ?l1 ?p1 ?p2 ?e2 ?l2 WHERE {
       ?e1 a <${cfg.c1}> . ?e2 a <${cfg.c2}> .
       ?e1 ?p1 ?mid . ?mid ?p2 ?e2 .
+      ${midTypeClause}
       ${META_FILTER('?p1')}
       ${META_FILTER('?p2')}
       FILTER(?e1 != ?e2 && ?mid != ?e1 && ?mid != ?e2)
@@ -175,10 +186,14 @@ export async function* strategyAnchor3(
     )
     const e1Label = lRows[0]?.['l']?.value ?? shortIri(e1Iri)
 
+    const m1TypeClause = typeConstraint('m1', 'm1T', cfg.allowedIntermediateTypes)
+    const m2TypeClause = typeConstraint('m2', 'm2T', cfg.allowedIntermediateTypes)
     const probeRows = await runQuery(`
       SELECT DISTINCT ?e2 ?l2 ?p1 ?p2 ?p3 WHERE {
         ?e2 a <${cfg.c2}> .
         <${e1Iri}> ?p1 ?m1 . ?m1 ?p2 ?m2 . ?m2 ?p3 ?e2 .
+        ${m1TypeClause}
+        ${m2TypeClause}
         ${META_FILTER('?p1')}
         ${META_FILTER('?p2')}
         ${META_FILTER('?p3')}

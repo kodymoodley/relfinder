@@ -182,6 +182,8 @@ export interface ClassPairWorkerInput {
   offset: number
   pairLimit: number
   maxSubgraphNodes: number
+  /** When non-empty, intermediate nodes must be instances of one of these types. */
+  allowedIntermediateTypes: string[]
 }
 
 export type ClassPairWorkerOutput =

@@ -36,6 +36,8 @@ export interface DiscoveryOptions {
   pairLimit?: number
   /** OFFSET multiplier — increment to regenerate without re-running from zero. */
   offset?: number
+  /** When non-empty, intermediate nodes are constrained to these types. */
+  allowedIntermediateTypes?: string[]
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -77,6 +79,7 @@ function spawnWorker(
     offset: cfg.offset,
     pairLimit: cfg.pairLimit,
     maxSubgraphNodes: cfg.maxSubgraphNodes,
+    allowedIntermediateTypes: cfg.allowedIntermediateTypes,
   }
 
   worker.postMessage(msg)
@@ -143,6 +146,7 @@ export function discoverClassPairs(
   const pairLimit = options.pairLimit ?? 6
   const offset = options.offset ?? 0
   const maxSubgraphNodes = 50
+  const allowedIntermediateTypes = options.allowedIntermediateTypes ?? []
 
   const strategies = strategiesFor(maxDistance)
   const seen = new Set<string>()
@@ -164,7 +168,7 @@ export function discoverClassPairs(
     if (doneCount === strategies.length) onComplete()
   }
 
-  const cfg: StrategyConfig = { c1, c2, offset, pairLimit, maxSubgraphNodes }
+  const cfg: StrategyConfig = { c1, c2, offset, pairLimit, maxSubgraphNodes, allowedIntermediateTypes }
 
   if (store) {
     const runQuery = makeComunicaQuery(store)
