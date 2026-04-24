@@ -1,6 +1,32 @@
 <template>
   <div class="pair-panel">
 
+    <!-- ── Mode toggle ──────────────────────────────────────────────────── -->
+    <div class="panel-modes">
+      <button
+        class="panel-mode-btn"
+        :class="{ 'panel-mode-btn--active': panelMode === 'class' }"
+        @click="panelMode = 'class'"
+      >
+        <i class="pi pi-objects-column" />
+        Class Pairs
+      </button>
+      <button
+        class="panel-mode-btn"
+        :class="{ 'panel-mode-btn--active': panelMode === 'instance' }"
+        @click="panelMode = 'instance'"
+      >
+        <i class="pi pi-user" />
+        Entity Pairs
+      </button>
+    </div>
+
+    <!-- ── Entity Pairs mode ────────────────────────────────────────────── -->
+    <InstancePairSection v-if="panelMode === 'instance'" />
+
+    <!-- ── Class Pairs mode ─────────────────────────────────────────────── -->
+    <template v-else>
+
     <!-- ── Class selectors ───────────────────────────────────────────────── -->
     <div class="selectors">
       <div class="selector-wrap">
@@ -125,6 +151,8 @@
       </p>
     </div>
 
+    </template><!-- end class-pairs mode -->
+
   </div>
 </template>
 
@@ -135,6 +163,7 @@ import Select from 'primevue/select'
 import Button from 'primevue/button'
 import { useConnectionStore } from '@/stores/connection'
 import { fetchClassesWithCounts, findRelationships } from '@/lib/sparql/entitySearch'
+import InstancePairSection from './InstancePairSection.vue'
 import { discoverClassPairs } from '@/lib/sparql/classPairDiscovery'
 import { cacheSet } from '@/lib/cache/queryCache'
 import { shortIri } from '@/lib/utils/iri'
@@ -143,6 +172,10 @@ import { QueryCyclesStrategy } from '@/lib/sparql/types'
 
 const router = useRouter()
 const connectionStore = useConnectionStore()
+
+// ── Panel mode ────────────────────────────────────────────────────────────────
+
+const panelMode = ref<'class' | 'instance'>('class')
 
 // ── Class list ────────────────────────────────────────────────────────────────
 
@@ -287,6 +320,44 @@ function pairKey(pair: DiscoveredPair): string {
   flex-direction: column;
   height: 100%;
   overflow: hidden;
+}
+
+/* ── Panel mode toggle ───────────────────────────────────────────────────── */
+
+.panel-modes {
+  display: flex;
+  border-bottom: 1px solid var(--rf-border);
+  flex-shrink: 0;
+}
+
+.panel-mode-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--rf-space-2);
+  padding: var(--rf-space-2) var(--rf-space-2);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  font-family: var(--rf-font-body);
+  font-size: var(--rf-text-xs);
+  font-weight: var(--rf-weight-medium);
+  color: var(--rf-text-subtle);
+  transition:
+    color var(--rf-duration-fast) var(--rf-ease-out),
+    border-color var(--rf-duration-fast) var(--rf-ease-out);
+  margin-bottom: -1px;
+}
+
+.panel-mode-btn:hover {
+  color: var(--rf-text);
+}
+
+.panel-mode-btn--active {
+  color: var(--rf-primary);
+  border-bottom-color: var(--rf-primary);
 }
 
 /* ── Selectors ───────────────────────────────────────────────────────────── */

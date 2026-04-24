@@ -54,7 +54,7 @@
             @click="leftTab = 'classes'"
           >
             <i class="pi pi-list" />
-            Classes
+            Entity Discovery
           </button>
           <button
             class="left-tab"
@@ -62,7 +62,7 @@
             @click="leftTab = 'pairs'"
           >
             <i class="pi pi-share-alt" />
-            Pair Explorer
+            Relation Discovery
           </button>
         </div>
         <ClassesPanel v-if="leftTab === 'classes'" />
