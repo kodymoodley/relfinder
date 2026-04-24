@@ -157,6 +157,38 @@ export interface DataProperty {
   value: string
 }
 
+// ── Class pair discovery ───────────────────────────────────────────────────────
+
+export interface DiscoveredPair {
+  entity1: { iri: string; label: string }
+  entity2: { iri: string; label: string }
+  /** Number of hops between the two entities. */
+  distance: number
+  /** Human-readable description of the connecting path, e.g. "→ schema:author → ● → schema:member →". */
+  pathSketch: string
+  /** Which strategy produced this pair. */
+  strategy: string
+}
+
+export type ClassPairStrategy = 'direct-1' | 'direct-2' | 'anchor-3'
+
+export interface ClassPairWorkerInput {
+  type: 'start'
+  strategy: ClassPairStrategy
+  c1: string
+  c2: string
+  endpointUrl: string
+  authorizationHeader?: string
+  offset: number
+  pairLimit: number
+  maxSubgraphNodes: number
+}
+
+export type ClassPairWorkerOutput =
+  | { type: 'pair'; pair: DiscoveredPair }
+  | { type: 'done' }
+  | { type: 'error'; message: string }
+
 // ── Engine context ────────────────────────────────────────────────────────────
 
 /**
