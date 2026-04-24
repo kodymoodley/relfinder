@@ -22,7 +22,6 @@ import type {
 } from './types'
 import { executeSelectOnStore } from './engine'
 import {
-  strategyDirect1,
   strategyDirect2,
   strategyAnchor3,
   type StrategyConfig,
@@ -47,7 +46,6 @@ function pairKey(e1: string, e2: string): string {
 
 function strategiesFor(maxDistance: number): ClassPairStrategy[] {
   const s: ClassPairStrategy[] = []
-  if (maxDistance >= 1) s.push('direct-1')
   if (maxDistance >= 2) s.push('direct-2')
   if (maxDistance >= 3) s.push('anchor-3')
   return s
@@ -170,7 +168,6 @@ export function discoverClassPairs(
 
   if (store) {
     const runQuery = makeComunicaQuery(store)
-    if (maxDistance >= 1) runGen(strategyDirect1(cfg, runQuery), handlePair, cancelRef, handleDone)
     if (maxDistance >= 2) runGen(strategyDirect2(cfg, runQuery), handlePair, cancelRef, handleDone)
     if (maxDistance >= 3) runGen(strategyAnchor3(cfg, runQuery), handlePair, cancelRef, handleDone)
   } else {

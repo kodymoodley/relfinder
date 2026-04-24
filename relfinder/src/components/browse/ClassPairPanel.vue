@@ -136,7 +136,7 @@ import Button from 'primevue/button'
 import { useConnectionStore } from '@/stores/connection'
 import { fetchClassesWithCounts, findRelationships } from '@/lib/sparql/entitySearch'
 import { discoverClassPairs } from '@/lib/sparql/classPairDiscovery'
-import { cacheSet, cacheGet } from '@/lib/cache/queryCache'
+import { cacheSet } from '@/lib/cache/queryCache'
 import { shortIri } from '@/lib/utils/iri'
 import type { ClassInfo, DiscoveredPair } from '@/lib/sparql/types'
 import { QueryCyclesStrategy } from '@/lib/sparql/types'
@@ -212,12 +212,14 @@ function startDiscovery() {
     connectionStore.queryContext,
     connectionStore.rdfStore ?? undefined,
     { maxDistance: 3, pairLimit: 6, offset: discoveryOffset.value },
-    (pair) => { pairs.value.push(pair) },
+    (pair) => {
+      pairs.value.push(pair)
+      // Start pre-warming immediately so the cache is likely ready when user clicks Explore
+      prewarmPair(pair)
+    },
     () => {
       discovering.value = false
       allDone.value = true
-      // Fire-and-forget: pre-warm all discovered pairs in the background
-      prewarmPairs([...pairs.value])
     },
   )
 }
@@ -231,33 +233,25 @@ onUnmounted(() => cancelDiscovery?.())
 
 // ── Background pre-warming ────────────────────────────────────────────────────
 //
-// After all strategies finish, silently run findRelationships for each
-// discovered pair and store in the session cache.  When the user clicks
-// "Explore", GraphView will find the result already cached and skip the query.
+// Called immediately when each pair is discovered so the cache is ready (or
+// nearly ready) by the time the user clicks Explore.
 
-async function prewarmPairs(pairsToWarm: DiscoveredPair[]) {
+async function prewarmPair(pair: DiscoveredPair) {
   const ctx = connectionStore.queryContext
   const store = connectionStore.rdfStore ?? undefined
   const effectiveContext = ctx ?? { endpointUrl: '' }
-
-  for (const pair of pairsToWarm) {
-    const cacheKey = `graph:${effectiveContext.endpointUrl}:${pair.entity1.iri}:${pair.entity2.iri}`
-    try {
-      const graph = await findRelationships(
-        pair.entity1.iri,
-        pair.entity2.iri,
-        3,
-        effectiveContext,
-        {
-          avoidCycles: QueryCyclesStrategy.NO_INTERMEDIATE_DUPLICATES,
-          store,
-        },
-      )
-      // 30-minute TTL — long enough for an exploration session
-      cacheSet(cacheKey, graph, 30 * 60 * 1000)
-    } catch {
-      // Pre-warming is best-effort; ignore failures silently
-    }
+  const cacheKey = `graph:${effectiveContext.endpointUrl}:${pair.entity1.iri}:${pair.entity2.iri}`
+  try {
+    const graph = await findRelationships(
+      pair.entity1.iri,
+      pair.entity2.iri,
+      3,
+      effectiveContext,
+      { avoidCycles: QueryCyclesStrategy.NO_INTERMEDIATE_DUPLICATES, store },
+    )
+    cacheSet(cacheKey, graph, 30 * 60 * 1000)
+  } catch {
+    // Pre-warming is best-effort; ignore failures silently
   }
 }
 
@@ -267,16 +261,13 @@ function onExplore(pair: DiscoveredPair) {
   const ctx = connectionStore.queryContext
   const endpointUrl = ctx?.endpointUrl ?? ''
   const cacheKey = `graph:${endpointUrl}:${pair.entity1.iri}:${pair.entity2.iri}`
-  const prewarmed = cacheGet(cacheKey)
 
-  // Pass a flag so GraphView can skip re-querying when the graph is already cached
   router.push({
     name: 'graph',
     state: {
       example: JSON.parse(JSON.stringify({
         entity1: { iri: pair.entity1.iri, label: pair.entity1.label, class: c1.value ?? '' },
         entity2: { iri: pair.entity2.iri, label: pair.entity2.label, class: c2.value ?? '' },
-        prewarmed: !!prewarmed,
         cacheKey,
       })),
     },

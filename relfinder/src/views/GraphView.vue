@@ -189,7 +189,7 @@ const { dark, toggle: toggleDark } = useDarkMode()
 
 // Read synchronously so EntitySearch receives preset values on first render.
 const _historyExample = (history.state as Record<string, unknown>)?.example as
-  | { entity1: EntitySearchResult; entity2: EntitySearchResult; options?: Partial<GraphOptions>; prewarmed?: boolean; cacheKey?: string }
+  | { entity1: EntitySearchResult; entity2: EntitySearchResult; options?: Partial<GraphOptions>; cacheKey?: string }
   | undefined
 
 const presetEntity1 = ref<EntitySearchResult | null>(_historyExample?.entity1 ?? null)
@@ -326,7 +326,7 @@ function onDisconnect() {
 
 onMounted(() => {
   if (!_historyExample) return
-  if (_historyExample.prewarmed && _historyExample.cacheKey) {
+  if (_historyExample.cacheKey) {
     const cached = cacheGet<RelationshipGraph>(_historyExample.cacheKey)
     if (cached) { graph.value = cached; return }
   }
