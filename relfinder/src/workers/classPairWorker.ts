@@ -26,6 +26,8 @@ function makeFetchQuery(endpointUrl: string, authorizationHeader?: string): RunQ
     const headers: Record<string, string> = {
       Accept: 'application/sparql-results+json',
       'Content-Type': 'application/x-www-form-urlencoded',
+      // Prevent connection reuse so a dropped HTTP/2 stream only kills one request
+      Connection: 'close',
     }
     if (authorizationHeader) headers['Authorization'] = authorizationHeader
 

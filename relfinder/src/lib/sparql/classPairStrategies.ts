@@ -27,6 +27,8 @@ export interface StrategyConfig {
 
 const RDFS_LABEL = 'http://www.w3.org/2000/01/rdf-schema#label'
 
+const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
+
 // Properties that connect entities via schema/ontology structure rather than
 // meaningful domain-level relationships — excluded from path traversal.
 const META = [
@@ -164,6 +166,9 @@ export async function* strategyAnchor3(
     if (found >= cfg.pairLimit) return
     const e1Iri = inst['e1']?.value
     if (!e1Iri) continue
+
+    // Small pause between anchor probes to avoid flooding rate-limited endpoints
+    await sleep(150)
 
     const lRows = await runQuery(
       `SELECT ?l WHERE { <${e1Iri}> <${RDFS_LABEL}> ?l . FILTER(lang(?l) = 'en' || lang(?l) = '') } LIMIT 1`,
