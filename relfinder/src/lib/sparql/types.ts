@@ -143,53 +143,12 @@ export interface EntitySearchResult {
   class: string
 }
 
-export interface ClassInfo {
-  iri: string
-  /** Short display name derived from the IRI fragment or last path segment. */
-  label: string
-  /** Approximate instance count — omitted when the endpoint can't aggregate quickly. */
-  count?: number
-}
-
 export interface DataProperty {
   iri: string
   label: string
   value: string
 }
 
-// ── Class pair discovery ───────────────────────────────────────────────────────
-
-export interface DiscoveredPair {
-  entity1: { iri: string; label: string }
-  entity2: { iri: string; label: string }
-  /** Number of hops between the two entities. */
-  distance: number
-  /** Human-readable description of the connecting path, e.g. "→ schema:author → ● → schema:member →". */
-  pathSketch: string
-  /** Which strategy produced this pair. */
-  strategy: string
-}
-
-export type ClassPairStrategy = 'direct-1' | 'direct-2' | 'anchor-3'
-
-export interface ClassPairWorkerInput {
-  type: 'start'
-  strategy: ClassPairStrategy
-  c1: string
-  c2: string
-  endpointUrl: string
-  authorizationHeader?: string
-  offset: number
-  pairLimit: number
-  maxSubgraphNodes: number
-  /** When non-empty, intermediate nodes must be instances of one of these types. */
-  allowedIntermediateTypes: string[]
-}
-
-export type ClassPairWorkerOutput =
-  | { type: 'pair'; pair: DiscoveredPair }
-  | { type: 'done' }
-  | { type: 'error'; message: string }
 
 // ── Engine context ────────────────────────────────────────────────────────────
 

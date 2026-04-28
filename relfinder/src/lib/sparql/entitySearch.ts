@@ -24,7 +24,6 @@ import {
   QueryCyclesStrategy,
   type QueryContext,
   type EntitySearchResult,
-  type ClassInfo,
   type DataProperty,
   type GraphNode,
   type RelationshipGraph,
@@ -180,113 +179,6 @@ export async function fetchAvailableClasses(
   return bindings.filter((b) => b['type']).map((b) => b['type']!.value)
 }
 
-// ── Class discovery with counts ───────────────────────────────────────────────
-
-/**
- * Returns all distinct `rdf:type` values used in the source, sorted by
- * descending instance count.
- *
- * Results are cached for the session (5-minute TTL) since the class catalogue
- * of a knowledge graph changes rarely. The cache is invalidated automatically
- * when the user disconnects.
- *
- * @param limit  Max classes to return. 500 is enough for any practical KG while
- *   keeping the GROUP BY result set manageable.
- */
-export async function fetchClassesWithCounts(
-  context: QueryContext,
-  store?: Store,
-  limit = 500,
-): Promise<ClassInfo[]> {
-  const cacheKey = store ? 'classes:file' : `classes:${context.endpointUrl}`
-  const cached = cacheGet<ClassInfo[]>(cacheKey)
-  if (cached) return cached
-
-  // DISTINCT ?type terminates as soon as the engine has seen `limit` unique
-  // types — no full-table COUNT scan needed. Results are sorted alphabetically
-  // on the client since we have no counts to order by.
-  const query = `
-    SELECT DISTINCT ?type WHERE {
-      ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?type .
-      FILTER (isIRI(?type))
-    } LIMIT ${limit}
-  `
-
-  const result: ClassInfo[] = (await runSelect(query, context, store))
-    .filter((b) => b['type'])
-    .map((b) => ({
-      iri: b['type']!.value,
-      label: shortIri(b['type']!.value),
-    }))
-    .sort((a, b) => a.label.localeCompare(b.label))
-
-  cacheSet(cacheKey, result)
-  return result
-}
-
-// ── Graph size estimation ─────────────────────────────────────────────────────
-
-/**
- * Returns an approximate node count for the connected graph.
- * For local N3 stores the quad count is used as a fast proxy.
- * For SPARQL endpoints the count of distinct IRI subjects is queried and
- * cached for 10 minutes so repeated calls are free.
- */
-export async function estimateGraphNodeCount(
-  context: QueryContext,
-  store?: Store,
-): Promise<number> {
-  if (store) return store.size
-  const cacheKey = `nodecount:${context.endpointUrl}`
-  const cached = cacheGet<number>(cacheKey)
-  if (cached !== undefined) return cached
-  try {
-    const rows = await runSelect(
-      `SELECT (COUNT(DISTINCT ?s) AS ?n) WHERE { ?s ?p ?o . FILTER(isIRI(?s)) }`,
-      context,
-    )
-    const count = parseInt(rows[0]?.['n']?.value ?? '0', 10)
-    cacheSet(cacheKey, count, 10 * 60 * 1000)
-    return count
-  } catch {
-    return 0
-  }
-}
-
-// ── Intermediate type discovery ───────────────────────────────────────────────
-
-/**
- * Given a set of already-discovered entity pairs, finds the most common
- * rdf:type values of nodes that act as 2-hop intermediates between them.
- * Used to suggest path-type constraints after an unconstrained discovery run.
- */
-export async function fetchIntermediateTypesForPairs(
-  pairs: Array<{ entity1: { iri: string }; entity2: { iri: string } }>,
-  context: QueryContext,
-  store?: Store,
-): Promise<Array<{ iri: string; label: string; count: number }>> {
-  if (pairs.length === 0) return []
-  const valuesClause = pairs.map((p) => `(<${p.entity1.iri}> <${p.entity2.iri}>)`).join(' ')
-  const query = `
-    SELECT DISTINCT ?midType (COUNT(*) AS ?n) WHERE {
-      VALUES (?e1 ?e2) { ${valuesClause} }
-      ?e1 ?p1 ?mid . ?mid ?p2 ?e2 .
-      ?mid a ?midType . FILTER(isIRI(?midType))
-    } GROUP BY ?midType ORDER BY DESC(?n) LIMIT 15
-  `
-  try {
-    const rows = await runSelect(query, context, store)
-    return rows
-      .filter((r) => r['midType'])
-      .map((r) => ({
-        iri: r['midType']!.value,
-        label: shortIri(r['midType']!.value),
-        count: parseInt(r['n']?.value ?? '1', 10),
-      }))
-  } catch {
-    return []
-  }
-}
 
 // ── Instance loading ──────────────────────────────────────────────────────────
 
