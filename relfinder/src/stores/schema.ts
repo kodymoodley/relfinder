@@ -54,6 +54,11 @@ export const useSchemaStore = defineStore('schema', () => {
 
   /** Snapshot current reactive state into the localStorage schema entry. */
   function persist(endpointUrl: string, processedSet: Set<string>, classLimit: number, edgeLimit: number) {
+    // Guard: if clear() has been called, nodes are already wiped. Persisting now
+    // would overwrite a valid earlier snapshot with an empty-nodes entry that
+    // would be read back as "fully cached" (processedSet.size >= 0) on the next
+    // session, leaving the schema appearing empty.
+    if (nodes.value.length === 0) return
     const entry: PersistedSchema = {
       version: 1,
       endpointUrl,
@@ -128,12 +133,12 @@ export const useSchemaStore = defineStore('schema', () => {
           classLimit,
           edgeLimit,
           preloadedNodes: canResume && saved ? saved.nodes : undefined,
-          skipClasses: processedSet.size > 0 ? processedSet : undefined,
+          skipClasses: processedSet.size > 0 ? new Set(processedSet) : undefined,
         },
         {
           onClassesLoaded(incoming) {
             nodes.value = incoming
-            progress.value = { completed: 0, total: incoming.length }
+            progress.value = { completed: processedSet.size, total: incoming.length }
             statusMessage.value = ''  // Phase 2 count+bar takes over from here
             // Persist immediately so an abort after Phase 1 still saves the class list
             persist(endpointUrl, processedSet, classLimit, edgeLimit)
