@@ -1,7 +1,7 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
-import { extractSchema } from '@/lib/sparql/schemaExtractor'
-import type { SchemaNode, SchemaEdge, QueryContext } from '@/lib/sparql/types'
+import { extractSchema, fetchSchemaDataProperties } from '@/lib/sparql/schemaExtractor'
+import type { SchemaNode, SchemaEdge, SchemaDataProp, QueryContext } from '@/lib/sparql/types'
 import type { Store } from 'n3'
 
 export const useSchemaStore = defineStore('schema', () => {
@@ -22,6 +22,10 @@ export const useSchemaStore = defineStore('schema', () => {
   const hasData = computed(() => nodes.value.length > 0)
 
   const hideOrphans = ref(false)
+
+  const dataPropsCache = ref(new Map<string, SchemaDataProp[]>())
+  const dataPropsLoading = ref(new Set<string>())
+  const dataPropsStatus = ref(new Map<string, string>())
 
   async function start(
     context: QueryContext,
@@ -66,6 +70,30 @@ export const useSchemaStore = defineStore('schema', () => {
     }
   }
 
+  function setStatus(classIri: string, msg: string) {
+    dataPropsStatus.value = new Map(dataPropsStatus.value).set(classIri, msg)
+  }
+
+  async function fetchDataProps(classIri: string, context: QueryContext, store: Store | undefined) {
+    if (dataPropsCache.value.has(classIri)) return
+    if (dataPropsLoading.value.has(classIri)) return
+
+    dataPropsLoading.value = new Set(dataPropsLoading.value).add(classIri)
+    setStatus(classIri, 'Querying endpoint…')
+
+    try {
+      const props = await fetchSchemaDataProperties(classIri, context, store, 50, (msg) => setStatus(classIri, msg))
+      dataPropsCache.value = new Map(dataPropsCache.value).set(classIri, props)
+    } finally {
+      const next = new Set(dataPropsLoading.value)
+      next.delete(classIri)
+      dataPropsLoading.value = next
+      const s = new Map(dataPropsStatus.value)
+      s.delete(classIri)
+      dataPropsStatus.value = s
+    }
+  }
+
   function cancel() {
     abortController?.abort()
   }
@@ -77,7 +105,14 @@ export const useSchemaStore = defineStore('schema', () => {
     extracting.value = false
     extractError.value = ''
     progress.value = { completed: 0, total: 0 }
+    dataPropsCache.value = new Map()
+    dataPropsLoading.value = new Set()
+    dataPropsStatus.value = new Map()
   }
 
-  return { nodes, edges, extracting, extractError, progress, progressPct, hasData, hideOrphans, start, cancel, clear }
+  return {
+    nodes, edges, extracting, extractError, progress, progressPct, hasData,
+    hideOrphans, dataPropsCache, dataPropsLoading, dataPropsStatus,
+    start, cancel, clear, fetchDataProps,
+  }
 })

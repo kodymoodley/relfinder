@@ -17,7 +17,7 @@ import type { Store } from 'n3'
 import { executeSelect, executeSelectOnStore } from './engine'
 import { fetchLabels } from './entitySearch'
 import { shortIri } from '../utils/iri'
-import type { QueryContext, SchemaNode, SchemaEdge, SchemaGraph, SchemaProp } from './types'
+import type { QueryContext, SchemaNode, SchemaEdge, SchemaGraph, SchemaProp, SchemaDataProp } from './types'
 
 const RDF_TYPE = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type'
 
@@ -175,4 +175,43 @@ export async function extractSchema(
   )
 
   return { nodes, edges: allEdges }
+}
+
+// ── Data properties for a class ───────────────────────────────────────────────
+
+export async function fetchSchemaDataProperties(
+  classIri: string,
+  context: QueryContext,
+  store: Store | undefined,
+  limit = 50,
+  onStatus?: (msg: string) => void,
+): Promise<SchemaDataProp[]> {
+  const query = `
+    SELECT DISTINCT ?prop ?dt WHERE {
+      ?s <${RDF_TYPE}> <${classIri}> .
+      ?s ?prop ?val .
+      FILTER(isLiteral(?val))
+      BIND(DATATYPE(?val) AS ?dt)
+    } ORDER BY ?prop LIMIT ${limit}
+  `
+  const rows = await runSelect(query, context, store)
+  onStatus?.(`Processing ${rows.length} result row${rows.length === 1 ? '' : 's'}…`)
+
+  const byProp = new Map<string, Set<string>>()
+  for (const r of rows) {
+    const propIri = r['prop']?.value
+    const dt = r['dt']?.value ?? ''
+    if (!propIri) continue
+    const dts = byProp.get(propIri)
+    if (dts) dts.add(dt)
+    else byProp.set(propIri, new Set([dt]))
+  }
+
+  const result = Array.from(byProp.entries()).map(([iri, dts]) => ({
+    iri,
+    label: shortIri(iri),
+    datatypes: [...dts].filter(Boolean).map(shortIri),
+  }))
+  onStatus?.(`Found ${result.length} data propert${result.length === 1 ? 'y' : 'ies'}`)
+  return result
 }

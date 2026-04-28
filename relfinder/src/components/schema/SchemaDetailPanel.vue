@@ -4,7 +4,7 @@
     position="right"
     :header="panelHeader"
     class="schema-detail-drawer"
-    :pt="{ root: { style: 'width: 380px' } }"
+    :pt="{ root: { style: 'width: 400px' } }"
   >
     <!-- Node view -->
     <template v-if="props.selectedNode && !props.selectedEdge">
@@ -16,17 +16,40 @@
         </a>
       </div>
 
+      <!-- Data properties -->
       <div class="detail-section">
-        <p class="section-label">Outgoing connections</p>
-        <p v-if="outgoing.length === 0" class="list-empty">No outgoing connections.</p>
-        <ul v-else class="connection-list">
-          <li v-for="item in outgoing" :key="item.targetIri" class="connection-item">
-            <span class="conn-label">{{ item.targetLabel }}</span>
-            <span class="conn-via">via <em>{{ item.dominantProp }}</em></span>
+        <p class="section-label">Data Properties</p>
+        <div v-if="loadingDataProps" class="spinner-row">
+          <ProgressSpinner stroke-width="4" style="width: 20px; height: 20px" />
+          <span class="spinner-status">{{ dataPropsStatusMsg }}</span>
+        </div>
+        <p v-else-if="dataProps.length === 0" class="list-empty">No data properties found.</p>
+        <ul v-else class="prop-list">
+          <li v-for="dp in dataProps" :key="dp.iri" class="prop-item">
+            <span class="prop-name">{{ dp.label }}</span>
+            <span v-if="dp.datatypes.length" class="prop-types">
+              <code v-for="dt in dp.datatypes" :key="dt" class="type-chip">{{ dt }}</code>
+            </span>
           </li>
         </ul>
       </div>
 
+      <!-- Object properties -->
+      <div class="detail-section">
+        <p class="section-label">Object Properties</p>
+        <p v-if="objectProps.length === 0" class="list-empty">No object properties found.</p>
+        <ul v-else class="prop-list">
+          <li v-for="op in objectProps" :key="op.propIri + op.rangeIri" class="prop-item">
+            <span class="prop-name">{{ op.propLabel }}</span>
+            <span class="prop-range">
+              <i class="pi pi-arrow-right range-arrow" />
+              {{ op.rangeLabel }}
+            </span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Incoming connections -->
       <div class="detail-section">
         <p class="section-label">Incoming connections</p>
         <p v-if="incoming.length === 0" class="list-empty">No incoming connections.</p>
@@ -72,12 +95,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import Drawer from 'primevue/drawer'
 import Tag from 'primevue/tag'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Button from 'primevue/button'
+import ProgressSpinner from 'primevue/progressspinner'
+import { useConnectionStore } from '@/stores/connection'
+import { useSchemaStore } from '@/stores/schema'
 import type { SchemaNode, SchemaEdge } from '@/lib/sparql/types'
 
 const props = defineProps<{
@@ -93,10 +119,13 @@ const emit = defineEmits<{
   'update:selectedEdge': [value: SchemaEdge | null]
 }>()
 
+const connectionStore = useConnectionStore()
+const schemaStore = useSchemaStore()
+
 const visible = ref(false)
 
 watch(
-  () => [props.selectedNode, props.selectedEdge],
+  () => [props.selectedNode, props.selectedEdge] as const,
   ([n, e]) => { visible.value = n !== null || e !== null },
   { immediate: true },
 )
@@ -107,6 +136,20 @@ watch(visible, (v) => {
     emit('update:selectedEdge', null)
   }
 })
+
+watch(
+  () => props.selectedNode,
+  (node) => {
+    if (!node) return
+    nextTick(() => {
+      const context = connectionStore.queryContext ?? { endpointUrl: '' }
+      const store = connectionStore.rdfStore ?? undefined
+      schemaStore.fetchDataProps(node.iri, context, store).catch(() => {})
+    })
+  },
+)
+
+// ── Derived display data ──────────────────────────────────────────────────────
 
 const labelMap = computed(() => {
   const m = new Map<string, string>()
@@ -126,15 +169,30 @@ const panelHeader = computed(() => {
   return 'Details'
 })
 
-const outgoing = computed(() => {
+const loadingDataProps = computed(() =>
+  props.selectedNode ? schemaStore.dataPropsLoading.has(props.selectedNode.iri) : false,
+)
+
+const dataPropsStatusMsg = computed(() =>
+  props.selectedNode ? (schemaStore.dataPropsStatus.get(props.selectedNode.iri) ?? 'Querying endpoint…') : '',
+)
+
+const dataProps = computed(() =>
+  props.selectedNode ? (schemaStore.dataPropsCache.get(props.selectedNode.iri) ?? []) : [],
+)
+
+const objectProps = computed(() => {
   if (!props.selectedNode) return []
   return props.allEdges
     .filter((e) => e.sourceIri === props.selectedNode!.iri)
-    .map((e) => ({
-      targetIri: e.targetIri,
-      targetLabel: resolveLabel(e.targetIri),
-      dominantProp: e.props[0]?.label ?? '',
-    }))
+    .flatMap((e) =>
+      e.props.map((p) => ({
+        propIri: p.iri,
+        propLabel: p.label,
+        rangeIri: e.targetIri,
+        rangeLabel: resolveLabel(e.targetIri),
+      })),
+    )
 })
 
 const incoming = computed(() => {
@@ -181,6 +239,81 @@ function emitExplore() {
 .iri-link:hover {
   color: var(--rf-primary-hover);
   text-decoration: underline;
+}
+
+.spinner-row {
+  display: flex;
+  align-items: center;
+  gap: var(--rf-space-2);
+  padding: var(--rf-space-2) 0;
+}
+
+.spinner-status {
+  font-size: var(--rf-text-xs);
+  color: var(--rf-text-muted);
+  font-style: italic;
+}
+
+.prop-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--rf-space-2);
+}
+
+.prop-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--rf-space-3);
+  padding: var(--rf-space-2) var(--rf-space-3);
+  background: var(--rf-surface-alt);
+  border-radius: var(--rf-radius-md);
+  border: 1px solid var(--rf-border);
+}
+
+.prop-name {
+  font-size: var(--rf-text-sm);
+  font-weight: var(--rf-weight-medium);
+  color: var(--rf-text);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.prop-types {
+  display: flex;
+  gap: var(--rf-space-1);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.type-chip {
+  font-size: 10px;
+  font-family: var(--rf-font-mono, monospace);
+  padding: 1px 5px;
+  border-radius: var(--rf-radius-sm);
+  background: var(--rf-primary-soft);
+  color: var(--rf-primary);
+  white-space: nowrap;
+}
+
+.prop-range {
+  font-size: var(--rf-text-xs);
+  color: var(--rf-text-muted);
+  display: flex;
+  align-items: center;
+  gap: var(--rf-space-1);
+  flex-shrink: 0;
+}
+
+.range-arrow {
+  font-size: 0.6rem;
+  opacity: 0.6;
 }
 
 .connection-list {

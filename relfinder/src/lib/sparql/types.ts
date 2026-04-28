@@ -156,6 +156,13 @@ export interface SchemaNode {
   label: string
 }
 
+/** A data (literal) property on a class, with its observed XSD datatypes. */
+export interface SchemaDataProp {
+  iri: string
+  label: string
+  datatypes: string[]
+}
+
 /** One property connecting two classes, with occurrence count. */
 export interface SchemaProp {
   iri: string
