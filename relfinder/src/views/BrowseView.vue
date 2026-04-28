@@ -90,11 +90,10 @@
                 :max="500"
                 :step="10"
                 size="small"
-                style="width: 80px"
               />
             </div>
             <div class="option-row">
-              <label class="option-label" for="edge-limit">Edges / class</label>
+              <label class="option-label" for="edge-limit">Props per class</label>
               <InputNumber
                 id="edge-limit"
                 v-model="edgeLimit"
@@ -102,7 +101,6 @@
                 :max="200"
                 :step="5"
                 size="small"
-                style="width: 80px"
               />
             </div>
           </template>
@@ -406,6 +404,16 @@ onMounted(() => {
 .option-label {
   font-size: var(--rf-text-sm);
   color: var(--rf-text-muted);
+  flex-shrink: 0;
+}
+
+:deep(.option-row .p-inputnumber) {
+  width: 72px;
+}
+
+:deep(.option-row .p-inputnumber-input) {
+  width: 100%;
+  min-width: 0;
 }
 
 /* ── Main canvas ──────────────────────────────────────────────────────────── */
