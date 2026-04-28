@@ -149,6 +149,32 @@ export interface DataProperty {
   value: string
 }
 
+// ── Schema graph ──────────────────────────────────────────────────────────────
+
+export interface SchemaNode {
+  iri: string
+  label: string
+}
+
+/** One property connecting two classes, with occurrence count. */
+export interface SchemaProp {
+  iri: string
+  label: string
+  count: number
+}
+
+/** All properties from one class to another, collapsed into a single directed edge. */
+export interface SchemaEdge {
+  sourceIri: string
+  targetIri: string
+  props: SchemaProp[]
+  totalCount: number
+}
+
+export interface SchemaGraph {
+  nodes: SchemaNode[]
+  edges: SchemaEdge[]
+}
 
 // ── Engine context ────────────────────────────────────────────────────────────
 
