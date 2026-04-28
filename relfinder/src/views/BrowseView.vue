@@ -52,13 +52,22 @@
           </Message>
         </section>
 
-        <!-- Progress -->
-        <section v-if="schemaStore.extracting && schemaStore.progress.total > 0" class="sidebar-section">
+        <!-- Extraction progress -->
+        <section v-if="schemaStore.extracting" class="sidebar-section">
           <div class="progress-row">
-            <span class="progress-label">Phase 2 — edges</span>
-            <span class="progress-count">{{ schemaStore.progress.completed }} / {{ schemaStore.progress.total }}</span>
+            <span class="progress-label">
+              {{ schemaStore.statusMessage || 'Building edge map…' }}
+            </span>
+            <span v-if="schemaStore.progress.total > 0" class="progress-count">
+              {{ schemaStore.progress.completed }} / {{ schemaStore.progress.total }}
+            </span>
           </div>
-          <ProgressBar :value="schemaStore.progressPct" :show-value="false" style="height: 4px" />
+          <ProgressBar
+            v-if="schemaStore.progress.total > 0"
+            :value="schemaStore.progressPct"
+            :show-value="false"
+            style="height: 4px"
+          />
         </section>
 
         <!-- Stats -->

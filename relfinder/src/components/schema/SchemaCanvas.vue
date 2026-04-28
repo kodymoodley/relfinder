@@ -66,19 +66,9 @@ let renderedEdgeCount = 0
 
 const showEdgeLabels = ref(false)
 
-// ── Colour helpers ────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
-const PALETTE = [
-  '#06b6d4', '#10b981', '#a78bfa', '#facc15',
-  '#f472b6', '#f87171', '#60a5fa', '#a3e635',
-  '#fb923c', '#34d399', '#818cf8', '#fbbf24',
-]
-
-function hashColor(iri: string): string {
-  let h = 0
-  for (const c of iri) h = (h * 31 + c.charCodeAt(0)) >>> 0
-  return PALETTE[h % PALETTE.length]!
-}
+const NODE_COLOR = '#0891b2'
 
 function edgeWidth(totalCount: number): number {
   return Math.min(1.5 + Math.log2(totalCount + 1), 5)
@@ -95,14 +85,14 @@ function initCytoscape() {
   cy = cytoscape({
     container: cyContainer.value,
     elements: props.nodes.map((n) => ({
-      data: { id: n.iri, label: n.label, iri: n.iri, color: hashColor(n.iri) },
+      data: { id: n.iri, label: n.label, iri: n.iri },
     })),
     style: [
       {
         selector: 'node',
         style: {
           label: 'data(label)',
-          'background-color': 'data(color)',
+          'background-color': NODE_COLOR,
           color: '#ffffff',
           'text-valign': 'center',
           'text-halign': 'center',
@@ -134,7 +124,7 @@ function initCytoscape() {
         selector: 'node:selected',
         style: {
           'border-width': 3,
-          'border-color': '#0891b2',
+          'border-color': '#ffffff',
           'border-style': 'solid',
         },
       },

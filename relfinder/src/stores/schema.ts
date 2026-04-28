@@ -15,6 +15,7 @@ export const useSchemaStore = defineStore('schema', () => {
   const extracting = ref(false)
   const extractError = ref('')
   const progress = ref({ completed: 0, total: 0 })
+  const statusMessage = ref('')
 
   const progressPct = computed(() =>
     progress.value.total > 0
@@ -115,6 +116,9 @@ export const useSchemaStore = defineStore('schema', () => {
     }
 
     extracting.value = true
+    statusMessage.value = canResume && processedSet.size > 0
+      ? `Resuming — ${processedSet.size} of ${saved!.nodes.length} classes already done…`
+      : 'Discovering classes…'
 
     try {
       await extractSchema(
@@ -130,6 +134,9 @@ export const useSchemaStore = defineStore('schema', () => {
           onClassesLoaded(incoming) {
             nodes.value = incoming
             progress.value = { completed: 0, total: incoming.length }
+            statusMessage.value = ''  // Phase 2 count+bar takes over from here
+            // Persist immediately so an abort after Phase 1 still saves the class list
+            persist(endpointUrl, processedSet, classLimit, edgeLimit)
           },
           onEdgesLoaded(incoming) {
             edges.value = [...edges.value, ...incoming]
@@ -151,6 +158,7 @@ export const useSchemaStore = defineStore('schema', () => {
       }
     } finally {
       extracting.value = false
+      statusMessage.value = ''
     }
   }
 
@@ -165,6 +173,7 @@ export const useSchemaStore = defineStore('schema', () => {
     extracting.value = false
     extractError.value = ''
     progress.value = { completed: 0, total: 0 }
+    statusMessage.value = ''
     dataPropsCache.value = new Map()
     dataPropsLoading.value = new Set()
     dataPropsStatus.value = new Map()
@@ -227,7 +236,7 @@ export const useSchemaStore = defineStore('schema', () => {
 
   return {
     // graph
-    nodes, edges, extracting, extractError, progress, progressPct, hasData,
+    nodes, edges, extracting, extractError, progress, progressPct, hasData, statusMessage,
     // options
     hideOrphans,
     // data props
