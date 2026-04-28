@@ -4,15 +4,11 @@
     <aside class="sidebar" :class="{ 'sidebar--collapsed': sidebarCollapsed }">
       <div class="sidebar-header">
         <div v-show="!sidebarCollapsed" class="header-left">
-          <Button
-            icon="pi pi-arrow-left"
-            text
-            rounded
-            size="small"
-            aria-label="Back to browser"
-            @click="router.push({ name: 'browse' })"
-          />
           <span class="app-brand">RelFinder</span>
+          <div class="view-tabs">
+            <button class="view-tab" @click="router.push({ name: 'browse' })">Schema</button>
+            <button class="view-tab view-tab--active" aria-current="page">Relations</button>
+          </div>
         </div>
         <div class="header-actions">
           <Button
@@ -398,8 +394,46 @@ function shortIri(iri: string): string {
 .header-left {
   display: flex;
   align-items: center;
-  gap: var(--rf-space-1);
+  gap: var(--rf-space-3);
   min-width: 0;
+}
+
+.view-tabs {
+  display: flex;
+  gap: 2px;
+  background: var(--rf-surface-alt);
+  border: 1px solid var(--rf-border);
+  border-radius: var(--rf-radius-md);
+  padding: 2px;
+}
+
+.view-tab {
+  padding: 2px 10px;
+  font-size: var(--rf-text-xs);
+  font-weight: var(--rf-weight-medium);
+  border-radius: calc(var(--rf-radius-md) - 2px);
+  border: none;
+  background: transparent;
+  color: var(--rf-text-muted);
+  cursor: pointer;
+  transition: background var(--rf-duration-fast) var(--rf-ease-out),
+              color var(--rf-duration-fast) var(--rf-ease-out);
+  white-space: nowrap;
+}
+
+.view-tab:hover {
+  color: var(--rf-text);
+  background: var(--rf-surface-raised);
+}
+
+.view-tab--active {
+  background: var(--rf-primary);
+  color: #fff;
+}
+
+.view-tab--active:hover {
+  background: var(--rf-primary-hover);
+  color: #fff;
 }
 
 .app-brand {
