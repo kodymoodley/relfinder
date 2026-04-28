@@ -58,7 +58,7 @@ export const DEFAULT_PREFIXES: Record<string, string> = {
  */
 function isSafePNameLocal(local: string): boolean {
   if (!local) return false
-  if (/['"()\[\]{}\\\^|\s<>]/.test(local)) return false
+  if (/['"()[\]{}\\^|\s<>]/.test(local)) return false
   // Characters in Unicode gaps not covered by PN_CHARS_BASE:
   // U+00D7 (×), U+00F7 (÷), and the range U+200E–U+206F (includes en-dash U+2013)
   if (/[×÷‎-⁯]/.test(local)) return false

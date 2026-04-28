@@ -103,6 +103,17 @@
                 size="small"
               />
             </div>
+            <div class="option-row">
+              <label class="option-label" for="hide-orphans">Hide orphan nodes</label>
+              <ToggleButton
+                v-model="schemaStore.hideOrphans"
+                on-label="On"
+                off-label="Off"
+                on-icon="pi pi-check"
+                off-icon="pi pi-times"
+                size="small"
+              />
+            </div>
           </template>
         </section>
       </div>
@@ -111,7 +122,7 @@
     <!-- ── Schema canvas ──────────────────────────────────────────────────────── -->
     <main class="browse-main">
       <SchemaCanvas
-        :nodes="schemaStore.nodes"
+        :nodes="displayNodes"
         :edges="schemaStore.edges"
         @node-click="onNodeClick"
         @edge-click="onEdgeClick"
@@ -122,7 +133,7 @@
     <SchemaDetailPanel
       :selected-node="selectedNode"
       :selected-edge="selectedEdge"
-      :all-nodes="schemaStore.nodes"
+      :all-nodes="displayNodes"
       :all-edges="schemaStore.edges"
       @update:selected-node="selectedNode = $event"
       @update:selected-edge="selectedEdge = $event"
@@ -132,13 +143,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import Message from 'primevue/message'
 import ProgressBar from 'primevue/progressbar'
 import Divider from 'primevue/divider'
 import InputNumber from 'primevue/inputnumber'
+import ToggleButton from 'primevue/togglebutton'
 import { useDarkMode } from '@/composables/useDarkMode'
 import { useConnectionStore } from '@/stores/connection'
 import { useSchemaStore } from '@/stores/schema'
@@ -159,6 +171,16 @@ const sidebarCollapsed = ref(false)
 const optionsOpen = ref(false)
 const classLimit = ref(100)
 const edgeLimit = ref(50)
+
+const displayNodes = computed(() => {
+  if (!schemaStore.hideOrphans) return schemaStore.nodes
+  const connected = new Set<string>()
+  for (const e of schemaStore.edges) {
+    connected.add(e.sourceIri)
+    connected.add(e.targetIri)
+  }
+  return schemaStore.nodes.filter((n) => connected.has(n.iri))
+})
 
 // ── Extraction ────────────────────────────────────────────────────────────────
 
@@ -414,6 +436,18 @@ onMounted(() => {
 :deep(.option-row .p-inputnumber-input) {
   width: 100%;
   min-width: 0;
+}
+
+:deep(.option-row .p-togglebutton) {
+  font-size: var(--rf-text-xs);
+  padding: 0.3rem 0.7rem;
+  width: 72px;
+}
+
+:deep(.option-row .p-togglebutton-checked) {
+  background: var(--rf-primary-soft);
+  border-color: var(--rf-primary);
+  color: var(--rf-primary);
 }
 
 /* ── Main canvas ──────────────────────────────────────────────────────────── */

@@ -77,7 +77,7 @@ const PALETTE = [
 function hashColor(iri: string): string {
   let h = 0
   for (const c of iri) h = (h * 31 + c.charCodeAt(0)) >>> 0
-  return PALETTE[h % PALETTE.length]
+  return PALETTE[h % PALETTE.length]!
 }
 
 function edgeWidth(totalCount: number): number {

@@ -21,6 +21,8 @@ export const useSchemaStore = defineStore('schema', () => {
 
   const hasData = computed(() => nodes.value.length > 0)
 
+  const hideOrphans = ref(false)
+
   async function start(
     context: QueryContext,
     store: Store | undefined,
@@ -77,5 +79,5 @@ export const useSchemaStore = defineStore('schema', () => {
     progress.value = { completed: 0, total: 0 }
   }
 
-  return { nodes, edges, extracting, extractError, progress, progressPct, hasData, start, cancel, clear }
+  return { nodes, edges, extracting, extractError, progress, progressPct, hasData, hideOrphans, start, cancel, clear }
 })
