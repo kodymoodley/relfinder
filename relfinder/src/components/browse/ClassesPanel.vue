@@ -60,7 +60,7 @@
               :class="instancesLoading && expandedClass === item.iri ? 'pi-spin pi-spinner' : 'pi-tag'"
             />
             <span class="class-name">{{ item.label }}</span>
-            <span class="class-count">{{ (item as ClassInfo).count.toLocaleString() }}</span>
+            <span v-if="(item as ClassInfo).count" class="class-count">{{ (item as ClassInfo).count!.toLocaleString() }}</span>
           </button>
 
           <!-- Instance match — pin button -->
@@ -113,7 +113,7 @@
               "
             />
             <span class="class-name">{{ cls.label }}</span>
-            <span class="class-count">{{ cls.count.toLocaleString() }}</span>
+            <span v-if="cls.count" class="class-count">{{ cls.count.toLocaleString() }}</span>
           </button>
 
           <div v-if="expandedClass === cls.iri" class="instance-section">

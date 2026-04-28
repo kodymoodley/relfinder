@@ -202,22 +202,23 @@ export async function fetchClassesWithCounts(
   const cached = cacheGet<ClassInfo[]>(cacheKey)
   if (cached) return cached
 
+  // DISTINCT ?type terminates as soon as the engine has seen `limit` unique
+  // types — no full-table COUNT scan needed. Results are sorted alphabetically
+  // on the client since we have no counts to order by.
   const query = `
-    SELECT ?type (COUNT(?s) AS ?count) WHERE {
+    SELECT DISTINCT ?type WHERE {
       ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?type .
       FILTER (isIRI(?type))
-    } GROUP BY ?type ORDER BY DESC(?count) LIMIT ${limit}
+    } LIMIT ${limit}
   `
 
-  const bindings = await runSelect(query, context, store)
-
-  const result: ClassInfo[] = bindings
-    .filter((b) => b['type'] && b['count'])
+  const result: ClassInfo[] = (await runSelect(query, context, store))
+    .filter((b) => b['type'])
     .map((b) => ({
       iri: b['type']!.value,
       label: shortIri(b['type']!.value),
-      count: parseInt(b['count']!.value, 10),
     }))
+    .sort((a, b) => a.label.localeCompare(b.label))
 
   cacheSet(cacheKey, result)
   return result
@@ -238,7 +239,7 @@ export async function estimateGraphNodeCount(
   if (store) return store.size
   const cacheKey = `nodecount:${context.endpointUrl}`
   const cached = cacheGet<number>(cacheKey)
-  if (cached !== null) return cached
+  if (cached !== undefined) return cached
   try {
     const rows = await runSelect(
       `SELECT (COUNT(DISTINCT ?s) AS ?n) WHERE { ?s ?p ?o . FILTER(isIRI(?s)) }`,
@@ -350,19 +351,20 @@ export async function fetchInstancesByClass(
     `
   }
 
-  const bindings = await runSelect(query, context, store)
-
-  const seen = new Set<string>()
-  const result: Array<{ iri: string; label: string }> = []
-
-  for (const b of bindings) {
-    const s = b['s']
-    if (!s) continue
-    const iri = s.value
-    if (seen.has(iri)) continue
-    seen.add(iri)
-    result.push({ iri, label: b['label']?.value ?? shortIri(iri) })
+  const toInstances = (bindings: Awaited<ReturnType<typeof runSelect>>) => {
+    const seen = new Set<string>()
+    const out: Array<{ iri: string; label: string }> = []
+    for (const b of bindings) {
+      const s = b['s']
+      if (!s) continue
+      if (seen.has(s.value)) continue
+      seen.add(s.value)
+      out.push({ iri: s.value, label: b['label']?.value ?? shortIri(s.value) })
+    }
+    return out
   }
+
+  const result = toInstances(await runSelect(query, context, store))
 
   cacheSet(cacheKey, result)
   return result

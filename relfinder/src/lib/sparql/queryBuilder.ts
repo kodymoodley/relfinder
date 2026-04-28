@@ -45,10 +45,6 @@ export const DEFAULT_PREFIXES: Record<string, string> = {
   owl: 'http://www.w3.org/2002/07/owl#',
   xsd: 'http://www.w3.org/2001/XMLSchema#',
   schema: 'https://schema.org/',
-  db: 'http://dbpedia.org/resource/',
-  dbo: 'http://dbpedia.org/ontology/',
-  dbp: 'http://dbpedia.org/property/',
-  wd: 'http://www.wikidata.org/entity/',
 }
 
 /**

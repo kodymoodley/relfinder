@@ -147,8 +147,8 @@ export interface ClassInfo {
   iri: string
   /** Short display name derived from the IRI fragment or last path segment. */
   label: string
-  /** Number of instances with this rdf:type. */
-  count: number
+  /** Approximate instance count — omitted when the endpoint can't aggregate quickly. */
+  count?: number
 }
 
 export interface DataProperty {

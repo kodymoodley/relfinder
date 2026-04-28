@@ -1,5 +1,3 @@
-version: '3.9'
-
 # RelFinder — local development stack
 #
 # Services:
@@ -35,8 +33,10 @@ services:
     ports:
       - '8080:8080'
     environment:
-      # Required: the SPARQL endpoint to proxy requests to
-      SPARQL_ENDPOINT: ${SPARQL_ENDPOINT}
+      # Required: scheme + host of the SPARQL endpoint (no path)
+      SPARQL_HOST: ${SPARQL_HOST}
+      # Optional: path at that host (default: /sparql)
+      SPARQL_PATH: ${SPARQL_PATH:-/sparql}
       # Optional: restrict CORS to your frontend origin (default: *)
       ALLOWED_ORIGIN: ${ALLOWED_ORIGIN:-*}
       PROXY_PORT: 8080

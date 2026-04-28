@@ -265,7 +265,7 @@ const classesLoading = ref(false)
 
 const classOptions = computed(() =>
   classes.value.map((c) => ({
-    label: `${c.label} (${c.count.toLocaleString()})`,
+    label: c.count ? `${c.label} (${c.count.toLocaleString()})` : c.label,
     value: c.iri,
   })),
 )
