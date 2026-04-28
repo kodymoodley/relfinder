@@ -5,10 +5,6 @@
       <div class="sidebar-header">
         <div v-show="!sidebarCollapsed" class="header-left">
           <span class="app-brand">RelFinder</span>
-          <div class="view-tabs">
-            <button class="view-tab view-tab--active" aria-current="page">Schema</button>
-            <button class="view-tab" @click="router.push({ name: 'graph' })">Relations</button>
-          </div>
         </div>
         <div class="header-actions">
           <Button
@@ -34,6 +30,11 @@
           />
         </div>
       </div>
+
+      <nav v-show="!sidebarCollapsed" class="sidebar-nav">
+        <button class="view-tab view-tab--active" aria-current="page">Schema</button>
+        <button class="view-tab" @click="router.push({ name: 'graph' })">Paths</button>
+      </nav>
 
       <div v-show="!sidebarCollapsed" class="sidebar-body">
         <!-- Extract action -->
@@ -316,46 +317,37 @@ onUnmounted(() => {
 .header-left {
   display: flex;
   align-items: center;
-  gap: var(--rf-space-3);
+  gap: var(--rf-space-1);
   min-width: 0;
 }
 
-.view-tabs {
+.sidebar-nav {
   display: flex;
-  gap: 2px;
-  background: var(--rf-surface-alt);
-  border: 1px solid var(--rf-border);
-  border-radius: var(--rf-radius-md);
-  padding: 2px;
+  border-bottom: 1px solid var(--rf-border);
+  flex-shrink: 0;
 }
 
 .view-tab {
-  padding: 2px 10px;
-  font-size: var(--rf-text-xs);
+  flex: 1;
+  padding: var(--rf-space-2) 0;
+  font-size: var(--rf-text-sm);
   font-weight: var(--rf-weight-medium);
-  border-radius: calc(var(--rf-radius-md) - 2px);
   border: none;
+  border-bottom: 2px solid transparent;
   background: transparent;
   color: var(--rf-text-muted);
   cursor: pointer;
-  transition: background var(--rf-duration-fast) var(--rf-ease-out),
-              color var(--rf-duration-fast) var(--rf-ease-out);
-  white-space: nowrap;
+  transition: color var(--rf-duration-fast) var(--rf-ease-out),
+              border-color var(--rf-duration-fast) var(--rf-ease-out);
 }
 
 .view-tab:hover {
   color: var(--rf-text);
-  background: var(--rf-surface-raised);
 }
 
 .view-tab--active {
-  background: var(--rf-primary);
-  color: #fff;
-}
-
-.view-tab--active:hover {
-  background: var(--rf-primary-hover);
-  color: #fff;
+  color: var(--rf-primary);
+  border-bottom-color: var(--rf-primary);
 }
 
 .app-brand {
