@@ -46,6 +46,7 @@
         <!-- Entity selection -->
         <section class="sidebar-section">
           <EntitySearch
+            :key="`e1-${entitySearchKey}`"
             id="entity1"
             label="Source"
             placeholder="Search…"
@@ -60,6 +61,7 @@
 
         <section class="sidebar-section">
           <EntitySearch
+            :key="`e2-${entitySearchKey}`"
             id="entity2"
             label="Target"
             placeholder="Search…"
@@ -86,6 +88,42 @@
           <Message v-if="searchError" severity="error" :closable="true" @close="searchError = ''">
             {{ searchError }}
           </Message>
+        </section>
+
+        <!-- Recent graphs -->
+        <section v-if="recentGraphs.length > 0" class="sidebar-section">
+          <p class="section-label collapsible" @click="recentOpen = !recentOpen">
+            <i :class="['pi', recentOpen ? 'pi-chevron-down' : 'pi-chevron-right']" />
+            Recent ({{ recentGraphs.length }})
+          </p>
+          <ul v-if="recentOpen" class="recent-list">
+            <li
+              v-for="entry in recentGraphs"
+              :key="entry.id"
+              class="recent-item"
+              @click="onLoadRecent(entry)"
+            >
+              <div class="recent-pair">
+                <span class="recent-entity" :title="entry.entity1.label">{{ entry.entity1.label }}</span>
+                <i class="pi pi-arrow-right recent-arrow" />
+                <span class="recent-entity" :title="entry.entity2.label">{{ entry.entity2.label }}</span>
+              </div>
+              <div class="recent-meta">
+                <Tag
+                  :value="`${entry.maxDistance} hop${entry.maxDistance !== 1 ? 's' : ''}`"
+                  severity="secondary"
+                  class="recent-tag"
+                />
+                <button
+                  class="recent-delete"
+                  @click.stop="onDeleteRecent(entry.id)"
+                  aria-label="Remove from recent"
+                >
+                  <i class="pi pi-times" />
+                </button>
+              </div>
+            </li>
+          </ul>
         </section>
 
         <!-- Results summary -->
@@ -160,7 +198,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed, onMounted } from 'vue'
+import { ref, watch, computed, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import { useDarkMode } from '@/composables/useDarkMode'
@@ -170,6 +208,10 @@ import Tag from 'primevue/tag'
 import { useConnectionStore } from '@/stores/connection'
 import { findRelationships, refreshGraphLabels } from '@/lib/sparql/entitySearch'
 import { cacheGet } from '@/lib/cache/queryCache'
+import {
+  saveGraph, loadGraph, lookupGraph, listRecentGraphs, deleteGraphEntry,
+} from '@/lib/cache/graphStorage'
+import type { GraphHistoryMeta } from '@/lib/cache/graphStorage'
 import { QueryCyclesStrategy } from '@/lib/sparql/types'
 import type { EntitySearchResult, RelationshipGraph, GraphNode } from '@/lib/sparql/types'
 import EntitySearch from '@/components/graph/EntitySearch.vue'
@@ -199,6 +241,9 @@ const searchError = ref('')
 const selectedNode = ref<GraphNode | null>(null)
 const sidebarCollapsed = ref(false)
 const optionsOpen = ref(false)
+const recentOpen = ref(true)
+const recentGraphs = ref<GraphHistoryMeta[]>([])
+const entitySearchKey = ref(0)
 
 const graphOptions = ref<GraphOptions>({
   maxDistance: 2,
@@ -271,6 +316,47 @@ watch(
   },
 )
 
+// ── Recent graphs ─────────────────────────────────────────────────────────────
+
+function endpointKey(): string {
+  return connectionStore.queryContext?.endpointUrl ?? '__file__'
+}
+
+function refreshRecent() {
+  recentGraphs.value = listRecentGraphs(endpointKey())
+}
+
+async function onLoadRecent(entry: GraphHistoryMeta) {
+  // Seed EntitySearch chips via initial-entity (unlocked after nextTick)
+  presetEntity1.value = entry.entity1
+  presetEntity2.value = entry.entity2
+  entity1.value = entry.entity1
+  entity2.value = entry.entity2
+  entitySearchKey.value++
+
+  // Unlock chips so the user can still change entities
+  await nextTick()
+  presetEntity1.value = null
+  presetEntity2.value = null
+
+  const restored = loadGraph(entry.id)
+  if (!restored) {
+    // TTL expired — re-query transparently
+    onFindRelationships()
+    return
+  }
+
+  graph.value = restored
+  selectedNode.value = null
+  searchError.value = ''
+  refreshRecent()
+}
+
+function onDeleteRecent(id: string) {
+  deleteGraphEntry(id)
+  refreshRecent()
+}
+
 // ── Find relationships ────────────────────────────────────────────────────────
 
 async function onFindRelationships() {
@@ -301,6 +387,17 @@ async function onFindRelationships() {
 
     if (graph.value.nodes.length === 0) {
       searchError.value = 'No relationships found between the selected entities.'
+    } else {
+      // Persist for future sessions
+      saveGraph(
+        endpointKey(),
+        entity1.value,
+        entity2.value,
+        graphOptions.value.maxDistance,
+        graphOptions.value.ignoredProperties,
+        graph.value,
+      )
+      refreshRecent()
     }
   } catch (err) {
     searchError.value =
@@ -322,11 +419,29 @@ function onDisconnect() {
 // ── Auto-run when entities are preset (from browse or examples panel) ────────
 
 onMounted(() => {
+  refreshRecent()
+
   if (!_historyExample) return
+
+  // 1. Session cache (fastest — avoids even a localStorage read)
   if (_historyExample.cacheKey) {
     const cached = cacheGet<RelationshipGraph>(_historyExample.cacheKey)
     if (cached) { graph.value = cached; return }
   }
+
+  // 2. Persistent localStorage cache
+  if (entity1.value && entity2.value) {
+    const restored = lookupGraph(
+      endpointKey(),
+      entity1.value.iri,
+      entity2.value.iri,
+      graphOptions.value.maxDistance,
+      graphOptions.value.ignoredProperties,
+    )
+    if (restored) { graph.value = restored; return }
+  }
+
+  // 3. Full query
   onFindRelationships()
 })
 
@@ -549,5 +664,92 @@ function shortIri(iri: string): string {
   flex: 1;
   position: relative;
   overflow: hidden;
+}
+
+/* ── Recent graphs ────────────────────────────────────────────────────────── */
+
+.recent-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--rf-space-1);
+}
+
+.recent-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--rf-space-2);
+  padding: var(--rf-space-2) var(--rf-space-3);
+  border-radius: var(--rf-radius-md);
+  border: 1px solid var(--rf-border);
+  background: var(--rf-surface-alt);
+  cursor: pointer;
+  transition:
+    border-color var(--rf-duration-fast) var(--rf-ease-out),
+    background var(--rf-duration-fast) var(--rf-ease-out);
+}
+
+.recent-item:hover {
+  border-color: var(--rf-primary);
+  background: var(--rf-primary-soft);
+}
+
+.recent-pair {
+  display: flex;
+  align-items: center;
+  gap: var(--rf-space-1);
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+.recent-entity {
+  font-size: var(--rf-text-xs);
+  font-weight: var(--rf-weight-medium);
+  color: var(--rf-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 80px;
+}
+
+.recent-arrow {
+  font-size: 0.55rem;
+  color: var(--rf-text-muted);
+  flex-shrink: 0;
+}
+
+.recent-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--rf-space-1);
+  flex-shrink: 0;
+}
+
+.recent-tag {
+  font-size: 10px;
+}
+
+.recent-delete {
+  background: none;
+  border: none;
+  padding: 2px 4px;
+  cursor: pointer;
+  color: var(--rf-text-subtle);
+  font-size: 0.6rem;
+  display: flex;
+  align-items: center;
+  border-radius: var(--rf-radius-sm);
+  transition:
+    color var(--rf-duration-fast) var(--rf-ease-out),
+    background var(--rf-duration-fast) var(--rf-ease-out);
+}
+
+.recent-delete:hover {
+  color: var(--rf-danger);
+  background: var(--rf-danger-soft);
 }
 </style>
