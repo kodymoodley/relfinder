@@ -45,7 +45,7 @@
             :severity="schemaStore.extracting ? 'danger' : 'primary'"
             :loading="schemaStore.extracting && schemaStore.progress.total === 0"
             fluid
-            @click="schemaStore.extracting ? schemaStore.cancel() : startExtraction()"
+            @click="schemaStore.extracting ? schemaStore.cancel() : startExtraction(true)"
           />
           <Message v-if="schemaStore.extractError" severity="error" :closable="true" @close="schemaStore.extractError = ''">
             {{ schemaStore.extractError }}
@@ -184,12 +184,12 @@ const displayNodes = computed(() => {
 
 // ── Extraction ────────────────────────────────────────────────────────────────
 
-function startExtraction() {
+function startExtraction(force = false) {
   selectedNode.value = null
   selectedEdge.value = null
   const context = connectionStore.queryContext ?? { endpointUrl: '' }
   const store = connectionStore.rdfStore ?? undefined
-  schemaStore.start(context, store, classLimit.value, edgeLimit.value)
+  schemaStore.start(context, store, classLimit.value, edgeLimit.value, force)
 }
 
 // ── Node / edge selection ─────────────────────────────────────────────────────

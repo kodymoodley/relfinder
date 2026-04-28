@@ -16,6 +16,15 @@
         </a>
       </div>
 
+      <!-- Description -->
+      <div class="detail-section">
+        <div v-if="loadingDescription" class="spinner-row">
+          <ProgressSpinner stroke-width="4" style="width: 20px; height: 20px" />
+          <span class="spinner-status">{{ descriptionStatusMsg }}</span>
+        </div>
+        <p v-else-if="description" class="description-text">{{ description }}</p>
+      </div>
+
       <!-- Data properties -->
       <div class="detail-section">
         <p class="section-label">Data Properties</p>
@@ -145,6 +154,7 @@ watch(
       const context = connectionStore.queryContext ?? { endpointUrl: '' }
       const store = connectionStore.rdfStore ?? undefined
       schemaStore.fetchDataProps(node.iri, context, store).catch(() => {})
+      schemaStore.fetchDescription(node.iri, context, store).catch(() => {})
     })
   },
 )
@@ -168,6 +178,20 @@ const panelHeader = computed(() => {
   }
   return 'Details'
 })
+
+const loadingDescription = computed(() =>
+  props.selectedNode ? schemaStore.descriptionLoading.has(props.selectedNode.iri) : false,
+)
+
+const descriptionStatusMsg = computed(() =>
+  props.selectedNode
+    ? (schemaStore.descriptionStatus.get(props.selectedNode.iri) ?? 'Fetching description…')
+    : '',
+)
+
+const description = computed(() =>
+  props.selectedNode ? (schemaStore.descriptionCache.get(props.selectedNode.iri) ?? '') : '',
+)
 
 const loadingDataProps = computed(() =>
   props.selectedNode ? schemaStore.dataPropsLoading.has(props.selectedNode.iri) : false,
@@ -349,6 +373,13 @@ function emitExplore() {
 .conn-via em {
   font-style: italic;
   color: var(--rf-text-subtle);
+}
+
+.description-text {
+  margin: 0;
+  font-size: var(--rf-text-sm);
+  color: var(--rf-text);
+  line-height: var(--rf-leading-relaxed);
 }
 
 .list-empty {

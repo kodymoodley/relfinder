@@ -40,6 +40,17 @@ export interface SchemaExtractionOptions {
   concurrency?: number
   /** Preferred language for labels. Default 'en'. */
   language?: string
+  /**
+   * Skip Phase 1 entirely and use these nodes instead.
+   * Useful when resuming a partial extraction from persistent storage.
+   */
+  preloadedNodes?: SchemaNode[]
+  /**
+   * Class IRIs to skip in Phase 2 (edges already fetched in a previous run).
+   * The completed counter is initialised to this set's size so progress
+   * reporting stays accurate across resume.
+   */
+  skipClasses?: Set<string>
 }
 
 export interface SchemaExtractionCallbacks {
@@ -47,8 +58,10 @@ export interface SchemaExtractionCallbacks {
   onClassesLoaded?: (nodes: SchemaNode[]) => void
   /** Called after each class's edges arrive — render incrementally. */
   onEdgesLoaded?: (edges: SchemaEdge[]) => void
-  /** Called after every class query completes. */
+  /** Called after every class query completes (including skipped ones). */
   onProgress?: (completed: number, total: number) => void
+  /** Called after each class finishes Phase 2 — use to persist incremental state. */
+  onClassProcessed?: (classIri: string) => void
 }
 
 // ── Phase 1 ───────────────────────────────────────────────────────────────────
@@ -123,35 +136,43 @@ export async function extractSchema(
   callbacks: SchemaExtractionCallbacks = {},
   signal?: AbortSignal,
 ): Promise<SchemaGraph> {
-  const { classLimit = 100, edgeLimit = 50, concurrency = 5, language = 'en' } = options
+  const { classLimit = 100, edgeLimit = 50, concurrency = 5, language = 'en', preloadedNodes, skipClasses } = options
 
-  // ── Phase 1: classes ────────────────────────────────────────────────────────
-  const nodes = await fetchSchemaClasses(context, store, classLimit)
-  if (signal?.aborted || nodes.length === 0) return { nodes, edges: [] }
+  // ── Phase 1: classes (skipped when resuming) ────────────────────────────────
+  let nodes: SchemaNode[]
+  if (preloadedNodes && preloadedNodes.length > 0) {
+    nodes = preloadedNodes
+    // Labels and onClassesLoaded already handled by the caller when restoring
+  } else {
+    nodes = await fetchSchemaClasses(context, store, classLimit)
+    if (signal?.aborted || nodes.length === 0) return { nodes, edges: [] }
 
-  // Fetch labels in batches of 20 to avoid oversized UNION queries
-  for (const batch of chunk(nodes.map((n) => n.iri), 20)) {
-    if (signal?.aborted) break
-    const labelMap = await fetchLabels(batch, context, store)
-    for (const node of nodes) {
-      const entries = labelMap.get(node.iri)
-      if (!entries?.length) continue
-      const best =
-        entries.find((e) => e.lang === language) ??
-        entries.find((e) => e.lang === '') ??
-        entries.find((e) => e.lang === 'en') ??
-        entries[0]
-      if (best) node.label = best.value
+    for (const batch of chunk(nodes.map((n) => n.iri), 20)) {
+      if (signal?.aborted) break
+      const labelMap = await fetchLabels(batch, context, store)
+      for (const node of nodes) {
+        const entries = labelMap.get(node.iri)
+        if (!entries?.length) continue
+        const best =
+          entries.find((e) => e.lang === language) ??
+          entries.find((e) => e.lang === '') ??
+          entries.find((e) => e.lang === 'en') ??
+          entries[0]
+        if (best) node.label = best.value
+      }
     }
+    callbacks.onClassesLoaded?.(nodes)
+    if (signal?.aborted) return { nodes, edges: [] }
   }
-  callbacks.onClassesLoaded?.(nodes)
-  if (signal?.aborted) return { nodes, edges: [] }
 
   // ── Phase 2: edges ──────────────────────────────────────────────────────────
   const allClassIris = nodes.map((n) => n.iri)
   const allEdges: SchemaEdge[] = []
-  let completed = 0
-  const queue = [...nodes]
+  // Initialise counter at skip count so progress % is accurate when resuming
+  let completed = skipClasses?.size ?? 0
+  const queue = nodes.filter((n) => !skipClasses?.has(n.iri))
+
+  if (queue.length === 0) return { nodes, edges: allEdges }
 
   async function worker() {
     while (queue.length > 0) {
@@ -167,11 +188,12 @@ export async function extractSchema(
         // Partial schema is still useful — skip classes that time out
       }
       callbacks.onProgress?.(++completed, nodes.length)
+      callbacks.onClassProcessed?.(node.iri)
     }
   }
 
   await Promise.all(
-    Array.from({ length: Math.min(concurrency, nodes.length) }, worker),
+    Array.from({ length: Math.min(concurrency, queue.length) }, worker),
   )
 
   return { nodes, edges: allEdges }
