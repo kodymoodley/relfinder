@@ -144,7 +144,8 @@ import InputNumber from 'primevue/inputnumber'
 import { useDarkMode } from '@/composables/useDarkMode'
 import { useConnectionStore } from '@/stores/connection'
 import { extractSchema } from '@/lib/sparql/schemaExtractor'
-import type { SchemaNode, SchemaEdge } from '@/lib/sparql/types'
+import { cacheGet, cacheSet } from '@/lib/cache/queryCache'
+import type { SchemaNode, SchemaEdge, SchemaGraph } from '@/lib/sparql/types'
 import SchemaCanvas from '@/components/schema/SchemaCanvas.vue'
 import SchemaDetailPanel from '@/components/schema/SchemaDetailPanel.vue'
 
@@ -168,6 +169,13 @@ const edgeLimit = ref(50)
 
 let abortController: AbortController | null = null
 
+const SCHEMA_TTL_MS = 30 * 60 * 1000 // 30 minutes
+
+function schemaCacheKey(): string {
+  const url = connectionStore.queryContext?.endpointUrl ?? '__file__'
+  return `schema:${url}`
+}
+
 const progressPct = computed(() =>
   progress.value.total > 0
     ? Math.round((progress.value.completed / progress.value.total) * 100)
@@ -175,6 +183,14 @@ const progressPct = computed(() =>
 )
 
 // ── Extraction ────────────────────────────────────────────────────────────────
+
+function loadFromCache(): boolean {
+  const cached = cacheGet<SchemaGraph>(schemaCacheKey())
+  if (!cached) return false
+  nodes.value = cached.nodes
+  edges.value = cached.edges
+  return true
+}
 
 async function startExtraction() {
   abortController = new AbortController()
@@ -192,7 +208,7 @@ async function startExtraction() {
     const store = connectionStore.rdfStore ?? undefined
     const effectiveContext = context ?? { endpointUrl: '' }
 
-    await extractSchema(
+    const result = await extractSchema(
       effectiveContext,
       store,
       { classLimit: classLimit.value, edgeLimit: edgeLimit.value },
@@ -210,6 +226,10 @@ async function startExtraction() {
       },
       abortController.signal,
     )
+
+    if (!abortController.signal.aborted) {
+      cacheSet(schemaCacheKey(), result, SCHEMA_TTL_MS)
+    }
   } catch (err) {
     if ((err as Error)?.name !== 'AbortError') {
       extractError.value =
@@ -263,7 +283,7 @@ function onDisconnect() {
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
 
 onMounted(() => {
-  if (connectionStore.isConnected) startExtraction()
+  if (connectionStore.isConnected && !loadFromCache()) startExtraction()
 })
 
 onUnmounted(() => {
