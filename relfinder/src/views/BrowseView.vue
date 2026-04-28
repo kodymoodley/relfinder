@@ -40,42 +40,42 @@
         <!-- Extract action -->
         <section class="sidebar-section">
           <Button
-            :label="extracting ? 'Stop extraction' : 'Extract Schema'"
-            :icon="extracting ? 'pi pi-stop' : 'pi pi-sitemap'"
-            :severity="extracting ? 'danger' : 'primary'"
-            :loading="extracting && progress.total === 0"
+            :label="schemaStore.extracting ? 'Stop extraction' : 'Extract Schema'"
+            :icon="schemaStore.extracting ? 'pi pi-stop' : 'pi pi-sitemap'"
+            :severity="schemaStore.extracting ? 'danger' : 'primary'"
+            :loading="schemaStore.extracting && schemaStore.progress.total === 0"
             fluid
-            @click="extracting ? cancelExtraction() : startExtraction()"
+            @click="schemaStore.extracting ? schemaStore.cancel() : startExtraction()"
           />
-          <Message v-if="extractError" severity="error" :closable="true" @close="extractError = ''">
-            {{ extractError }}
+          <Message v-if="schemaStore.extractError" severity="error" :closable="true" @close="schemaStore.extractError = ''">
+            {{ schemaStore.extractError }}
           </Message>
         </section>
 
         <!-- Progress -->
-        <section v-if="extracting && progress.total > 0" class="sidebar-section">
+        <section v-if="schemaStore.extracting && schemaStore.progress.total > 0" class="sidebar-section">
           <div class="progress-row">
             <span class="progress-label">Phase 2 — edges</span>
-            <span class="progress-count">{{ progress.completed }} / {{ progress.total }}</span>
+            <span class="progress-count">{{ schemaStore.progress.completed }} / {{ schemaStore.progress.total }}</span>
           </div>
-          <ProgressBar :value="progressPct" :show-value="false" style="height: 4px" />
+          <ProgressBar :value="schemaStore.progressPct" :show-value="false" style="height: 4px" />
         </section>
 
         <!-- Stats -->
-        <section v-if="nodes.length > 0" class="sidebar-section stats-row">
+        <section v-if="schemaStore.nodes.length > 0" class="sidebar-section stats-row">
           <div class="stat-item">
-            <span class="stat-value">{{ nodes.length }}</span>
+            <span class="stat-value">{{ schemaStore.nodes.length }}</span>
             <span class="stat-label">Classes</span>
           </div>
           <div class="stat-item">
-            <span class="stat-value">{{ edges.length }}</span>
+            <span class="stat-value">{{ schemaStore.edges.length }}</span>
             <span class="stat-label">Edges</span>
           </div>
         </section>
 
         <!-- Options -->
-        <Divider v-if="nodes.length > 0" />
-        <section v-if="nodes.length > 0" class="sidebar-section">
+        <Divider v-if="schemaStore.nodes.length > 0" />
+        <section v-if="schemaStore.nodes.length > 0" class="sidebar-section">
           <p class="section-label collapsible" @click="optionsOpen = !optionsOpen">
             <i :class="['pi', optionsOpen ? 'pi-chevron-down' : 'pi-chevron-right']" />
             Options
@@ -113,8 +113,8 @@
     <!-- ── Schema canvas ──────────────────────────────────────────────────────── -->
     <main class="browse-main">
       <SchemaCanvas
-        :nodes="nodes"
-        :edges="edges"
+        :nodes="schemaStore.nodes"
+        :edges="schemaStore.edges"
         @node-click="onNodeClick"
         @edge-click="onEdgeClick"
       />
@@ -124,8 +124,8 @@
     <SchemaDetailPanel
       :selected-node="selectedNode"
       :selected-edge="selectedEdge"
-      :all-nodes="nodes"
-      :all-edges="edges"
+      :all-nodes="schemaStore.nodes"
+      :all-edges="schemaStore.edges"
       @update:selected-node="selectedNode = $event"
       @update:selected-edge="selectedEdge = $event"
       @explore="onExplore"
@@ -134,7 +134,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import Message from 'primevue/message'
@@ -143,23 +143,18 @@ import Divider from 'primevue/divider'
 import InputNumber from 'primevue/inputnumber'
 import { useDarkMode } from '@/composables/useDarkMode'
 import { useConnectionStore } from '@/stores/connection'
-import { extractSchema } from '@/lib/sparql/schemaExtractor'
-import { cacheGet, cacheSet } from '@/lib/cache/queryCache'
-import type { SchemaNode, SchemaEdge, SchemaGraph } from '@/lib/sparql/types'
+import { useSchemaStore } from '@/stores/schema'
+import type { SchemaNode, SchemaEdge } from '@/lib/sparql/types'
 import SchemaCanvas from '@/components/schema/SchemaCanvas.vue'
 import SchemaDetailPanel from '@/components/schema/SchemaDetailPanel.vue'
 
 const router = useRouter()
 const connectionStore = useConnectionStore()
+const schemaStore = useSchemaStore()
 const { dark, toggle: toggleDark } = useDarkMode()
 
-// ── State ─────────────────────────────────────────────────────────────────────
+// ── Local UI state ────────────────────────────────────────────────────────────
 
-const nodes = ref<SchemaNode[]>([])
-const edges = ref<SchemaEdge[]>([])
-const extracting = ref(false)
-const extractError = ref('')
-const progress = ref({ completed: 0, total: 0 })
 const selectedNode = ref<SchemaNode | null>(null)
 const selectedEdge = ref<SchemaEdge | null>(null)
 const sidebarCollapsed = ref(false)
@@ -167,81 +162,14 @@ const optionsOpen = ref(false)
 const classLimit = ref(100)
 const edgeLimit = ref(50)
 
-let abortController: AbortController | null = null
-
-const SCHEMA_TTL_MS = 30 * 60 * 1000 // 30 minutes
-
-function schemaCacheKey(): string {
-  const url = connectionStore.queryContext?.endpointUrl ?? '__file__'
-  return `schema:${url}`
-}
-
-const progressPct = computed(() =>
-  progress.value.total > 0
-    ? Math.round((progress.value.completed / progress.value.total) * 100)
-    : 0,
-)
-
 // ── Extraction ────────────────────────────────────────────────────────────────
 
-function loadFromCache(): boolean {
-  const cached = cacheGet<SchemaGraph>(schemaCacheKey())
-  if (!cached) return false
-  nodes.value = cached.nodes
-  edges.value = cached.edges
-  return true
-}
-
-async function startExtraction() {
-  abortController = new AbortController()
-
-  nodes.value = []
-  edges.value = []
-  extractError.value = ''
-  progress.value = { completed: 0, total: 0 }
+function startExtraction() {
   selectedNode.value = null
   selectedEdge.value = null
-  extracting.value = true
-
-  try {
-    const context = connectionStore.queryContext
-    const store = connectionStore.rdfStore ?? undefined
-    const effectiveContext = context ?? { endpointUrl: '' }
-
-    const result = await extractSchema(
-      effectiveContext,
-      store,
-      { classLimit: classLimit.value, edgeLimit: edgeLimit.value },
-      {
-        onClassesLoaded(incoming) {
-          nodes.value = incoming
-          progress.value = { completed: 0, total: incoming.length }
-        },
-        onEdgesLoaded(incoming) {
-          edges.value = [...edges.value, ...incoming]
-        },
-        onProgress(completed, total) {
-          progress.value = { completed, total }
-        },
-      },
-      abortController.signal,
-    )
-
-    if (!abortController.signal.aborted) {
-      cacheSet(schemaCacheKey(), result, SCHEMA_TTL_MS)
-    }
-  } catch (err) {
-    if ((err as Error)?.name !== 'AbortError') {
-      extractError.value =
-        err instanceof Error ? `Extraction failed: ${err.message}` : 'An unexpected error occurred.'
-    }
-  } finally {
-    extracting.value = false
-  }
-}
-
-function cancelExtraction() {
-  abortController?.abort()
+  const context = connectionStore.queryContext ?? { endpointUrl: '' }
+  const store = connectionStore.rdfStore ?? undefined
+  schemaStore.start(context, store, classLimit.value, edgeLimit.value)
 }
 
 // ── Node / edge selection ─────────────────────────────────────────────────────
@@ -259,8 +187,8 @@ function onEdgeClick(edge: SchemaEdge) {
 // ── Navigate to Graph View ────────────────────────────────────────────────────
 
 function onExplore(sourceIri: string, targetIri: string) {
-  const sourceNode = nodes.value.find((n) => n.iri === sourceIri)
-  const targetNode = nodes.value.find((n) => n.iri === targetIri)
+  const sourceNode = schemaStore.nodes.find((n) => n.iri === sourceIri)
+  const targetNode = schemaStore.nodes.find((n) => n.iri === targetIri)
   router.push({
     name: 'graph',
     state: {
@@ -275,7 +203,7 @@ function onExplore(sourceIri: string, targetIri: string) {
 // ── Disconnect ────────────────────────────────────────────────────────────────
 
 function onDisconnect() {
-  abortController?.abort()
+  schemaStore.clear()
   connectionStore.disconnect()
   router.push({ name: 'connection' })
 }
@@ -283,11 +211,9 @@ function onDisconnect() {
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
 
 onMounted(() => {
-  if (connectionStore.isConnected && !loadFromCache()) startExtraction()
-})
-
-onUnmounted(() => {
-  abortController?.abort()
+  if (connectionStore.isConnected && !schemaStore.hasData && !schemaStore.extracting) {
+    startExtraction()
+  }
 })
 </script>
 
