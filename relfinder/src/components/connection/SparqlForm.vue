@@ -103,6 +103,7 @@ import Button from 'primevue/button'
 import Message from 'primevue/message'
 import { useConnectionStore } from '@/stores/connection'
 import { executeSelect } from '@/lib/sparql/engine'
+import { loadSchema } from '@/lib/cache/schemaStorage'
 
 const router = useRouter()
 const connectionStore = useConnectionStore()
@@ -189,7 +190,13 @@ async function onSubmit() {
     : undefined
 
   try {
-    await testConnection(endpointUrl, authHeader)
+    // Skip the round-trip test when a cached schema already exists — the user
+    // will see the cached nodes instantly, and Phase 2 will surface any
+    // connectivity error if the endpoint is actually unreachable.
+    const hasCachedSchema = loadSchema(endpointUrl) !== null
+    if (!hasCachedSchema) {
+      await testConnection(endpointUrl, authHeader)
+    }
 
     connectionStore.connectSparql({
       endpointUrl,
