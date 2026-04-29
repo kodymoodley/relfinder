@@ -18,6 +18,7 @@ import { executeSelect, executeSelectOnStore } from './engine'
 import { fetchLabels } from './entitySearch'
 import { shortIri } from '../utils/iri'
 import type { QueryContext, SchemaNode, SchemaEdge, SchemaGraph, SchemaProp, SchemaDataProp } from './types'
+import { DESCRIPTION_PROPERTIES } from './classDescription'
 
 const RDF_TYPE = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type'
 
@@ -62,6 +63,8 @@ export interface SchemaExtractionCallbacks {
   onProgress?: (completed: number, total: number) => void
   /** Called after each class finishes Phase 2 — use to persist incremental state. */
   onClassProcessed?: (classIri: string) => void
+  /** Called per label batch with best description per class IRI (empty string = none found). */
+  onDescriptionsLoaded?: (descriptions: Map<string, string>) => void
 }
 
 // ── Phase 1 ───────────────────────────────────────────────────────────────────
@@ -81,6 +84,58 @@ async function fetchSchemaClasses(
   return rows
     .filter((r) => r['class'])
     .map((r) => ({ iri: r['class']!.value, label: shortIri(r['class']!.value) }))
+}
+
+// ── Phase 1b: descriptions ────────────────────────────────────────────────────
+
+async function fetchDescriptionsBatch(
+  iris: string[],
+  context: QueryContext,
+  store: Store | undefined,
+  language = 'en',
+): Promise<Map<string, string>> {
+  const classValues = iris.map((c) => `<${c}>`).join(' ')
+  const propValues = DESCRIPTION_PROPERTIES.map((p) => `<${p}>`).join(' ')
+  const query = `
+    SELECT ?class ?prop ?val WHERE {
+      VALUES ?class { ${classValues} }
+      VALUES ?prop { ${propValues} }
+      ?class ?prop ?val .
+      FILTER(isLiteral(?val))
+    }
+  `
+  const rows = await runSelect(query, context, store)
+
+  const byClass = new Map<string, Map<string, { value: string; lang: string }[]>>()
+  for (const r of rows) {
+    const classIri = r['class']?.value
+    const prop = r['prop']?.value
+    const val = r['val']?.value
+    const lang: string = (r['val'] as { language?: string })?.language ?? r['val']?.lang ?? ''
+    if (!classIri || !prop || val == null) continue
+    if (!byClass.has(classIri)) byClass.set(classIri, new Map())
+    const byProp = byClass.get(classIri)!
+    const bucket = byProp.get(prop)
+    if (bucket) bucket.push({ value: val, lang })
+    else byProp.set(prop, [{ value: val, lang }])
+  }
+
+  // All queried IRIs get an entry (empty string = no description) so callers
+  // can cache negatives and avoid redundant on-demand fetches.
+  const result = new Map<string, string>(iris.map((iri) => [iri, '']))
+  for (const [classIri, byProp] of byClass) {
+    for (const propIri of DESCRIPTION_PROPERTIES) {
+      const candidates = byProp.get(propIri)
+      if (!candidates?.length) continue
+      const best =
+        candidates.find((c) => c.lang === language) ??
+        candidates.find((c) => c.lang === 'en') ??
+        candidates.find((c) => c.lang === '') ??
+        candidates[0]
+      if (best) { result.set(classIri, best.value); break }
+    }
+  }
+  return result
 }
 
 // ── Phase 2 ───────────────────────────────────────────────────────────────────
@@ -148,20 +203,28 @@ export async function extractSchema(
     nodes = await fetchSchemaClasses(context, store, classLimit)
     if (signal?.aborted || nodes.length === 0) return { nodes, edges: [] }
 
-    for (const batch of chunk(nodes.map((n) => n.iri), 20)) {
-      if (signal?.aborted) break
-      const labelMap = await fetchLabels(batch, context, store)
-      for (const node of nodes) {
-        const entries = labelMap.get(node.iri)
-        if (!entries?.length) continue
-        const best =
-          entries.find((e) => e.lang === language) ??
-          entries.find((e) => e.lang === '') ??
-          entries.find((e) => e.lang === 'en') ??
-          entries[0]
-        if (best) node.label = best.value
-      }
-    }
+    // Run all label + description batches concurrently (2 queries per batch in parallel).
+    await Promise.all(
+      chunk(nodes.map((n) => n.iri), 20).map(async (batch) => {
+        if (signal?.aborted) return
+        const [labelMap, descMap] = await Promise.all([
+          fetchLabels(batch, context, store),
+          fetchDescriptionsBatch(batch, context, store, language).catch(() => new Map<string, string>()),
+        ])
+        if (signal?.aborted) return
+        for (const node of nodes) {
+          const entries = labelMap.get(node.iri)
+          if (!entries?.length) continue
+          const best =
+            entries.find((e) => e.lang === language) ??
+            entries.find((e) => e.lang === '') ??
+            entries.find((e) => e.lang === 'en') ??
+            entries[0]
+          if (best) node.label = best.value
+        }
+        if (descMap.size > 0) callbacks.onDescriptionsLoaded?.(descMap)
+      }),
+    )
     callbacks.onClassesLoaded?.(nodes)
     if (signal?.aborted) return { nodes, edges: [] }
   }

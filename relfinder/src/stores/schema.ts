@@ -146,6 +146,9 @@ export const useSchemaStore = defineStore('schema', () => {
           skipClasses: processedSet.size > 0 ? new Set(processedSet) : undefined,
         },
         {
+          onDescriptionsLoaded(map) {
+            descriptionCache.value = new Map([...descriptionCache.value, ...map])
+          },
           onClassesLoaded(incoming) {
             nodes.value = incoming
             progress.value = { completed: processedSet.size, total: incoming.length }
