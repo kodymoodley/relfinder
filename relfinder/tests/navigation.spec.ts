@@ -15,6 +15,9 @@ async function connectViaFile(page: import('@playwright/test').Page): Promise<vo
   await expect(page.getByTestId('rdf-drop-zone')).toContainText('triples loaded', { timeout: 10_000 })
   await page.getByTestId('open-graph-btn').click()
   await expect(page).toHaveURL('/browse')
+  // Wait for auto-started extraction to finish before tests assert on browse state
+  const browse = new BrowsePage(page)
+  await browse.waitForExtractionComplete(60_000)
 }
 
 // ── View switching ────────────────────────────────────────────────────────────
@@ -82,23 +85,20 @@ test.describe('Sidebar collapse', () => {
 
 test.describe('State persistence', () => {
   test('extraction state persists when switching Schema → Paths → Schema', async ({ page }) => {
+    // connectViaFile already waits for auto-extraction to complete
     await connectViaFile(page)
     const browse = new BrowsePage(page)
-
-    // Extract schema
-    await browse.clickExtract()
-    await browse.waitForExtractionComplete(60_000)
     const nodesBefore = await browse.getNodeCount()
+    expect(nodesBefore).toBeGreaterThan(0)
 
     // Go to Paths
     await page.getByTestId('nav-paths').click()
     await expect(page).toHaveURL('/graph')
 
-    // Return to Schema
+    // Return to Schema — Pinia store persists across Vue Router navigation
     await page.getByTestId('nav-schema-graph').click()
     await expect(page).toHaveURL('/browse')
 
-    // Schema store is preserved (Pinia state persists across route navigation)
     await browse.expectSchemaLoaded()
     const nodesAfter = await browse.getNodeCount()
     expect(nodesAfter).toBe(nodesBefore)
