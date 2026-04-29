@@ -35,7 +35,7 @@
     </div>
 
     <!-- Cytoscape mount point — always in the DOM so cy can attach -->
-    <div ref="cyContainer" class="cy-container" :class="{ hidden: !hasGraph }" />
+    <div ref="cyContainer" class="cy-container" :class="{ hidden: !hasGraph }" data-testid="graph-canvas" />
 
     <!-- Select mode indicator -->
     <Transition name="mode-badge">

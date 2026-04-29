@@ -25,6 +25,7 @@
             severity="danger"
             @click="onDisconnect"
             aria-label="Disconnect"
+            data-testid="disconnect-btn-graph"
           />
           <Button
             icon="pi pi-bars"
@@ -38,13 +39,13 @@
       </div>
 
       <nav v-show="!sidebarCollapsed" class="sidebar-nav">
-        <button class="view-tab" @click="router.push({ name: 'browse' })">Schema</button>
-        <button class="view-tab view-tab--active" aria-current="page">Paths</button>
+        <button class="view-tab" @click="router.push({ name: 'browse' })" data-testid="nav-schema-graph">Schema</button>
+        <button class="view-tab view-tab--active" aria-current="page" data-testid="nav-paths-graph">Paths</button>
       </nav>
 
       <div v-show="!sidebarCollapsed" class="sidebar-body">
         <!-- Entity selection -->
-        <section class="sidebar-section">
+        <section class="sidebar-section" data-testid="entity1-search">
           <EntitySearch
             :key="`e1-${entitySearchKey}`"
             id="entity1"
@@ -59,7 +60,7 @@
           />
         </section>
 
-        <section class="sidebar-section">
+        <section class="sidebar-section" data-testid="entity2-search">
           <EntitySearch
             :key="`e2-${entitySearchKey}`"
             id="entity2"
@@ -83,6 +84,7 @@
             :disabled="!entity1 || !entity2"
             :class="{ 'ready-pulse': entity1 && entity2 && !searching }"
             fluid
+            data-testid="find-relationships-btn"
             @click="onFindRelationships"
           />
           <Message v-if="searchError" severity="error" :closable="true" @close="searchError = ''">

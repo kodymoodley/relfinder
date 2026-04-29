@@ -4,6 +4,7 @@
     <div
       class="drop-zone"
       :class="{ 'drop-zone--over': isDragging, 'drop-zone--loaded': !!loadedFile }"
+      data-testid="rdf-drop-zone"
       @dragover.prevent="isDragging = true"
       @dragleave.prevent="isDragging = false"
       @drop.prevent="onDrop"
@@ -17,6 +18,7 @@
         class="hidden-input"
         aria-label="Upload RDF file"
         @change="onFileChange"
+        data-testid="rdf-file-input"
       />
 
       <template v-if="!loadedFile && !parsing">
@@ -38,7 +40,7 @@
       </template>
     </div>
 
-    <Message v-if="parseError" severity="error" :closable="true" @close="parseError = ''">
+    <Message v-if="parseError" severity="error" :closable="true" @close="parseError = ''" data-testid="parse-error-msg">
       {{ parseError }}
     </Message>
 
@@ -49,6 +51,7 @@
       icon-pos="right"
       fluid
       class="open-btn"
+      data-testid="open-graph-btn"
       @click="onConnect"
     />
 

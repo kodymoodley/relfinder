@@ -9,6 +9,7 @@
         :invalid="!!errors.endpointUrl"
         fluid
         autocomplete="url"
+        data-testid="endpoint-url-input"
       />
       <small v-if="errors.endpointUrl" class="error-msg">{{ errors.endpointUrl }}</small>
     </div>
@@ -86,9 +87,10 @@
       :loading="connecting"
       fluid
       class="connect-btn"
+      data-testid="connect-btn"
     />
 
-    <Message v-if="connectionError" severity="error" :closable="true" @close="connectionError = ''">
+    <Message v-if="connectionError" severity="error" :closable="true" @close="connectionError = ''" data-testid="connection-error-msg">
       {{ connectionError }}
     </Message>
   </form>

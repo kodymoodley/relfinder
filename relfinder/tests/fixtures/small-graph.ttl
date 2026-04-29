@@ -1,0 +1,27 @@
+@prefix :     <http://test.example.org/> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+
+# Classes
+:Person  rdf:type owl:Class ; rdfs:label "Person" .
+:Project rdf:type owl:Class ; rdfs:label "Project" .
+
+# Properties
+:worksOn rdf:type owl:ObjectProperty  ; rdfs:label "works on" ;
+         rdfs:domain :Person ; rdfs:range :Project .
+:name    rdf:type owl:DatatypeProperty ; rdfs:label "name" ;
+         rdfs:domain :Person ; rdfs:range xsd:string .
+:title   rdf:type owl:DatatypeProperty ; rdfs:label "title" ;
+         rdfs:domain :Project ; rdfs:range xsd:string .
+
+# Instances
+:alice  rdf:type :Person  ; rdfs:label "Alice" ; :name "Alice" .
+:bob    rdf:type :Person  ; rdfs:label "Bob"   ; :name "Bob"   .
+:proj1  rdf:type :Project ; rdfs:label "Project Alpha" ; :title "Project Alpha" .
+:proj2  rdf:type :Project ; rdfs:label "Project Beta"  ; :title "Project Beta"  .
+
+:alice :worksOn :proj1 .
+:alice :worksOn :proj2 .
+:bob   :worksOn :proj1 .

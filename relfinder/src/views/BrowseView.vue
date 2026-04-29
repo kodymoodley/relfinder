@@ -21,6 +21,7 @@
             severity="danger"
             @click="onDisconnect"
             aria-label="Disconnect"
+            data-testid="disconnect-btn"
           />
           <Button
             icon="pi pi-bars"
@@ -32,8 +33,8 @@
       </div>
 
       <nav v-show="!sidebarCollapsed" class="sidebar-nav">
-        <button class="view-tab view-tab--active" aria-current="page">Schema</button>
-        <button class="view-tab" @click="router.push({ name: 'graph' })">Paths</button>
+        <button class="view-tab view-tab--active" aria-current="page" data-testid="nav-schema">Schema</button>
+        <button class="view-tab" @click="router.push({ name: 'graph' })" data-testid="nav-paths">Paths</button>
       </nav>
 
       <div v-show="!sidebarCollapsed" class="sidebar-body">
@@ -46,6 +47,7 @@
             icon="pi pi-sitemap"
             severity="primary"
             fluid
+            data-testid="extract-schema-btn"
             @click="startExtraction()"
           />
 
@@ -56,22 +58,23 @@
             icon="pi pi-spinner pi-spin"
             severity="danger"
             fluid
+            data-testid="stop-extraction-btn"
             @click="schemaStore.cancel()"
           />
 
           <!-- State 3: done — unambiguous completion indicator -->
-          <div v-else class="schema-done">
+          <div v-else class="schema-done" data-testid="schema-done-indicator">
             <i class="pi pi-check-circle schema-done-icon" />
             <span class="schema-done-label">Schema loaded</span>
           </div>
 
-          <Message v-if="schemaStore.extractError" severity="error" :closable="true" @close="schemaStore.extractError = ''">
+          <Message v-if="schemaStore.extractError" severity="error" :closable="true" @close="schemaStore.extractError = ''" data-testid="extraction-error-msg">
             {{ schemaStore.extractError }}
           </Message>
         </section>
 
         <!-- Extraction progress (only while extracting) -->
-        <section v-if="schemaStore.extracting" class="sidebar-section">
+        <section v-if="schemaStore.extracting" class="sidebar-section" data-testid="extraction-progress">
           <div class="progress-row">
             <span class="progress-label">
               {{ schemaStore.statusMessage || 'Building edge map…' }}
@@ -89,13 +92,13 @@
         </section>
 
         <!-- Stats -->
-        <section v-if="schemaStore.nodes.length > 0" class="sidebar-section stats-row">
+        <section v-if="schemaStore.nodes.length > 0" class="sidebar-section stats-row" data-testid="schema-stats">
           <div class="stat-item">
-            <span class="stat-value">{{ schemaStore.nodes.length }}</span>
+            <span class="stat-value" data-testid="nodes-count">{{ schemaStore.nodes.length }}</span>
             <span class="stat-label">Classes</span>
           </div>
           <div class="stat-item">
-            <span class="stat-value">{{ schemaStore.edges.length }}</span>
+            <span class="stat-value" data-testid="edges-count">{{ schemaStore.edges.length }}</span>
             <span class="stat-label">Edges</span>
           </div>
         </section>
@@ -139,6 +142,7 @@
                 on-icon="pi pi-check"
                 off-icon="pi pi-times"
                 size="small"
+                data-testid="hide-orphans-toggle"
               />
             </div>
             <Button
@@ -149,6 +153,7 @@
               size="small"
               fluid
               :disabled="schemaStore.extracting"
+              data-testid="reextract-btn"
               @click="startExtraction(true)"
             />
           </template>

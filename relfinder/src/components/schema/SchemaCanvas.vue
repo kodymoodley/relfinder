@@ -1,7 +1,7 @@
 <template>
   <div class="schema-canvas-wrapper">
     <!-- Empty state -->
-    <div v-if="props.nodes.length === 0" class="canvas-empty">
+    <div v-if="props.nodes.length === 0" class="canvas-empty" data-testid="schema-canvas-empty">
       <div class="empty-icon-wrap">
         <i class="pi pi-sitemap empty-icon" />
       </div>
@@ -12,15 +12,15 @@
     </div>
 
     <!-- Cytoscape mount point — always in DOM so cy can attach -->
-    <div ref="cyContainer" class="cy-container" :class="{ hidden: props.nodes.length === 0 }" />
+    <div ref="cyContainer" class="cy-container" :class="{ hidden: props.nodes.length === 0 }" data-testid="schema-canvas" />
 
     <!-- Toolbar -->
-    <div v-if="props.nodes.length > 0" class="canvas-toolbar">
-      <Button v-tooltip.top="'Zoom in'" icon="pi pi-plus" text rounded size="small" aria-label="Zoom in" @click="zoomIn" />
-      <Button v-tooltip.top="'Zoom out'" icon="pi pi-minus" text rounded size="small" aria-label="Zoom out" @click="zoomOut" />
-      <Button v-tooltip.top="'Fit to screen'" icon="pi pi-arrows-alt" text rounded size="small" aria-label="Fit" @click="fitGraph" />
+    <div v-if="props.nodes.length > 0" class="canvas-toolbar" data-testid="schema-toolbar">
+      <Button v-tooltip.top="'Zoom in'" icon="pi pi-plus" text rounded size="small" aria-label="Zoom in" data-testid="zoom-in-btn" @click="zoomIn" />
+      <Button v-tooltip.top="'Zoom out'" icon="pi pi-minus" text rounded size="small" aria-label="Zoom out" data-testid="zoom-out-btn" @click="zoomOut" />
+      <Button v-tooltip.top="'Fit to screen'" icon="pi pi-arrows-alt" text rounded size="small" aria-label="Fit" data-testid="fit-btn" @click="fitGraph" />
       <Divider layout="vertical" />
-      <Button v-tooltip.top="'Re-run layout'" icon="pi pi-refresh" text rounded size="small" aria-label="Re-run layout" @click="rerunLayout" />
+      <Button v-tooltip.top="'Re-run layout'" icon="pi pi-refresh" text rounded size="small" aria-label="Re-run layout" data-testid="rerun-layout-btn" @click="rerunLayout" />
       <Divider layout="vertical" />
       <Button
         v-tooltip.top="showEdgeLabels ? 'Hide property labels' : 'Show property labels'"
@@ -28,6 +28,7 @@
         text rounded size="small"
         :style="{ opacity: showEdgeLabels ? 1 : 0.45 }"
         :aria-label="showEdgeLabels ? 'Hide labels' : 'Show labels'"
+        data-testid="toggle-labels-btn"
         @click="toggleEdgeLabels"
       />
     </div>
