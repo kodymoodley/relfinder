@@ -167,6 +167,10 @@ function initCytoscape() {
     boxSelectionEnabled: false,
   })
 
+  if (import.meta.env.DEV) {
+    ;(window as Window & { __schemaCy?: Core }).__schemaCy = cy
+  }
+
   addNewEdges()
   runLayout()
   attachHandlers()
