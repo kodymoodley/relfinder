@@ -33,9 +33,9 @@ function chunk<T>(arr: T[], size: number): T[][] {
 }
 
 export interface SchemaExtractionOptions {
-  /** Max classes to discover. Default 100. */
+  /** Max classes to discover. Default 40. */
   classLimit?: number
-  /** Max (prop, targetClass) rows per source class. Default 50. */
+  /** Max (prop, targetClass) rows per source class. Default 10. */
   edgeLimit?: number
   /** Max concurrent Phase-2 queries. Default 5. */
   concurrency?: number
@@ -52,6 +52,12 @@ export interface SchemaExtractionOptions {
    * reporting stays accurate across resume.
    */
   skipClasses?: Set<string>
+  /**
+   * Number of classes to skip before fetching the next page.
+   * Requires ORDER BY in the Phase 1 query for deterministic pagination.
+   * Default 0 (first page).
+   */
+  classOffset?: number
 }
 
 export interface SchemaExtractionCallbacks {
@@ -73,12 +79,14 @@ async function fetchSchemaClasses(
   context: QueryContext,
   store: Store | undefined,
   limit: number,
+  offset = 0,
 ): Promise<SchemaNode[]> {
   const query = `
     SELECT DISTINCT ?class WHERE {
       [] <${RDF_TYPE}> ?class .
       FILTER(isIRI(?class))
-    } LIMIT ${limit}
+    } ORDER BY ?class
+    LIMIT ${limit}${offset > 0 ? `\n    OFFSET ${offset}` : ''}
   `
   const rows = await runSelect(query, context, store)
   return rows
@@ -192,7 +200,7 @@ export async function extractSchema(
   callbacks: SchemaExtractionCallbacks = {},
   signal?: AbortSignal,
 ): Promise<SchemaGraph> {
-  const { classLimit = 40, edgeLimit = 10, concurrency = 5, language = 'en', preloadedNodes, skipClasses } = options
+  const { classLimit = 40, edgeLimit = 10, concurrency = 5, language = 'en', preloadedNodes, skipClasses, classOffset = 0 } = options
 
   // ── Phase 1: classes (skipped when resuming) ────────────────────────────────
   let nodes: SchemaNode[]
@@ -200,7 +208,7 @@ export async function extractSchema(
     nodes = preloadedNodes
     // Labels and onClassesLoaded already handled by the caller when restoring
   } else {
-    nodes = await fetchSchemaClasses(context, store, classLimit)
+    nodes = await fetchSchemaClasses(context, store, classLimit, classOffset)
     if (signal?.aborted || nodes.length === 0) return { nodes, edges: [] }
 
     // Run all label + description batches concurrently (2 queries per batch in parallel).
