@@ -162,6 +162,7 @@ const connectionStore = useConnectionStore()
 const cyContainer = ref<HTMLElement | null>(null)
 let cy: Core | null = null
 let layout: Layouts | null = null
+let renderedNodeCount = 0
 let renderedEdgeCount = 0
 
 const showEdgeLabels = ref(false)
@@ -269,6 +270,7 @@ function initCytoscape() {
   if (!cyContainer.value) return
   layout?.stop()
   cy?.destroy()
+  renderedNodeCount = 0
   renderedEdgeCount = 0
   hoveredNodeIri.value = null
   hoveredEdge.value = null
@@ -276,9 +278,7 @@ function initCytoscape() {
 
   cy = cytoscape({
     container: cyContainer.value,
-    elements: props.nodes.map((n) => ({
-      data: { id: n.iri, label: n.label, iri: n.iri },
-    })),
+    elements: [],
     style: [
       {
         selector: 'node',
@@ -362,9 +362,20 @@ function initCytoscape() {
     ;(window as Window & { __schemaCy?: Core }).__schemaCy = cy
   }
 
-  addNewEdges()
+  addNewNodes()
   runLayout()
   attachHandlers()
+}
+
+// ── Incremental node addition ─────────────────────────────────────────────────
+
+function addNewNodes() {
+  if (!cy) return
+  const newNodes = props.nodes.slice(renderedNodeCount)
+  if (newNodes.length === 0) return
+  cy.add(newNodes.map((n) => ({ data: { id: n.iri, label: n.label, iri: n.iri } })))
+  renderedNodeCount = props.nodes.length
+  addNewEdges()
 }
 
 // ── Incremental edge addition ─────────────────────────────────────────────────
@@ -492,12 +503,19 @@ function toggleEdgeLabels() {
 
 // ── Reactive updates ──────────────────────────────────────────────────────────
 
-// New extraction started — rebuild from scratch
 watch(
   () => props.nodes.length,
-  (n) => {
-    if (n > 0) initCytoscape()
-    else { layout?.stop(); cy?.destroy(); cy = null; renderedEdgeCount = 0 }
+  (n, prev) => {
+    if (n === 0) {
+      layout?.stop(); cy?.destroy(); cy = null
+      renderedNodeCount = 0; renderedEdgeCount = 0
+    } else if (prev === 0) {
+      // First nodes arrived — build the graph from scratch
+      initCytoscape()
+    } else {
+      // loadMore() appended new nodes — add them without destroying the layout
+      addNewNodes()
+    }
   },
 )
 
