@@ -246,10 +246,11 @@ function runLayout() {
     velocityDecay: 0.2,
     fixedAfterDragging: false,
     padding: 40,
-    fit: true,
     infinite: true,
   } as Parameters<Core['layout']>[0])
   layout.run()
+  // Fit once after nodes have spread out; subsequent zoom/pan is user-controlled
+  setTimeout(() => cy?.fit(undefined, 40), 800)
 }
 
 // ── Toolbar actions ───────────────────────────────────────────────────────────
