@@ -1,22 +1,15 @@
 @prefix :     <http://test.example.org/> .
 @prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
-@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
-@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
-@prefix owl:  <http://www.w3.org/2002/owl#> .
 
-# Two connected classes
-:Person  rdf:type owl:Class ; rdfs:label "Person" .
-:Project rdf:type owl:Class ; rdfs:label "Project" .
-
-# One orphan class (no edges to/from other classes)
-:Tag     rdf:type owl:Class ; rdfs:label "Tag" .
-
-:worksOn rdf:type owl:ObjectProperty ; rdfs:domain :Person ; rdfs:range :Project .
-
-:alice  rdf:type :Person  ; :worksOn :proj1 .
-:bob    rdf:type :Person  ; :worksOn :proj1 .
+# Two connected classes (instances define the classes)
+:alice  rdf:type :Person .
+:bob    rdf:type :Person .
 :proj1  rdf:type :Project .
 
-# Tag instances — no relations to Person or Project
-:tag1   rdf:type :Tag .
-:tag2   rdf:type :Tag .
+# Object property between Person and Project
+:alice  :worksOn  :proj1 .
+:bob    :worksOn  :proj1 .
+
+# Orphan class — instances but no edges to/from other classes
+:tag1   rdf:type  :Tag .
+:tag2   rdf:type  :Tag .

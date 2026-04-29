@@ -61,14 +61,16 @@ async function hoverNode(page: Page, nodeIri: string): Promise<{ x: number; y: n
 }
 
 /**
- * Move the Playwright mouse to the midpoint of the first Cytoscape edge and
- * return its viewport coordinates.
+ * Move the Playwright mouse to the midpoint of the Person→Project edge and
+ * return its viewport coordinates. Uses a stable edge ID rather than
+ * cy.edges().first() which is order-dependent on SPARQL query execution.
  */
-async function hoverFirstEdge(page: Page): Promise<{ x: number; y: number }> {
-  const pos = await page.evaluate(() => {
+async function hoverPersonProjectEdge(page: Page): Promise<{ x: number; y: number }> {
+  const edgeId = `${PERSON_IRI}__${PROJECT_IRI}`
+  const pos = await page.evaluate((id: string) => {
     const cy = (window as Window & { __schemaCy?: cytoscape.Core }).__schemaCy
     if (!cy) return null
-    const edge = cy.edges().first()
+    const edge = cy.$id(id)
     if (edge.empty()) return null
     const src = edge.source().renderedPosition()
     const tgt = edge.target().renderedPosition()
@@ -77,9 +79,9 @@ async function hoverFirstEdge(page: Page): Promise<{ x: number; y: number }> {
       x: rect.left + (src.x + tgt.x) / 2,
       y: rect.top  + (src.y + tgt.y) / 2,
     }
-  })
+  }, edgeId)
 
-  if (!pos) throw new Error('No edge found in Cytoscape')
+  if (!pos) throw new Error(`Edge ${edgeId} not found in Cytoscape`)
   await page.mouse.move(pos.x, pos.y)
   return pos
 }
@@ -150,14 +152,14 @@ test.describe('Node hover tooltip', () => {
 test.describe('Edge hover tooltip', () => {
   test('tooltip shows property IRI when hovering the edge', async ({ page }) => {
     await loadSchemaAndWait(page)
-    await hoverFirstEdge(page)
+    await hoverPersonProjectEdge(page)
     // Edge tooltip may take a moment to appear as Cytoscape hit-tests the midpoint
     await expect(page.locator('.cy-tooltip--visible')).toContainText(WORKS_ON_IRI, { timeout: 3_000 })
   })
 
   test('edge tooltip contains the Properties section header', async ({ page }) => {
     await loadSchemaAndWait(page)
-    await hoverFirstEdge(page)
+    await hoverPersonProjectEdge(page)
     await expect(page.locator('.cy-tooltip--visible')).toContainText('Properties', { timeout: 3_000 })
   })
 })
