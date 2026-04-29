@@ -58,6 +58,12 @@ export interface SchemaExtractionOptions {
    * Default 0 (first page).
    */
   classOffset?: number
+  /**
+   * Extra class IRIs to include in the Phase 2 VALUES clause as edge targets,
+   * but NOT processed as source classes. Use when loading a new page so that
+   * edges between the new batch and previously-loaded classes are discovered.
+   */
+  additionalClassIris?: string[]
 }
 
 export interface SchemaExtractionCallbacks {
@@ -200,7 +206,7 @@ export async function extractSchema(
   callbacks: SchemaExtractionCallbacks = {},
   signal?: AbortSignal,
 ): Promise<SchemaGraph> {
-  const { classLimit = 40, edgeLimit = 10, concurrency = 5, language = 'en', preloadedNodes, skipClasses, classOffset = 0 } = options
+  const { classLimit = 40, edgeLimit = 10, concurrency = 5, language = 'en', preloadedNodes, skipClasses, classOffset = 0, additionalClassIris } = options
 
   // ── Phase 1: classes (skipped when resuming) ────────────────────────────────
   let nodes: SchemaNode[]
@@ -238,7 +244,10 @@ export async function extractSchema(
   }
 
   // ── Phase 2: edges ──────────────────────────────────────────────────────────
-  const allClassIris = nodes.map((n) => n.iri)
+  // Include any extra IRIs (prior pages) so cross-batch edges are discovered.
+  const allClassIris = additionalClassIris
+    ? [...new Set([...nodes.map((n) => n.iri), ...additionalClassIris])]
+    : nodes.map((n) => n.iri)
   const allEdges: SchemaEdge[] = []
   // Initialise counter at skip count so progress % is accurate when resuming
   let completed = skipClasses?.size ?? 0
