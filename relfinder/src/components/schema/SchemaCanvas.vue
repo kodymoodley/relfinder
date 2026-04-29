@@ -27,7 +27,7 @@
         <div v-if="tooltipContent.outgoing.length" class="tt-section">
           <div class="tt-section-head">Object Properties</div>
           <div
-            v-for="p in tooltipContent.outgoing.slice(0, 6)"
+            v-for="p in tooltipContent.outgoing.slice(0, 3)"
             :key="p.propIri + p.rangeIri"
             class="tt-prop-row"
           >
@@ -39,15 +39,15 @@
             </span>
             <div class="tt-full-iri">{{ p.propIri }}</div>
           </div>
-          <div v-if="tooltipContent.outgoing.length > 6" class="tt-more">
-            +{{ tooltipContent.outgoing.length - 6 }} more
+          <div v-if="tooltipContent.outgoing.length > 3" class="tt-more">
+            +{{ tooltipContent.outgoing.length - 3 }} more — click to open
           </div>
         </div>
 
         <div v-if="tooltipContent.incoming.length" class="tt-section">
           <div class="tt-section-head">Incoming</div>
           <div
-            v-for="c in tooltipContent.incoming.slice(0, 5)"
+            v-for="c in tooltipContent.incoming.slice(0, 3)"
             :key="c.sourceIri + c.propIri"
             class="tt-prop-row"
           >
@@ -58,8 +58,8 @@
             </span>
             <div class="tt-full-iri">{{ c.propIri }}</div>
           </div>
-          <div v-if="tooltipContent.incoming.length > 5" class="tt-more">
-            +{{ tooltipContent.incoming.length - 5 }} more
+          <div v-if="tooltipContent.incoming.length > 3" class="tt-more">
+            +{{ tooltipContent.incoming.length - 3 }} more — click to open
           </div>
         </div>
 
@@ -69,7 +69,7 @@
           <div v-else-if="tooltipContent.dataProps.length === 0" class="tt-loading">None found</div>
           <div
             v-else
-            v-for="dp in tooltipContent.dataProps.slice(0, 6)"
+            v-for="dp in tooltipContent.dataProps.slice(0, 3)"
             :key="dp.iri"
             class="tt-prop-row"
           >
@@ -79,8 +79,8 @@
             </span>
             <div class="tt-full-iri">{{ dp.iri }}</div>
           </div>
-          <div v-if="tooltipContent.dataProps.length > 6" class="tt-more">
-            +{{ tooltipContent.dataProps.length - 6 }} more
+          <div v-if="tooltipContent.dataProps.length > 3" class="tt-more">
+            +{{ tooltipContent.dataProps.length - 3 }} more — click to open
           </div>
         </div>
       </template>
@@ -542,6 +542,8 @@ onUnmounted(() => { layout?.stop(); layout = null; cy?.destroy(); cy = null })
   border-radius: 8px;
   padding: 8px 10px;
   max-width: 370px;
+  max-height: 340px;
+  overflow: hidden;
   font-size: 11px;
   line-height: 1.5;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
