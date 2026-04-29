@@ -103,6 +103,20 @@
           </div>
         </section>
 
+        <!-- Load more -->
+        <section v-if="canLoadMore" class="sidebar-section">
+          <Button
+            :label="`Load next ${classLimit} classes`"
+            icon="pi pi-plus-circle"
+            severity="secondary"
+            outlined
+            size="small"
+            fluid
+            data-testid="load-more-btn"
+            @click="schemaStore.loadMore()"
+          />
+        </section>
+
         <!-- Options -->
         <Divider v-if="schemaStore.nodes.length > 0" />
         <section v-if="schemaStore.nodes.length > 0" class="sidebar-section">
@@ -213,6 +227,11 @@ const sidebarCollapsed = ref(false)
 const optionsOpen = ref(false)
 const classLimit = ref(40)
 const edgeLimit = ref(10)
+
+// True when the last discovered batch was a full page — more classes likely exist
+const canLoadMore = computed(
+  () => !schemaStore.extracting && schemaStore.lastBatchSize >= classLimit.value,
+)
 
 const displayNodes = computed(() => {
   if (!schemaStore.hideOrphans) return schemaStore.nodes

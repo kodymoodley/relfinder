@@ -210,6 +210,7 @@ export const useSchemaStore = defineStore('schema', () => {
     abortController = new AbortController()
     extracting.value = true
     extractError.value = ''
+    progress.value = { completed: 0, total: 0 }
     statusMessage.value = 'Discovering more classes…'
 
     const batchProcessed = new Set<string>()
@@ -239,8 +240,7 @@ export const useSchemaStore = defineStore('schema', () => {
             edges.value = [...edges.value, ...incoming]
           },
           onProgress(completed, total) {
-            // Offset progress by how many classes already exist
-            progress.value = { completed: offset + completed, total: offset + total }
+            progress.value = { completed, total }
           },
           onClassProcessed(classIri) {
             batchProcessed.add(classIri)
