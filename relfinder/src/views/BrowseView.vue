@@ -225,8 +225,8 @@ const selectedNode = ref<SchemaNode | null>(null)
 const selectedEdge = ref<SchemaEdge | null>(null)
 const sidebarCollapsed = ref(false)
 const optionsOpen = ref(false)
-const classLimit = ref(40)
-const edgeLimit = ref(10)
+const classLimit = ref(10)
+const edgeLimit = ref(3)
 
 // True when the last discovered batch was a full page — more classes likely exist
 const canLoadMore = computed(
