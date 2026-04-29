@@ -33,13 +33,13 @@ const engine = new QueryEngine()
  * when `authorizationHeader` is present. Falls back to the global `fetch`
  * when no credentials are configured.
  */
-function makeFetch(authorizationHeader?: string): typeof fetch {
-  if (!authorizationHeader) return fetch
+function makeFetch(authorizationHeader?: string, signal?: AbortSignal): typeof fetch {
+  if (!authorizationHeader && !signal) return fetch
 
   return (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     const headers = new Headers(init?.headers)
-    headers.set('Authorization', authorizationHeader)
-    return fetch(input, { ...init, headers })
+    if (authorizationHeader) headers.set('Authorization', authorizationHeader)
+    return fetch(input, { ...init, headers, signal })
   }
 }
 
@@ -80,10 +80,11 @@ function convertBindings(binding: RDF.Bindings): SparqlBinding {
 export async function executeSelect(
   query: string,
   context: QueryContext,
+  signal?: AbortSignal,
 ): Promise<SparqlBinding[]> {
   const bindingsStream = await engine.queryBindings(query, {
     sources: [{ type: 'sparql', value: context.endpointUrl }],
-    fetch: makeFetch(context.authorizationHeader),
+    fetch: makeFetch(context.authorizationHeader, signal),
   })
 
   const rawBindings = await bindingsStream.toArray()

@@ -21,8 +21,8 @@ import type { QueryContext, SchemaNode, SchemaEdge, SchemaGraph, SchemaProp, Sch
 
 const RDF_TYPE = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type'
 
-function runSelect(query: string, context: QueryContext, store?: Store) {
-  return store ? executeSelectOnStore(query, store) : executeSelect(query, context)
+function runSelect(query: string, context: QueryContext, store?: Store, signal?: AbortSignal) {
+  return store ? executeSelectOnStore(query, store) : executeSelect(query, context, signal)
 }
 
 function chunk<T>(arr: T[], size: number): T[][] {
@@ -91,6 +91,7 @@ async function fetchEdgesForClass(
   context: QueryContext,
   store: Store | undefined,
   limit: number,
+  signal?: AbortSignal,
 ): Promise<SchemaEdge[]> {
   const valuesClause = allClassIris.map((c) => `<${c}>`).join(' ')
   const query = `
@@ -104,7 +105,7 @@ async function fetchEdgesForClass(
     ORDER BY DESC(?n)
     LIMIT ${limit}
   `
-  const rows = await runSelect(query, context, store)
+  const rows = await runSelect(query, context, store, signal)
 
   // Collapse multiple properties for the same (source, target) pair into one edge
   const byTarget = new Map<string, SchemaProp[]>()
@@ -179,7 +180,7 @@ export async function extractSchema(
       if (signal?.aborted) return
       const node = queue.shift()!
       try {
-        const edges = await fetchEdgesForClass(node.iri, allClassIris, context, store, edgeLimit)
+        const edges = await fetchEdgesForClass(node.iri, allClassIris, context, store, edgeLimit, signal)
         if (!signal?.aborted && edges.length > 0) {
           allEdges.push(...edges)
           callbacks.onEdgesLoaded?.(edges)
@@ -187,6 +188,7 @@ export async function extractSchema(
       } catch {
         // Partial schema is still useful — skip classes that time out
       }
+      if (signal?.aborted) return
       callbacks.onProgress?.(++completed, nodes.length)
       callbacks.onClassProcessed?.(node.iri)
     }

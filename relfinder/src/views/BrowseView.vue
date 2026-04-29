@@ -37,22 +37,40 @@
       </nav>
 
       <div v-show="!sidebarCollapsed" class="sidebar-body">
-        <!-- Extract action -->
+        <!-- Extract action — three exclusive states -->
         <section class="sidebar-section">
+          <!-- State 1: no schema yet -->
           <Button
-            :label="schemaStore.extracting ? 'Stop extraction' : 'Extract Schema'"
-            :icon="schemaStore.extracting ? 'pi pi-stop' : 'pi pi-sitemap'"
-            :severity="schemaStore.extracting ? 'danger' : 'primary'"
-            :loading="schemaStore.extracting && schemaStore.progress.total === 0"
+            v-if="!schemaStore.hasData && !schemaStore.extracting"
+            label="Extract Schema"
+            icon="pi pi-sitemap"
+            severity="primary"
             fluid
-            @click="schemaStore.extracting ? schemaStore.cancel() : startExtraction(true)"
+            @click="startExtraction()"
           />
+
+          <!-- State 2: actively extracting -->
+          <Button
+            v-else-if="schemaStore.extracting"
+            label="Stop"
+            icon="pi pi-spinner pi-spin"
+            severity="danger"
+            fluid
+            @click="schemaStore.cancel()"
+          />
+
+          <!-- State 3: done — unambiguous completion indicator -->
+          <div v-else class="schema-done">
+            <i class="pi pi-check-circle schema-done-icon" />
+            <span class="schema-done-label">Schema loaded</span>
+          </div>
+
           <Message v-if="schemaStore.extractError" severity="error" :closable="true" @close="schemaStore.extractError = ''">
             {{ schemaStore.extractError }}
           </Message>
         </section>
 
-        <!-- Extraction progress -->
+        <!-- Extraction progress (only while extracting) -->
         <section v-if="schemaStore.extracting" class="sidebar-section">
           <div class="progress-row">
             <span class="progress-label">
@@ -123,6 +141,16 @@
                 size="small"
               />
             </div>
+            <Button
+              label="Re-extract"
+              icon="pi pi-refresh"
+              severity="secondary"
+              outlined
+              size="small"
+              fluid
+              :disabled="schemaStore.extracting"
+              @click="startExtraction(true)"
+            />
           </template>
         </section>
       </div>
@@ -240,6 +268,7 @@ function onDisconnect() {
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
 
 onMounted(() => {
+  console.log('[browse] onMounted — connected:', connectionStore.isConnected, '| hasData:', schemaStore.hasData, '| extracting:', schemaStore.extracting)
   if (connectionStore.isConnected && !schemaStore.hasData && !schemaStore.extracting) {
     startExtraction()
   }
@@ -354,6 +383,28 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: var(--rf-space-2);
+}
+
+.schema-done {
+  display: flex;
+  align-items: center;
+  gap: var(--rf-space-2);
+  padding: var(--rf-space-2) var(--rf-space-3);
+  border-radius: var(--rf-radius-md);
+  background: color-mix(in srgb, var(--rf-success, #22c55e) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--rf-success, #22c55e) 30%, transparent);
+}
+
+.schema-done-icon {
+  font-size: var(--rf-text-base);
+  color: var(--rf-success, #22c55e);
+  flex-shrink: 0;
+}
+
+.schema-done-label {
+  font-size: var(--rf-text-sm);
+  font-weight: var(--rf-weight-medium);
+  color: var(--rf-success, #22c55e);
 }
 
 .section-label {

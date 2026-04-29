@@ -93,6 +93,8 @@ export const useSchemaStore = defineStore('schema', () => {
     const endpointUrl = context.endpointUrl || '__file__'
     const processedSet = new Set<string>()
 
+    console.log('[schema] start() called — force:', force, 'current nodes:', nodes.value.length, 'extracting:', extracting.value)
+
     // ── Try to restore from persistent storage ──────────────────────────────
     const saved = force ? null : loadSchema(endpointUrl)
     const canResume = saved !== null && saved.classLimit === classLimit && saved.edgeLimit === edgeLimit
@@ -102,12 +104,20 @@ export const useSchemaStore = defineStore('schema', () => {
       edges.value = saved.edges
       dataPropsCache.value = new Map(saved.dataPropsCache)
       descriptionCache.value = new Map(saved.descriptionCache)
-      for (const iri of saved.processedClassIris) processedSet.add(iri)
+      const nodeIriSet = new Set(saved.nodes.map(n => n.iri))
+      for (const iri of saved.processedClassIris) {
+        if (nodeIriSet.has(iri)) processedSet.add(iri)
+      }
+
+      console.log('[schema] cache check — saved:', !!saved, 'canResume:', canResume, `processed ${processedSet.size}/${saved.nodes.length}`)
 
       if (processedSet.size >= saved.nodes.length) {
+        console.log('[schema] FULLY CACHED — returning early, no extraction')
         // Fully cached — nothing to query
         return
       }
+
+      console.log('[schema] PARTIAL CACHE — resuming Phase 2 for', saved.nodes.length - processedSet.size, 'remaining classes')
 
       // Partial — show what we have immediately, then resume Phase 2
       progress.value = { completed: processedSet.size, total: saved.nodes.length }
@@ -122,7 +132,7 @@ export const useSchemaStore = defineStore('schema', () => {
 
     extracting.value = true
     statusMessage.value = canResume && processedSet.size > 0
-      ? `Resuming — ${processedSet.size} of ${saved!.nodes.length} classes already done…`
+      ? `Resuming...`
       : 'Discovering classes…'
 
     try {
@@ -145,33 +155,41 @@ export const useSchemaStore = defineStore('schema', () => {
           },
           onEdgesLoaded(incoming) {
             edges.value = [...edges.value, ...incoming]
+            console.log('[schema] onEdgesLoaded — total edges now:', edges.value.length, '| extracting:', extracting.value)
           },
           onProgress(completed, total) {
             progress.value = { completed, total }
           },
           onClassProcessed(classIri) {
             processedSet.add(classIri)
+            console.log('[schema] onClassProcessed', classIri, '| processed:', processedSet.size, '| extracting:', extracting.value)
             persist(endpointUrl, processedSet, classLimit, edgeLimit)
           },
         },
         abortController.signal,
       )
+      console.log('[schema] extractSchema returned — setting extracting=false')
     } catch (err) {
       if ((err as Error)?.name !== 'AbortError') {
         extractError.value =
           err instanceof Error ? `Extraction failed: ${err.message}` : 'An unexpected error occurred.'
       }
     } finally {
+      console.log('[schema] finally — extracting was:', extracting.value, '| edges:', edges.value.length, '| nodes:', nodes.value.length)
       extracting.value = false
       statusMessage.value = ''
     }
   }
 
   function cancel() {
+    console.log('[schema] cancel() called')
     abortController?.abort()
+    extracting.value = false
+    statusMessage.value = ''
   }
 
   function clear() {
+    console.log('[schema] clear() called — nodes before clear:', nodes.value.length)
     abortController?.abort()
     nodes.value = []
     edges.value = []
