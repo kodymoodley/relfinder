@@ -509,12 +509,14 @@ watch(
     if (n === 0) {
       layout?.stop(); cy?.destroy(); cy = null
       renderedNodeCount = 0; renderedEdgeCount = 0
-    } else if (prev === 0) {
-      // First nodes arrived — build the graph from scratch
+    } else if (!cy || prev === 0) {
       initCytoscape()
-    } else {
-      // loadMore() appended new nodes — add them without destroying the layout
+    } else if (n > renderedNodeCount) {
+      // Pure append (loadMore) — add new nodes without rebuilding the layout
       addNewNodes()
+    } else {
+      // Filter changed (hide/show orphans) — rebuild to sync Cytoscape with props
+      initCytoscape()
     }
   },
 )

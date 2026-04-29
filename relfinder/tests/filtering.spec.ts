@@ -4,6 +4,7 @@ import type { Page } from '@playwright/test'
 import { BrowsePage } from './pages/BrowsePage'
 
 const MEDIUM_TTL = fileURLToPath(new URL('./fixtures/medium-graph.ttl', import.meta.url))
+const ORPHAN_TTL = fileURLToPath(new URL('./fixtures/orphan-graph.ttl', import.meta.url))
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -59,6 +60,68 @@ test.describe('Hide orphan nodes filter', () => {
 
     const nodesAfter = await browse.getNodeCount()
     expect(nodesAfter).toBe(nodesBefore)
+  })
+})
+
+// ── Hide orphans — canvas-level regression tests ──────────────────────────────
+//
+// The DOM sidebar counter reflects schemaStore.nodes.length which is unchanged
+// by the orphan filter. These tests use window.__schemaCy to verify the
+// Cytoscape canvas actually gains/loses nodes when the toggle fires.
+
+async function loadOrphanGraphAndWait(page: Page): Promise<BrowsePage> {
+  await page.goto('/')
+  await page.evaluate(() => { sessionStorage.clear(); localStorage.clear() })
+  await page.getByTestId('tab-file').click()
+  await page.getByTestId('rdf-file-input').setInputFiles(ORPHAN_TTL)
+  await expect(page.getByTestId('rdf-drop-zone')).toContainText('triples loaded', { timeout: 10_000 })
+  await page.getByTestId('open-graph-btn').click()
+  await expect(page).toHaveURL('/browse')
+  const browse = new BrowsePage(page)
+  await browse.waitForExtractionComplete(60_000)
+  // Wait for Cytoscape to mount
+  await expect(async () => {
+    const n = await page.evaluate(
+      () => (window as Window & { __schemaCy?: { nodes(): { length: number } } }).__schemaCy?.nodes().length,
+    )
+    expect(typeof n).toBe('number')
+  }).toPass({ timeout: 5_000 })
+  return browse
+}
+
+function getCyNodeCount(page: Page): Promise<number> {
+  return page.evaluate(
+    () => (window as Window & { __schemaCy?: { nodes(): { length: number } } }).__schemaCy?.nodes().length ?? 0,
+  )
+}
+
+test.describe('Hide orphans — canvas node sync (regression)', () => {
+  test('canvas has 3 nodes before toggling (2 connected + 1 orphan)', async ({ page }) => {
+    await loadOrphanGraphAndWait(page)
+    expect(await getCyNodeCount(page)).toBe(3)
+  })
+
+  test('orphan node is removed from canvas when hide-orphans is toggled ON', async ({ page }) => {
+    const browse = await loadOrphanGraphAndWait(page)
+    await page.locator('.section-label.collapsible').click()
+    await browse.hideOrphansToggle().click()
+    await expect(async () => {
+      expect(await getCyNodeCount(page)).toBe(2)
+    }).toPass({ timeout: 2_000 })
+  })
+
+  test('orphan node reappears on canvas when hide-orphans is toggled back OFF', async ({ page }) => {
+    const browse = await loadOrphanGraphAndWait(page)
+    await page.locator('.section-label.collapsible').click()
+    await browse.hideOrphansToggle().click()
+    await expect(async () => {
+      expect(await getCyNodeCount(page)).toBe(2)
+    }).toPass({ timeout: 2_000 })
+
+    await browse.hideOrphansToggle().click()
+    await expect(async () => {
+      expect(await getCyNodeCount(page)).toBe(3)
+    }).toPass({ timeout: 2_000 })
   })
 })
 

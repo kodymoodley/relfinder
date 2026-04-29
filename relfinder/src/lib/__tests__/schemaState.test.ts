@@ -691,6 +691,114 @@ describe('schema store — state machine', () => {
     })
   })
 
+  // ── loadMore() ────────────────────────────────────────────────────────────────
+
+  describe('loadMore()', () => {
+    it('is a no-op when no context has been stored (fresh store)', async () => {
+      const store = useSchemaStore()
+      await store.loadMore()   // should not throw
+      expect(extractSchema).not.toHaveBeenCalled()
+    })
+
+    it('appends nodes rather than replacing them', async () => {
+      const PAGE2: SchemaNode[] = [
+        { iri: 'http://example.org/D', label: 'D' },
+        { iri: 'http://example.org/E', label: 'E' },
+      ]
+      mockFullExtraction(NODES)
+      const store = useSchemaStore()
+      await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      expect(store.nodes).toHaveLength(NODES.length)
+
+      mockFullExtraction(PAGE2)
+      await store.loadMore()
+      expect(store.nodes).toHaveLength(NODES.length + PAGE2.length)
+      expect(store.nodes.map(n => n.iri)).toEqual([...NODES, ...PAGE2].map(n => n.iri))
+    })
+
+    it('sets lastBatchSize to the count of newly loaded nodes', async () => {
+      const PAGE2: SchemaNode[] = [{ iri: 'http://example.org/D', label: 'D' }]
+      mockFullExtraction(NODES)
+      const store = useSchemaStore()
+      await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+
+      mockFullExtraction(PAGE2)
+      await store.loadMore()
+      expect(store.lastBatchSize).toBe(PAGE2.length)
+    })
+
+    it('passes classOffset equal to current node count', async () => {
+      mockFullExtraction(NODES)
+      const store = useSchemaStore()
+      await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+
+      mockFullExtraction([])
+      await store.loadMore()
+
+      const calls = vi.mocked(extractSchema).mock.calls
+      const loadMoreCall = calls[calls.length - 1]!
+      expect(loadMoreCall[2].classOffset).toBe(NODES.length)
+    })
+
+    it('passes existing node IRIs as additionalClassIris', async () => {
+      mockFullExtraction(NODES)
+      const store = useSchemaStore()
+      await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+
+      mockFullExtraction([])
+      await store.loadMore()
+
+      const calls = vi.mocked(extractSchema).mock.calls
+      const loadMoreCall = calls[calls.length - 1]!
+      expect(loadMoreCall[2].additionalClassIris).toEqual(NODES.map(n => n.iri))
+    })
+
+    it('resets progress to { 0, 0 } at the start of loadMore', async () => {
+      mockFullExtraction(NODES)
+      const store = useSchemaStore()
+      await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      expect(store.progress.completed).toBe(NODES.length)
+
+      // Gate the loadMore call so we can inspect progress before it ticks
+      let openGate!: () => void
+      const gate = new Promise<void>(r => { openGate = r })
+      vi.mocked(extractSchema).mockImplementation(async (_c, _s, _o, cbs) => {
+        await gate
+        cbs.onClassesLoaded?.([])
+        return { nodes: [], edges: [] }
+      })
+
+      const done = store.loadMore()
+      expect(store.progress.completed).toBe(0)
+      expect(store.progress.total).toBe(0)
+      openGate()
+      await done
+    })
+
+    it('is a no-op when an extraction is already in progress', async () => {
+      const openGate = mockGatedExtraction()
+      const store = useSchemaStore()
+      const done = store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+
+      // Try loadMore while extracting — should be ignored
+      await store.loadMore()
+      expect(vi.mocked(extractSchema)).toHaveBeenCalledTimes(1)
+
+      openGate()
+      await done
+    })
+
+    it('lastBatchSize is reset to 0 by clear()', async () => {
+      mockFullExtraction(NODES)
+      const store = useSchemaStore()
+      await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      expect(store.lastBatchSize).toBeGreaterThan(0)
+
+      store.clear()
+      expect(store.lastBatchSize).toBe(0)
+    })
+  })
+
   // ── cancel / abort guard ──────────────────────────────────────────────────────
 
   describe('cancel() and abort guard', () => {
