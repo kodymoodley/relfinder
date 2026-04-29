@@ -600,6 +600,97 @@ describe('schema store — state machine', () => {
     })
   })
 
+  // ── description cache ─────────────────────────────────────────────────────────
+
+  describe('description cache', () => {
+    function mockExtractionWithDescriptions(
+      descriptions: Map<string, string>,
+      nodes: SchemaNode[] = NODES,
+    ) {
+      vi.mocked(extractSchema).mockImplementation(
+        async (_ctx, _store, _opts, callbacks: SchemaExtractionCallbacks) => {
+          callbacks.onDescriptionsLoaded?.(descriptions)
+          callbacks.onClassesLoaded?.(nodes)
+          for (let i = 0; i < nodes.length; i++) {
+            callbacks.onProgress?.(i + 1, nodes.length)
+            callbacks.onClassProcessed?.(nodes[i].iri)
+          }
+          return { nodes, edges: [] }
+        },
+      )
+    }
+
+    it('descriptionCache is populated with text from onDescriptionsLoaded', async () => {
+      const descs = new Map([[NODES[0].iri, 'First class description']])
+      mockExtractionWithDescriptions(descs)
+      const store = useSchemaStore()
+      await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+
+      expect(store.descriptionCache.get(NODES[0].iri)).toBe('First class description')
+    })
+
+    it('empty-string entries are stored to prevent redundant on-demand fetches', async () => {
+      const descs = new Map<string, string>([
+        [NODES[0].iri, 'Has description'],
+        [NODES[1].iri, ''],
+      ])
+      mockExtractionWithDescriptions(descs)
+      const store = useSchemaStore()
+      await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+
+      expect(store.descriptionCache.has(NODES[1].iri)).toBe(true)
+      expect(store.descriptionCache.get(NODES[1].iri)).toBe('')
+    })
+
+    it('multiple onDescriptionsLoaded calls are merged into the cache', async () => {
+      vi.mocked(extractSchema).mockImplementation(
+        async (_ctx, _store, _opts, callbacks: SchemaExtractionCallbacks) => {
+          // Simulate two batches
+          callbacks.onDescriptionsLoaded?.(new Map([[NODES[0].iri, 'Batch 1']]))
+          callbacks.onDescriptionsLoaded?.(new Map([[NODES[1].iri, 'Batch 2']]))
+          callbacks.onClassesLoaded?.(NODES)
+          return { nodes: NODES, edges: [] }
+        },
+      )
+      const store = useSchemaStore()
+      await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+
+      expect(store.descriptionCache.get(NODES[0].iri)).toBe('Batch 1')
+      expect(store.descriptionCache.get(NODES[1].iri)).toBe('Batch 2')
+    })
+
+    it('pre-existing cache entries from persisted schema are preserved after extraction', async () => {
+      // NODES[0] was described in a prior session; only NODES[1] is being re-fetched
+      saveSchema(ENDPOINT, makeStoredSchema({
+        processedClassIris: [NODES[0].iri],
+        descriptionCache: [[NODES[0].iri, 'Persisted description']],
+      }))
+      vi.mocked(extractSchema).mockImplementation(
+        async (_ctx, _store, _opts, callbacks: SchemaExtractionCallbacks) => {
+          callbacks.onDescriptionsLoaded?.(new Map([[NODES[1].iri, 'New description']]))
+          callbacks.onProgress?.(1, NODES.length)
+          callbacks.onClassProcessed?.(NODES[1].iri)
+          return { nodes: NODES, edges: [] }
+        },
+      )
+      const store = useSchemaStore()
+      await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+
+      expect(store.descriptionCache.get(NODES[0].iri)).toBe('Persisted description')
+      expect(store.descriptionCache.get(NODES[1].iri)).toBe('New description')
+    })
+
+    it('descriptionCache is reset by clear()', async () => {
+      const descs = new Map([[NODES[0].iri, 'Some description']])
+      mockExtractionWithDescriptions(descs)
+      const store = useSchemaStore()
+      await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+
+      store.clear()
+      expect(store.descriptionCache.size).toBe(0)
+    })
+  })
+
   // ── cancel / abort guard ──────────────────────────────────────────────────────
 
   describe('cancel() and abort guard', () => {
