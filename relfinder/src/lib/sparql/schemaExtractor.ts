@@ -192,7 +192,7 @@ export async function extractSchema(
   callbacks: SchemaExtractionCallbacks = {},
   signal?: AbortSignal,
 ): Promise<SchemaGraph> {
-  const { classLimit = 100, edgeLimit = 50, concurrency = 5, language = 'en', preloadedNodes, skipClasses } = options
+  const { classLimit = 40, edgeLimit = 10, concurrency = 5, language = 'en', preloadedNodes, skipClasses } = options
 
   // ── Phase 1: classes (skipped when resuming) ────────────────────────────────
   let nodes: SchemaNode[]

@@ -211,8 +211,8 @@ const selectedNode = ref<SchemaNode | null>(null)
 const selectedEdge = ref<SchemaEdge | null>(null)
 const sidebarCollapsed = ref(false)
 const optionsOpen = ref(false)
-const classLimit = ref(100)
-const edgeLimit = ref(50)
+const classLimit = ref(40)
+const edgeLimit = ref(10)
 
 const displayNodes = computed(() => {
   if (!schemaStore.hideOrphans) return schemaStore.nodes
