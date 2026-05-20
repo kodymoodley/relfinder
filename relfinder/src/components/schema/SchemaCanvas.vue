@@ -211,6 +211,11 @@ let cy: Core | null = null
 let layout: Layouts | null = null
 let renderedNodeCount = 0
 let renderedEdgeCount = 0
+// IRI of the last node that was actually rendered — used to detect whether
+// a nodes-length increase is a pure append (loadMore) or a filter change
+// (orphan unhide). A pure append leaves all previously-rendered nodes in
+// place, so props.nodes[renderedNodeCount-1] still matches this value.
+let lastRenderedNodeIri = ''
 
 const showEdgeLabels = ref(false)
 
@@ -339,6 +344,8 @@ function initCytoscape() {
   hoveredEdge.value = null
   tooltipVisible.value = false
 
+  lastRenderedNodeIri = ''
+
   cy = cytoscape({
     container: cyContainer.value,
     elements: [],
@@ -438,6 +445,7 @@ function addNewNodes() {
   if (newNodes.length === 0) return
   cy.add(newNodes.map((n) => ({ data: { id: n.iri, label: n.label, iri: n.iri } })))
   renderedNodeCount = props.nodes.length
+  lastRenderedNodeIri = props.nodes[renderedNodeCount - 1]?.iri ?? ''
   addNewEdges()
 }
 
@@ -585,11 +593,11 @@ watch(
       renderedEdgeCount = 0
     } else if (!cy || prev === 0) {
       initCytoscape()
-    } else if (n > renderedNodeCount) {
-      // Pure append (loadMore) — add new nodes without rebuilding the layout
+    } else if (n > renderedNodeCount && props.nodes[renderedNodeCount - 1]?.iri === lastRenderedNodeIri) {
+      // Pure append (loadMore) — first renderedNodeCount nodes are unchanged
       addNewNodes()
     } else {
-      // Filter changed (hide/show orphans) — rebuild to sync Cytoscape with props
+      // Filter changed (hide/show orphans, or orphan sorted before rendered nodes)
       initCytoscape()
     }
   },

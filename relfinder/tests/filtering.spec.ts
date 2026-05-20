@@ -125,6 +125,46 @@ test.describe('Hide orphans — canvas node sync (regression)', () => {
   })
 })
 
+// ── Edge label toggle — canvas sync (regression) ─────────────────────────────
+//
+// Verifies that the "Show/Hide property labels" toolbar button adds or removes
+// the `no-label` CSS class on Cytoscape edges, using window.__schemaCy.
+
+function getCyEdgeHasNoLabel(page: Page): Promise<boolean> {
+  return page.evaluate(
+    () =>
+      (
+        window as Window & {
+          __schemaCy?: { edges(): { length: number; first(): { hasClass(c: string): boolean } } }
+        }
+      ).__schemaCy?.edges().first().hasClass('no-label') ?? true,
+  )
+}
+
+test.describe('Edge label toggle — canvas sync (regression)', () => {
+  test('edges start without labels visible (no-label class present)', async ({ page }) => {
+    await loadOrphanGraphAndWait(page)
+    expect(await getCyEdgeHasNoLabel(page)).toBe(true)
+  })
+
+  test('clicking toggle adds labels (no-label class removed)', async ({ page }) => {
+    await loadOrphanGraphAndWait(page)
+    await page.getByTestId('toggle-labels-btn').click()
+    await expect(async () => {
+      expect(await getCyEdgeHasNoLabel(page)).toBe(false)
+    }).toPass({ timeout: 1_000 })
+  })
+
+  test('clicking toggle twice restores no-label class', async ({ page }) => {
+    await loadOrphanGraphAndWait(page)
+    await page.getByTestId('toggle-labels-btn').click()
+    await page.getByTestId('toggle-labels-btn').click()
+    await expect(async () => {
+      expect(await getCyEdgeHasNoLabel(page)).toBe(true)
+    }).toPass({ timeout: 1_000 })
+  })
+})
+
 // ── Class limit option ────────────────────────────────────────────────────────
 
 test.describe('Class limit option', () => {
