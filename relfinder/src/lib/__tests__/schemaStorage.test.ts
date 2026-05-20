@@ -27,7 +27,12 @@ function makeEntry(overrides: Partial<PersistedSchema> = {}): PersistedSchema {
       },
     ],
     processedClassIris: ['http://example.org/A'],
-    dataPropsCache: [['http://example.org/A', [{ iri: 'http://example.org/name', label: 'name', datatypes: ['xsd:string'] }]]],
+    dataPropsCache: [
+      [
+        'http://example.org/A',
+        [{ iri: 'http://example.org/name', label: 'name', datatypes: ['xsd:string'] }],
+      ],
+    ],
     descriptionCache: [['http://example.org/A', 'A thing called A']],
     ...overrides,
   }
@@ -148,7 +153,10 @@ describe('schemaStorage', () => {
     it('two different endpoints do not share entries', () => {
       const ep1 = 'https://ep1.example/sparql'
       const ep2 = 'https://ep2.example/sparql'
-      saveSchema(ep1, makeEntry({ endpointUrl: ep1, nodes: [{ iri: 'http://example.org/A', label: 'A' }] }))
+      saveSchema(
+        ep1,
+        makeEntry({ endpointUrl: ep1, nodes: [{ iri: 'http://example.org/A', label: 'A' }] }),
+      )
       saveSchema(ep2, makeEntry({ endpointUrl: ep2, nodes: [] }))
 
       expect(loadSchema(ep1)!.nodes).toHaveLength(1)

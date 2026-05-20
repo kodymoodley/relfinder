@@ -39,8 +39,16 @@
       </div>
 
       <nav v-show="!sidebarCollapsed" class="sidebar-nav">
-        <button class="view-tab" @click="router.push({ name: 'browse' })" data-testid="nav-schema-graph">Schema</button>
-        <button class="view-tab view-tab--active" aria-current="page" data-testid="nav-paths-graph">Paths</button>
+        <button
+          class="view-tab"
+          @click="router.push({ name: 'browse' })"
+          data-testid="nav-schema-graph"
+        >
+          Schema
+        </button>
+        <button class="view-tab view-tab--active" aria-current="page" data-testid="nav-paths-graph">
+          Paths
+        </button>
       </nav>
 
       <div v-show="!sidebarCollapsed" class="sidebar-body">
@@ -106,9 +114,13 @@
               @click="onLoadRecent(entry)"
             >
               <div class="recent-pair">
-                <span class="recent-entity" :title="entry.entity1.label">{{ entry.entity1.label }}</span>
+                <span class="recent-entity" :title="entry.entity1.label">{{
+                  entry.entity1.label
+                }}</span>
                 <i class="pi pi-arrow-right recent-arrow" />
-                <span class="recent-entity" :title="entry.entity2.label">{{ entry.entity2.label }}</span>
+                <span class="recent-entity" :title="entry.entity2.label">{{
+                  entry.entity2.label
+                }}</span>
               </div>
               <div class="recent-meta">
                 <Tag
@@ -170,7 +182,12 @@
             <i :class="['pi', optionsOpen ? 'pi-chevron-down' : 'pi-chevron-right']" />
             Graph Filters
           </p>
-          <OptionsPanel v-if="optionsOpen" v-model="graphOptions" :available-languages="availableLanguages" :graph-classes="graph?.classes" />
+          <OptionsPanel
+            v-if="optionsOpen"
+            v-model="graphOptions"
+            :available-languages="availableLanguages"
+            :graph-classes="graph?.classes"
+          />
         </section>
       </div>
     </aside>
@@ -211,7 +228,11 @@ import { useConnectionStore } from '@/stores/connection'
 import { findRelationships, refreshGraphLabels } from '@/lib/sparql/entitySearch'
 import { cacheGet } from '@/lib/cache/queryCache'
 import {
-  saveGraph, loadGraph, lookupGraph, listRecentGraphs, deleteGraphEntry,
+  saveGraph,
+  loadGraph,
+  lookupGraph,
+  listRecentGraphs,
+  deleteGraphEntry,
 } from '@/lib/cache/graphStorage'
 import type { GraphHistoryMeta } from '@/lib/cache/graphStorage'
 import { QueryCyclesStrategy } from '@/lib/sparql/types'
@@ -230,7 +251,12 @@ const { dark, toggle: toggleDark } = useDarkMode()
 
 // Read synchronously so EntitySearch receives preset values on first render.
 const _historyExample = (history.state as Record<string, unknown>)?.example as
-  | { entity1: EntitySearchResult; entity2: EntitySearchResult; options?: Partial<GraphOptions>; cacheKey?: string }
+  | {
+      entity1: EntitySearchResult
+      entity2: EntitySearchResult
+      options?: Partial<GraphOptions>
+      cacheKey?: string
+    }
   | undefined
 
 const presetEntity1 = ref<EntitySearchResult | null>(_historyExample?.entity1 ?? null)
@@ -428,7 +454,10 @@ onMounted(() => {
   // 1. Session cache (fastest — avoids even a localStorage read)
   if (_historyExample.cacheKey) {
     const cached = cacheGet<RelationshipGraph>(_historyExample.cacheKey)
-    if (cached) { graph.value = cached; return }
+    if (cached) {
+      graph.value = cached
+      return
+    }
   }
 
   // 2. Persistent localStorage cache
@@ -440,7 +469,10 @@ onMounted(() => {
       graphOptions.value.maxDistance,
       graphOptions.value.ignoredProperties,
     )
-    if (restored) { graph.value = restored; return }
+    if (restored) {
+      graph.value = restored
+      return
+    }
   }
 
   // 3. Full query
@@ -457,7 +489,6 @@ watch(
     if (graph.value) refreshGraphLabels(graph.value, lang)
   },
 )
-
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -532,8 +563,9 @@ function shortIri(iri: string): string {
   background: transparent;
   color: var(--rf-text-muted);
   cursor: pointer;
-  transition: color var(--rf-duration-fast) var(--rf-ease-out),
-              border-color var(--rf-duration-fast) var(--rf-ease-out);
+  transition:
+    color var(--rf-duration-fast) var(--rf-ease-out),
+    border-color var(--rf-duration-fast) var(--rf-ease-out);
 }
 
 .view-tab:hover {
@@ -652,8 +684,13 @@ function shortIri(iri: string): string {
 /* ── Find Relationships pulse ─────────────────────────────────────────────── */
 
 @keyframes ready-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--rf-primary) 70%, transparent); }
-  50%       { box-shadow: 0 0 0 10px color-mix(in srgb, var(--rf-primary) 0%, transparent); }
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--rf-primary) 70%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 10px color-mix(in srgb, var(--rf-primary) 0%, transparent);
+  }
 }
 
 .ready-pulse {

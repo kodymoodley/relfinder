@@ -10,14 +10,18 @@
           <Button
             v-show="!sidebarCollapsed"
             :icon="dark ? 'pi pi-sun' : 'pi pi-moon'"
-            text rounded size="small"
+            text
+            rounded
+            size="small"
             @click="toggleDark"
             :aria-label="dark ? 'Switch to light mode' : 'Switch to dark mode'"
           />
           <Button
             v-show="!sidebarCollapsed"
             icon="pi pi-power-off"
-            text rounded size="small"
+            text
+            rounded
+            size="small"
             severity="danger"
             @click="onDisconnect"
             aria-label="Disconnect"
@@ -25,7 +29,9 @@
           />
           <Button
             icon="pi pi-bars"
-            text rounded size="small"
+            text
+            rounded
+            size="small"
             @click="sidebarCollapsed = !sidebarCollapsed"
             :aria-label="sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'"
           />
@@ -33,8 +39,12 @@
       </div>
 
       <nav v-show="!sidebarCollapsed" class="sidebar-nav">
-        <button class="view-tab view-tab--active" aria-current="page" data-testid="nav-schema">Schema</button>
-        <button class="view-tab" @click="router.push({ name: 'graph' })" data-testid="nav-paths">Paths</button>
+        <button class="view-tab view-tab--active" aria-current="page" data-testid="nav-schema">
+          Schema
+        </button>
+        <button class="view-tab" @click="router.push({ name: 'graph' })" data-testid="nav-paths">
+          Paths
+        </button>
       </nav>
 
       <div v-show="!sidebarCollapsed" class="sidebar-body">
@@ -68,13 +78,23 @@
             <span class="schema-done-label">Schema loaded</span>
           </div>
 
-          <Message v-if="schemaStore.extractError" severity="error" :closable="true" @close="schemaStore.extractError = ''" data-testid="extraction-error-msg">
+          <Message
+            v-if="schemaStore.extractError"
+            severity="error"
+            :closable="true"
+            @close="schemaStore.extractError = ''"
+            data-testid="extraction-error-msg"
+          >
             {{ schemaStore.extractError }}
           </Message>
         </section>
 
         <!-- Extraction progress (only while extracting) -->
-        <section v-if="schemaStore.extracting" class="sidebar-section" data-testid="extraction-progress">
+        <section
+          v-if="schemaStore.extracting"
+          class="sidebar-section"
+          data-testid="extraction-progress"
+        >
           <div class="progress-row">
             <span class="progress-label">
               {{ schemaStore.statusMessage || 'Building edge map…' }}
@@ -92,7 +112,11 @@
         </section>
 
         <!-- Stats -->
-        <section v-if="schemaStore.nodes.length > 0" class="sidebar-section stats-row" data-testid="schema-stats">
+        <section
+          v-if="schemaStore.nodes.length > 0"
+          class="sidebar-section stats-row"
+          data-testid="schema-stats"
+        >
           <div class="stat-item">
             <span class="stat-value" data-testid="nodes-count">{{ schemaStore.nodes.length }}</span>
             <span class="stat-label">Classes</span>
@@ -292,7 +316,14 @@ function onDisconnect() {
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
 
 onMounted(() => {
-  console.log('[browse] onMounted — connected:', connectionStore.isConnected, '| hasData:', schemaStore.hasData, '| extracting:', schemaStore.extracting)
+  console.log(
+    '[browse] onMounted — connected:',
+    connectionStore.isConnected,
+    '| hasData:',
+    schemaStore.hasData,
+    '| extracting:',
+    schemaStore.extracting,
+  )
   if (connectionStore.isConnected && !schemaStore.hasData && !schemaStore.extracting) {
     startExtraction()
   }
@@ -365,8 +396,9 @@ onMounted(() => {
   background: transparent;
   color: var(--rf-text-muted);
   cursor: pointer;
-  transition: color var(--rf-duration-fast) var(--rf-ease-out),
-              border-color var(--rf-duration-fast) var(--rf-ease-out);
+  transition:
+    color var(--rf-duration-fast) var(--rf-ease-out),
+    border-color var(--rf-duration-fast) var(--rf-ease-out);
 }
 
 .view-tab:hover {

@@ -10,7 +10,10 @@
         force-selection to clear the value when the new suggestion list
         doesn't contain an exact match.
       -->
-      <div v-if="!selectedEntity" :class="['autocomplete-wrap', { 'autocomplete-wrap--searching': searching }]">
+      <div
+        v-if="!selectedEntity"
+        :class="['autocomplete-wrap', { 'autocomplete-wrap--searching': searching }]"
+      >
         <AutoComplete
           :inputId="`entity-${id}-input`"
           v-model="inputText"
@@ -48,7 +51,11 @@
       </Transition>
 
       <!-- Chip replaces the input once an entity is selected -->
-      <div v-if="selectedEntity" class="selected-chip" :class="{ 'selected-chip--locked': !!initialEntity }">
+      <div
+        v-if="selectedEntity"
+        class="selected-chip"
+        :class="{ 'selected-chip--locked': !!initialEntity }"
+      >
         <i class="pi pi-circle-fill chip-dot" :style="{ color: dotColor }" />
         <span class="chip-label" :title="selectedEntity.iri">{{ selectedEntity.label }}</span>
         <button v-if="!initialEntity" class="chip-remove" @click="onClear" aria-label="Remove">
@@ -109,7 +116,10 @@ async function runSearch(query: string) {
   currentQuery.value = query
   searching.value = true
   statusMessage.value = ''
-  if (statusClearTimer) { clearTimeout(statusClearTimer); statusClearTimer = null }
+  if (statusClearTimer) {
+    clearTimeout(statusClearTimer)
+    statusClearTimer = null
+  }
 
   try {
     const context = connectionStore.queryContext
@@ -141,11 +151,15 @@ async function runSearch(query: string) {
     } else {
       statusMessage.value = `${suggestions.value.length} result${suggestions.value.length === 1 ? '' : 's'} for "${query}"`
     }
-    statusClearTimer = setTimeout(() => { statusMessage.value = '' }, 3000)
+    statusClearTimer = setTimeout(() => {
+      statusMessage.value = ''
+    }, 3000)
   } catch {
     suggestions.value = []
     statusMessage.value = 'Search failed — check your connection'
-    statusClearTimer = setTimeout(() => { statusMessage.value = '' }, 4000)
+    statusClearTimer = setTimeout(() => {
+      statusMessage.value = ''
+    }, 4000)
   } finally {
     searching.value = false
   }

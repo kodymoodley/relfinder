@@ -100,31 +100,49 @@ export const useSchemaStore = defineStore('schema', () => {
 
     const endpointUrl = context.endpointUrl || '__file__'
 
-    console.log('[schema] start() called — force:', force, 'current nodes:', nodes.value.length, 'extracting:', extracting.value)
+    console.log(
+      '[schema] start() called — force:',
+      force,
+      'current nodes:',
+      nodes.value.length,
+      'extracting:',
+      extracting.value,
+    )
 
     // ── Try to restore from persistent storage ──────────────────────────────
     const saved = force ? null : loadSchema(endpointUrl)
-    const canResume = saved !== null && saved.classLimit === classLimit && saved.edgeLimit === edgeLimit
+    const canResume =
+      saved !== null && saved.classLimit === classLimit && saved.edgeLimit === edgeLimit
 
     if (canResume && saved) {
       nodes.value = saved.nodes
       edges.value = saved.edges
       dataPropsCache.value = new Map(saved.dataPropsCache)
       descriptionCache.value = new Map(saved.descriptionCache)
-      const nodeIriSet = new Set(saved.nodes.map(n => n.iri))
+      const nodeIriSet = new Set(saved.nodes.map((n) => n.iri))
       for (const iri of saved.processedClassIris) {
         if (nodeIriSet.has(iri)) _processedSet.add(iri)
       }
       lastBatchSize.value = saved.nodes.length
 
-      console.log('[schema] cache check — saved:', !!saved, 'canResume:', canResume, `processed ${_processedSet.size}/${saved.nodes.length}`)
+      console.log(
+        '[schema] cache check — saved:',
+        !!saved,
+        'canResume:',
+        canResume,
+        `processed ${_processedSet.size}/${saved.nodes.length}`,
+      )
 
       if (_processedSet.size >= saved.nodes.length) {
         console.log('[schema] FULLY CACHED — returning early, no extraction')
         return
       }
 
-      console.log('[schema] PARTIAL CACHE — resuming Phase 2 for', saved.nodes.length - _processedSet.size, 'remaining classes')
+      console.log(
+        '[schema] PARTIAL CACHE — resuming Phase 2 for',
+        saved.nodes.length - _processedSet.size,
+        'remaining classes',
+      )
 
       progress.value = { completed: _processedSet.size, total: saved.nodes.length }
     } else {
@@ -138,9 +156,8 @@ export const useSchemaStore = defineStore('schema', () => {
     }
 
     extracting.value = true
-    statusMessage.value = canResume && _processedSet.size > 0
-      ? `Resuming...`
-      : 'Discovering classes…'
+    statusMessage.value =
+      canResume && _processedSet.size > 0 ? `Resuming...` : 'Discovering classes…'
 
     try {
       await extractSchema(
@@ -165,14 +182,26 @@ export const useSchemaStore = defineStore('schema', () => {
           },
           onEdgesLoaded(incoming) {
             edges.value = [...edges.value, ...incoming]
-            console.log('[schema] onEdgesLoaded — total edges now:', edges.value.length, '| extracting:', extracting.value)
+            console.log(
+              '[schema] onEdgesLoaded — total edges now:',
+              edges.value.length,
+              '| extracting:',
+              extracting.value,
+            )
           },
           onProgress(completed, total) {
             progress.value = { completed, total }
           },
           onClassProcessed(classIri) {
             _processedSet.add(classIri)
-            console.log('[schema] onClassProcessed', classIri, '| processed:', _processedSet.size, '| extracting:', extracting.value)
+            console.log(
+              '[schema] onClassProcessed',
+              classIri,
+              '| processed:',
+              _processedSet.size,
+              '| extracting:',
+              extracting.value,
+            )
             persist(endpointUrl)
           },
         },
@@ -182,10 +211,19 @@ export const useSchemaStore = defineStore('schema', () => {
     } catch (err) {
       if ((err as Error)?.name !== 'AbortError') {
         extractError.value =
-          err instanceof Error ? `Extraction failed: ${err.message}` : 'An unexpected error occurred.'
+          err instanceof Error
+            ? `Extraction failed: ${err.message}`
+            : 'An unexpected error occurred.'
       }
     } finally {
-      console.log('[schema] finally — extracting was:', extracting.value, '| edges:', edges.value.length, '| nodes:', nodes.value.length)
+      console.log(
+        '[schema] finally — extracting was:',
+        extracting.value,
+        '| edges:',
+        edges.value.length,
+        '| nodes:',
+        nodes.value.length,
+      )
       extracting.value = false
       statusMessage.value = ''
     }
@@ -204,7 +242,7 @@ export const useSchemaStore = defineStore('schema', () => {
     const classLimit = _classLimit
     const edgeLimit = _edgeLimit
     const offset = nodes.value.length
-    const existingIris = nodes.value.map(n => n.iri)
+    const existingIris = nodes.value.map((n) => n.iri)
     const endpointUrl = context.endpointUrl || '__file__'
 
     abortController = new AbortController()
@@ -253,7 +291,9 @@ export const useSchemaStore = defineStore('schema', () => {
     } catch (err) {
       if ((err as Error)?.name !== 'AbortError') {
         extractError.value =
-          err instanceof Error ? `Extraction failed: ${err.message}` : 'An unexpected error occurred.'
+          err instanceof Error
+            ? `Extraction failed: ${err.message}`
+            : 'An unexpected error occurred.'
       }
     } finally {
       extracting.value = false
@@ -291,7 +331,11 @@ export const useSchemaStore = defineStore('schema', () => {
 
   // ── Per-class data properties ─────────────────────────────────────────────
 
-  async function fetchDataProps(classIri: string, context: QueryContext, n3Store: Store | undefined) {
+  async function fetchDataProps(
+    classIri: string,
+    context: QueryContext,
+    n3Store: Store | undefined,
+  ) {
     if (dataPropsCache.value.has(classIri)) return
     if (dataPropsLoading.value.has(classIri)) return
 
@@ -299,12 +343,8 @@ export const useSchemaStore = defineStore('schema', () => {
     setDataPropsStatus(classIri, 'Querying endpoint…')
 
     try {
-      const props = await fetchSchemaDataProperties(
-        classIri,
-        context,
-        n3Store,
-        50,
-        (msg) => setDataPropsStatus(classIri, msg),
+      const props = await fetchSchemaDataProperties(classIri, context, n3Store, 50, (msg) =>
+        setDataPropsStatus(classIri, msg),
       )
       dataPropsCache.value = new Map(dataPropsCache.value).set(classIri, props)
     } finally {
@@ -319,7 +359,11 @@ export const useSchemaStore = defineStore('schema', () => {
 
   // ── Per-class descriptions ────────────────────────────────────────────────
 
-  async function fetchDescription(classIri: string, context: QueryContext, n3Store: Store | undefined) {
+  async function fetchDescription(
+    classIri: string,
+    context: QueryContext,
+    n3Store: Store | undefined,
+  ) {
     if (descriptionCache.value.has(classIri)) return
     if (descriptionLoading.value.has(classIri)) return
 
@@ -343,14 +387,31 @@ export const useSchemaStore = defineStore('schema', () => {
 
   return {
     // graph
-    nodes, edges, extracting, extractError, progress, progressPct, hasData, statusMessage, lastBatchSize,
+    nodes,
+    edges,
+    extracting,
+    extractError,
+    progress,
+    progressPct,
+    hasData,
+    statusMessage,
+    lastBatchSize,
     // options
     hideOrphans,
     // data props
-    dataPropsCache, dataPropsLoading, dataPropsStatus,
+    dataPropsCache,
+    dataPropsLoading,
+    dataPropsStatus,
     // descriptions
-    descriptionCache, descriptionLoading, descriptionStatus,
+    descriptionCache,
+    descriptionLoading,
+    descriptionStatus,
     // actions
-    start, loadMore, cancel, clear, fetchDataProps, fetchDescription,
+    start,
+    loadMore,
+    cancel,
+    clear,
+    fetchDataProps,
+    fetchDescription,
   }
 })

@@ -79,7 +79,6 @@ describe.skipIf(!process.env['INTEGRATION'])(
   'DBpedia SPARQL examples — node count between 10 and 50 [INTEGRATION]',
   () => {
     for (const example of sparqlExamples()) {
-       
       it(
         example.title,
         async () => {

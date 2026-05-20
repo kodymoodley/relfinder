@@ -22,7 +22,10 @@ import { extractSchema } from '@/lib/sparql/schemaExtractor'
 import { saveSchema } from '@/lib/cache/schemaStorage'
 import type { PersistedSchema } from '@/lib/cache/schemaStorage'
 import type { SchemaNode } from '@/lib/sparql/types'
-import type { SchemaExtractionCallbacks, SchemaExtractionOptions } from '@/lib/sparql/schemaExtractor'
+import type {
+  SchemaExtractionCallbacks,
+  SchemaExtractionOptions,
+} from '@/lib/sparql/schemaExtractor'
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 
@@ -57,7 +60,7 @@ function makeStoredSchema(overrides: Partial<PersistedSchema> = {}): PersistedSc
     edgeLimit: EDGE_LIMIT,
     nodes: NODES,
     edges: [],
-    processedClassIris: NODES.map(n => n.iri),
+    processedClassIris: NODES.map((n) => n.iri),
     dataPropsCache: [],
     descriptionCache: [],
     ...overrides,
@@ -89,7 +92,9 @@ function mockFullExtraction(nodes: SchemaNode[] = NODES) {
  */
 function mockGatedExtraction(nodes: SchemaNode[] = NODES): () => void {
   let openGate!: () => void
-  const gate = new Promise<void>(resolve => { openGate = resolve })
+  const gate = new Promise<void>((resolve) => {
+    openGate = resolve
+  })
 
   vi.mocked(extractSchema).mockImplementation(
     async (_ctx, _store, opts: SchemaExtractionOptions, callbacks: SchemaExtractionCallbacks) => {
@@ -112,7 +117,9 @@ function mockGatedExtraction(nodes: SchemaNode[] = NODES): () => void {
  */
 function mockFullyGatedExtraction(nodes: SchemaNode[] = NODES): () => void {
   let openGate!: () => void
-  const gate = new Promise<void>(resolve => { openGate = resolve })
+  const gate = new Promise<void>((resolve) => {
+    openGate = resolve
+  })
 
   vi.mocked(extractSchema).mockImplementation(
     async (_ctx, _store, opts: SchemaExtractionOptions, callbacks: SchemaExtractionCallbacks) => {
@@ -175,7 +182,7 @@ describe('schema store — state machine', () => {
 
       expect(store.extracting).toBe(true)
       store.cancel()
-      expect(store.extracting).toBe(false)  // immediate — does not wait for gate
+      expect(store.extracting).toBe(false) // immediate — does not wait for gate
 
       openGate()
       await done
@@ -229,7 +236,7 @@ describe('schema store — state machine', () => {
 
       // Phase 1 fired synchronously in the mock — nodes are already present
       expect(store.hasData).toBe(true)
-      expect(store.extracting).toBe(true)  // still extracting
+      expect(store.extracting).toBe(true) // still extracting
 
       openGate()
       await done
@@ -250,7 +257,7 @@ describe('schema store — state machine', () => {
       const done = store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
 
       store.cancel()
-      expect(store.hasData).toBe(true)  // partial schema retained
+      expect(store.hasData).toBe(true) // partial schema retained
 
       openGate()
       await done
@@ -545,7 +552,7 @@ describe('schema store — state machine', () => {
 
     it('discards IRIs that are not in the saved node list', async () => {
       // 3 valid + 13 phantom = 16 total, 3 nodes → should treat as fully cached
-      const corruptProcessed = [...NODES.map(n => n.iri), ...phantomIris(13)]
+      const corruptProcessed = [...NODES.map((n) => n.iri), ...phantomIris(13)]
       saveSchema(ENDPOINT, makeStoredSchema({ processedClassIris: corruptProcessed }))
 
       const store = useSchemaStore()
@@ -556,8 +563,8 @@ describe('schema store — state machine', () => {
     })
 
     it('reproduces the "116 / 100" bug: treats over-counted cache as fully cached', async () => {
-      const corruptProcessed = [...NODES.map(n => n.iri), ...phantomIris(113)]
-      expect(corruptProcessed.length).toBe(116)  // sanity-check the fixture
+      const corruptProcessed = [...NODES.map((n) => n.iri), ...phantomIris(113)]
+      expect(corruptProcessed.length).toBe(116) // sanity-check the fixture
       saveSchema(ENDPOINT, makeStoredSchema({ processedClassIris: corruptProcessed }))
 
       const store = useSchemaStore()
@@ -661,10 +668,13 @@ describe('schema store — state machine', () => {
 
     it('pre-existing cache entries from persisted schema are preserved after extraction', async () => {
       // NODES[0] was described in a prior session; only NODES[1] is being re-fetched
-      saveSchema(ENDPOINT, makeStoredSchema({
-        processedClassIris: [NODES[0].iri],
-        descriptionCache: [[NODES[0].iri, 'Persisted description']],
-      }))
+      saveSchema(
+        ENDPOINT,
+        makeStoredSchema({
+          processedClassIris: [NODES[0].iri],
+          descriptionCache: [[NODES[0].iri, 'Persisted description']],
+        }),
+      )
       vi.mocked(extractSchema).mockImplementation(
         async (_ctx, _store, _opts, callbacks: SchemaExtractionCallbacks) => {
           callbacks.onDescriptionsLoaded?.(new Map([[NODES[1].iri, 'New description']]))
@@ -696,7 +706,7 @@ describe('schema store — state machine', () => {
   describe('loadMore()', () => {
     it('is a no-op when no context has been stored (fresh store)', async () => {
       const store = useSchemaStore()
-      await store.loadMore()   // should not throw
+      await store.loadMore() // should not throw
       expect(extractSchema).not.toHaveBeenCalled()
     })
 
@@ -713,7 +723,7 @@ describe('schema store — state machine', () => {
       mockFullExtraction(PAGE2)
       await store.loadMore()
       expect(store.nodes).toHaveLength(NODES.length + PAGE2.length)
-      expect(store.nodes.map(n => n.iri)).toEqual([...NODES, ...PAGE2].map(n => n.iri))
+      expect(store.nodes.map((n) => n.iri)).toEqual([...NODES, ...PAGE2].map((n) => n.iri))
     })
 
     it('sets lastBatchSize to the count of newly loaded nodes', async () => {
@@ -750,7 +760,7 @@ describe('schema store — state machine', () => {
 
       const calls = vi.mocked(extractSchema).mock.calls
       const loadMoreCall = calls[calls.length - 1]!
-      expect(loadMoreCall[2].additionalClassIris).toEqual(NODES.map(n => n.iri))
+      expect(loadMoreCall[2].additionalClassIris).toEqual(NODES.map((n) => n.iri))
     })
 
     it('resets progress to { 0, 0 } at the start of loadMore', async () => {
@@ -761,7 +771,9 @@ describe('schema store — state machine', () => {
 
       // Gate the loadMore call so we can inspect progress before it ticks
       let openGate!: () => void
-      const gate = new Promise<void>(r => { openGate = r })
+      const gate = new Promise<void>((r) => {
+        openGate = r
+      })
       vi.mocked(extractSchema).mockImplementation(async (_c, _s, _o, cbs) => {
         await gate
         cbs.onClassesLoaded?.([])

@@ -179,7 +179,6 @@ export async function fetchAvailableClasses(
   return bindings.filter((b) => b['type']).map((b) => b['type']!.value)
 }
 
-
 // ── Instance loading ──────────────────────────────────────────────────────────
 
 /**
@@ -229,7 +228,9 @@ export async function fetchInstancesByClass(
       'http://schema.org/name',
       'http://purl.org/dc/elements/1.1/title',
       'http://purl.org/dc/terms/title',
-    ].map((p) => `<${p}>`).join('\n        ')
+    ]
+      .map((p) => `<${p}>`)
+      .join('\n        ')
 
     query = `
       SELECT DISTINCT ?s ?label WHERE {
@@ -524,7 +525,9 @@ export async function findRelationships(
   for (const blocks of queryBlocks.values()) {
     for (const block of blocks) {
       queryIndex++
-      console.log(`[findRelationships] query ${queryIndex} — src: ${block.src} dest: ${block.dest}\n${block.query}`)
+      console.log(
+        `[findRelationships] query ${queryIndex} — src: ${block.src} dest: ${block.dest}\n${block.query}`,
+      )
       const paths = await runSelect(block.query, context, options.store)
       console.log(`[findRelationships] query ${queryIndex} returned ${paths.length} rows`)
       pathCollections.push({ src: block.src, dest: block.dest, paths })

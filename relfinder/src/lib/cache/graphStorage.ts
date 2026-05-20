@@ -11,7 +11,13 @@
  * TTL: 7 days. Limit: 20 entries per endpoint URL.
  */
 
-import type { GraphNode, MergedEdge, LabelEntry, RelationshipGraph, EntitySearchResult } from '@/lib/sparql/types'
+import type {
+  GraphNode,
+  MergedEdge,
+  LabelEntry,
+  RelationshipGraph,
+  EntitySearchResult,
+} from '@/lib/sparql/types'
 
 const VERSION = 1
 const TTL_MS = 7 * 24 * 60 * 60 * 1000
@@ -63,7 +69,9 @@ export function makeGraphId(
   maxDistance: number,
   ignoredProperties: string[],
 ): string {
-  return djb2(endpointUrl + '|' + e1Iri + '|' + e2Iri + '|' + optionsSig(maxDistance, ignoredProperties))
+  return djb2(
+    endpointUrl + '|' + e1Iri + '|' + e2Iri + '|' + optionsSig(maxDistance, ignoredProperties),
+  )
 }
 
 // ── Index read/write ──────────────────────────────────────────────────────────
@@ -111,7 +119,11 @@ function writeGraphData(id: string, data: SerializedRelationshipGraph): boolean 
 }
 
 function removeGraphData(id: string): void {
-  try { localStorage.removeItem(DATA_KEY_PREFIX + id) } catch { /* ignore */ }
+  try {
+    localStorage.removeItem(DATA_KEY_PREFIX + id)
+  } catch {
+    /* ignore */
+  }
 }
 
 // ── Public API ────────────────────────────────────────────────────────────────
@@ -150,7 +162,14 @@ export function saveGraph(
   index.entries = index.entries.filter((e) => e.id !== id)
 
   // Prepend new metadata
-  const meta: GraphHistoryMeta = { id, endpointUrl, savedAt: Date.now(), entity1, entity2, maxDistance }
+  const meta: GraphHistoryMeta = {
+    id,
+    endpointUrl,
+    savedAt: Date.now(),
+    entity1,
+    entity2,
+    maxDistance,
+  }
   index.entries.unshift(meta)
 
   // Enforce per-endpoint limit

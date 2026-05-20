@@ -41,8 +41,8 @@ const classDiscoveryRow = (iri: string): SparqlBinding => ({
 
 const descriptionRow = (classIri: string, text: string, lang: string): SparqlBinding => ({
   class: { value: classIri, type: 'uri' },
-  prop:  { value: RDFS_COMMENT, type: 'uri' },
-  val:   { value: text, type: 'Literal', lang },
+  prop: { value: RDFS_COMMENT, type: 'uri' },
+  val: { value: text, type: 'Literal', lang },
 })
 
 // ── Mock helpers ──────────────────────────────────────────────────────────────
@@ -53,12 +53,9 @@ const descriptionRow = (classIri: string, text: string, lang: string): SparqlBin
  *  - VALUES ?prop → description batch
  *  - else         → Phase 2 edge queries (empty)
  */
-function routeSelect(
-  discoveryRows: SparqlBinding[],
-  descRows: SparqlBinding[],
-) {
+function routeSelect(discoveryRows: SparqlBinding[], descRows: SparqlBinding[]) {
   vi.mocked(executeSelect).mockImplementation(async (query: string) => {
-    if (query.includes('DISTINCT'))    return discoveryRows
+    if (query.includes('DISTINCT')) return discoveryRows
     if (query.includes('VALUES ?prop')) return descRows
     return []
   })
@@ -66,10 +63,10 @@ function routeSelect(
 
 function makeCallbacks(): SchemaExtractionCallbacks {
   return {
-    onClassesLoaded:      vi.fn(),
-    onEdgesLoaded:        vi.fn(),
-    onProgress:           vi.fn(),
-    onClassProcessed:     vi.fn(),
+    onClassesLoaded: vi.fn(),
+    onEdgesLoaded: vi.fn(),
+    onProgress: vi.fn(),
+    onClassProcessed: vi.fn(),
     onDescriptionsLoaded: vi.fn(),
   }
 }
@@ -81,15 +78,11 @@ beforeEach(() => vi.clearAllMocks())
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe('extractSchema — Phase 1 description fetching', () => {
-
   // ── onDescriptionsLoaded callback ─────────────────────────────────────────
 
   describe('onDescriptionsLoaded callback', () => {
     it('is called when descriptions are returned by the endpoint', async () => {
-      routeSelect(
-        [classDiscoveryRow(CLASS_A)],
-        [descriptionRow(CLASS_A, 'A class', 'en')],
-      )
+      routeSelect([classDiscoveryRow(CLASS_A)], [descriptionRow(CLASS_A, 'A class', 'en')])
       const cbs = makeCallbacks()
       await extractSchema(CONTEXT, undefined, {}, cbs)
 
@@ -97,10 +90,7 @@ describe('extractSchema — Phase 1 description fetching', () => {
     })
 
     it('passes a Map with the description text for matching classes', async () => {
-      routeSelect(
-        [classDiscoveryRow(CLASS_A)],
-        [descriptionRow(CLASS_A, 'A class', 'en')],
-      )
+      routeSelect([classDiscoveryRow(CLASS_A)], [descriptionRow(CLASS_A, 'A class', 'en')])
       const cbs = makeCallbacks()
       await extractSchema(CONTEXT, undefined, {}, cbs)
 
@@ -125,7 +115,8 @@ describe('extractSchema — Phase 1 description fetching', () => {
       vi.mocked(executeSelect).mockResolvedValue([])
       const cbs = makeCallbacks()
       await extractSchema(
-        CONTEXT, undefined,
+        CONTEXT,
+        undefined,
         { preloadedNodes: [{ iri: CLASS_A, label: 'A' }] },
         cbs,
       )
@@ -136,10 +127,7 @@ describe('extractSchema — Phase 1 description fetching', () => {
     it('is called once per batch of 20 classes', async () => {
       // 21 classes → 2 batches of 20 and 1
       const iris = Array.from({ length: 21 }, (_, i) => `http://example.org/C${i}`)
-      routeSelect(
-        iris.map(classDiscoveryRow),
-        [],
-      )
+      routeSelect(iris.map(classDiscoveryRow), [])
       const cbs = makeCallbacks()
       await extractSchema(CONTEXT, undefined, {}, cbs)
 
@@ -154,10 +142,7 @@ describe('extractSchema — Phase 1 description fetching', () => {
     it('selects the configured language when available', async () => {
       routeSelect(
         [classDiscoveryRow(CLASS_A)],
-        [
-          descriptionRow(CLASS_A, 'In English', 'en'),
-          descriptionRow(CLASS_A, 'Auf Deutsch', 'de'),
-        ],
+        [descriptionRow(CLASS_A, 'In English', 'en'), descriptionRow(CLASS_A, 'Auf Deutsch', 'de')],
       )
       const cbs = makeCallbacks()
       await extractSchema(CONTEXT, undefined, { language: 'de' }, cbs)
@@ -169,10 +154,7 @@ describe('extractSchema — Phase 1 description fetching', () => {
     it('falls back to English when the preferred language is absent', async () => {
       routeSelect(
         [classDiscoveryRow(CLASS_A)],
-        [
-          descriptionRow(CLASS_A, 'In English', 'en'),
-          descriptionRow(CLASS_A, 'Untagged', ''),
-        ],
+        [descriptionRow(CLASS_A, 'In English', 'en'), descriptionRow(CLASS_A, 'Untagged', '')],
       )
       const cbs = makeCallbacks()
       await extractSchema(CONTEXT, undefined, { language: 'fr' }, cbs)
@@ -182,10 +164,7 @@ describe('extractSchema — Phase 1 description fetching', () => {
     })
 
     it('falls back to untagged when neither preferred nor English is available', async () => {
-      routeSelect(
-        [classDiscoveryRow(CLASS_A)],
-        [descriptionRow(CLASS_A, 'Untagged', '')],
-      )
+      routeSelect([classDiscoveryRow(CLASS_A)], [descriptionRow(CLASS_A, 'Untagged', '')])
       const cbs = makeCallbacks()
       await extractSchema(CONTEXT, undefined, { language: 'fr' }, cbs)
 
@@ -194,10 +173,7 @@ describe('extractSchema — Phase 1 description fetching', () => {
     })
 
     it('falls back to any available language as a last resort', async () => {
-      routeSelect(
-        [classDiscoveryRow(CLASS_A)],
-        [descriptionRow(CLASS_A, 'Auf Deutsch', 'de')],
-      )
+      routeSelect([classDiscoveryRow(CLASS_A)], [descriptionRow(CLASS_A, 'Auf Deutsch', 'de')])
       const cbs = makeCallbacks()
       await extractSchema(CONTEXT, undefined, { language: 'fr' }, cbs)
 
@@ -211,7 +187,7 @@ describe('extractSchema — Phase 1 description fetching', () => {
   describe('resilience', () => {
     it('description fetch failure does not prevent onClassesLoaded from firing', async () => {
       vi.mocked(executeSelect).mockImplementation(async (query: string) => {
-        if (query.includes('DISTINCT'))     return [classDiscoveryRow(CLASS_A)]
+        if (query.includes('DISTINCT')) return [classDiscoveryRow(CLASS_A)]
         if (query.includes('VALUES ?prop')) throw new Error('endpoint error')
         return []
       })
@@ -233,11 +209,12 @@ describe('extractSchema — Phase 1 description fetching', () => {
     it('Phase 2 edge queries still run after a description fetch failure', async () => {
       const edgeRow: SparqlBinding = {
         prop: { value: 'http://example.org/rel', type: 'NamedNode' },
-        c2:   { value: CLASS_B, type: 'NamedNode' },
-        n:    { value: '3', type: 'Literal' },
+        c2: { value: CLASS_B, type: 'NamedNode' },
+        n: { value: '3', type: 'Literal' },
       }
       vi.mocked(executeSelect).mockImplementation(async (query: string) => {
-        if (query.includes('DISTINCT'))     return [classDiscoveryRow(CLASS_A), classDiscoveryRow(CLASS_B)]
+        if (query.includes('DISTINCT'))
+          return [classDiscoveryRow(CLASS_A), classDiscoveryRow(CLASS_B)]
         if (query.includes('VALUES ?prop')) throw new Error('description error')
         // Phase 2: class A has an edge to B
         if (query.includes(`<${CLASS_A}>`)) return [edgeRow]

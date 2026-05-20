@@ -17,7 +17,14 @@ import type { Store } from 'n3'
 import { executeSelect, executeSelectOnStore } from './engine'
 import { fetchLabels } from './entitySearch'
 import { shortIri } from '../utils/iri'
-import type { QueryContext, SchemaNode, SchemaEdge, SchemaGraph, SchemaProp, SchemaDataProp } from './types'
+import type {
+  QueryContext,
+  SchemaNode,
+  SchemaEdge,
+  SchemaGraph,
+  SchemaProp,
+  SchemaDataProp,
+} from './types'
 import { DESCRIPTION_PROPERTIES } from './classDescription'
 
 const RDF_TYPE = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type'
@@ -146,7 +153,10 @@ async function fetchDescriptionsBatch(
         candidates.find((c) => c.lang === 'en') ??
         candidates.find((c) => c.lang === '') ??
         candidates[0]
-      if (best) { result.set(classIri, best.value); break }
+      if (best) {
+        result.set(classIri, best.value)
+        break
+      }
     }
   }
   return result
@@ -206,7 +216,16 @@ export async function extractSchema(
   callbacks: SchemaExtractionCallbacks = {},
   signal?: AbortSignal,
 ): Promise<SchemaGraph> {
-  const { classLimit = 10, edgeLimit = 3, concurrency = 5, language = 'en', preloadedNodes, skipClasses, classOffset = 0, additionalClassIris } = options
+  const {
+    classLimit = 10,
+    edgeLimit = 3,
+    concurrency = 5,
+    language = 'en',
+    preloadedNodes,
+    skipClasses,
+    classOffset = 0,
+    additionalClassIris,
+  } = options
 
   // ── Phase 1: classes (skipped when resuming) ────────────────────────────────
   let nodes: SchemaNode[]
@@ -219,11 +238,16 @@ export async function extractSchema(
 
     // Run all label + description batches concurrently (2 queries per batch in parallel).
     await Promise.all(
-      chunk(nodes.map((n) => n.iri), 20).map(async (batch) => {
+      chunk(
+        nodes.map((n) => n.iri),
+        20,
+      ).map(async (batch) => {
         if (signal?.aborted) return
         const [labelMap, descMap] = await Promise.all([
           fetchLabels(batch, context, store),
-          fetchDescriptionsBatch(batch, context, store, language).catch(() => new Map<string, string>()),
+          fetchDescriptionsBatch(batch, context, store, language).catch(
+            () => new Map<string, string>(),
+          ),
         ])
         if (signal?.aborted) return
         for (const node of nodes) {
@@ -260,7 +284,14 @@ export async function extractSchema(
       if (signal?.aborted) return
       const node = queue.shift()!
       try {
-        const edges = await fetchEdgesForClass(node.iri, allClassIris, context, store, edgeLimit, signal)
+        const edges = await fetchEdgesForClass(
+          node.iri,
+          allClassIris,
+          context,
+          store,
+          edgeLimit,
+          signal,
+        )
         if (!signal?.aborted && edges.length > 0) {
           allEdges.push(...edges)
           callbacks.onEdgesLoaded?.(edges)
@@ -274,9 +305,7 @@ export async function extractSchema(
     }
   }
 
-  await Promise.all(
-    Array.from({ length: Math.min(concurrency, queue.length) }, worker),
-  )
+  await Promise.all(Array.from({ length: Math.min(concurrency, queue.length) }, worker))
 
   return { nodes, edges: allEdges }
 }

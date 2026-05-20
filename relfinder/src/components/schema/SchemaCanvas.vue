@@ -12,7 +12,12 @@
     </div>
 
     <!-- Cytoscape mount point — always in DOM so cy can attach -->
-    <div ref="cyContainer" class="cy-container" :class="{ hidden: props.nodes.length === 0 }" data-testid="schema-canvas" />
+    <div
+      ref="cyContainer"
+      class="cy-container"
+      :class="{ hidden: props.nodes.length === 0 }"
+      data-testid="schema-canvas"
+    />
 
     <!-- Hover tooltip -->
     <div
@@ -75,7 +80,9 @@
           >
             <span class="tt-row-top">
               <span class="tt-label">{{ dp.label }}</span>
-              <span v-if="dp.datatypes.length" class="tt-datatypes">{{ dp.datatypes.join(' · ') }}</span>
+              <span v-if="dp.datatypes.length" class="tt-datatypes">{{
+                dp.datatypes.join(' · ')
+              }}</span>
             </span>
             <div class="tt-full-iri">{{ dp.iri }}</div>
           </div>
@@ -93,11 +100,7 @@
         </div>
         <div class="tt-section">
           <div class="tt-section-head">Properties ({{ tooltipContent.edgeProps.length }})</div>
-          <div
-            v-for="p in tooltipContent.edgeProps"
-            :key="p.iri"
-            class="tt-prop-row"
-          >
+          <div v-for="p in tooltipContent.edgeProps" :key="p.iri" class="tt-prop-row">
             <span class="tt-row-top">
               <span class="tt-label">{{ p.label }}</span>
               <span class="tt-count">×{{ p.count }}</span>
@@ -110,16 +113,54 @@
 
     <!-- Toolbar -->
     <div v-if="props.nodes.length > 0" class="canvas-toolbar" data-testid="schema-toolbar">
-      <Button v-tooltip.top="'Zoom in'" icon="pi pi-plus" text rounded size="small" aria-label="Zoom in" data-testid="zoom-in-btn" @click="zoomIn" />
-      <Button v-tooltip.top="'Zoom out'" icon="pi pi-minus" text rounded size="small" aria-label="Zoom out" data-testid="zoom-out-btn" @click="zoomOut" />
-      <Button v-tooltip.top="'Fit to screen'" icon="pi pi-arrows-alt" text rounded size="small" aria-label="Fit" data-testid="fit-btn" @click="fitGraph" />
+      <Button
+        v-tooltip.top="'Zoom in'"
+        icon="pi pi-plus"
+        text
+        rounded
+        size="small"
+        aria-label="Zoom in"
+        data-testid="zoom-in-btn"
+        @click="zoomIn"
+      />
+      <Button
+        v-tooltip.top="'Zoom out'"
+        icon="pi pi-minus"
+        text
+        rounded
+        size="small"
+        aria-label="Zoom out"
+        data-testid="zoom-out-btn"
+        @click="zoomOut"
+      />
+      <Button
+        v-tooltip.top="'Fit to screen'"
+        icon="pi pi-arrows-alt"
+        text
+        rounded
+        size="small"
+        aria-label="Fit"
+        data-testid="fit-btn"
+        @click="fitGraph"
+      />
       <Divider layout="vertical" />
-      <Button v-tooltip.top="'Re-run layout'" icon="pi pi-refresh" text rounded size="small" aria-label="Re-run layout" data-testid="rerun-layout-btn" @click="rerunLayout" />
+      <Button
+        v-tooltip.top="'Re-run layout'"
+        icon="pi pi-refresh"
+        text
+        rounded
+        size="small"
+        aria-label="Re-run layout"
+        data-testid="rerun-layout-btn"
+        @click="rerunLayout"
+      />
       <Divider layout="vertical" />
       <Button
         v-tooltip.top="showEdgeLabels ? 'Hide property labels' : 'Show property labels'"
         :icon="showEdgeLabels ? 'pi pi-eye' : 'pi pi-eye-slash'"
-        text rounded size="small"
+        text
+        rounded
+        size="small"
         :style="{ opacity: showEdgeLabels ? 1 : 0.45 }"
         :aria-label="showEdgeLabels ? 'Hide labels' : 'Show labels'"
         data-testid="toggle-labels-btn"
@@ -188,11 +229,22 @@ function nodeLabel(iri: string): string {
 }
 
 const outgoingByNode = computed(() => {
-  const m = new Map<string, Array<{ propIri: string; propLabel: string; rangeIri: string; rangeLabel: string; count: number }>>()
+  const m = new Map<
+    string,
+    Array<{
+      propIri: string
+      propLabel: string
+      rangeIri: string
+      rangeLabel: string
+      count: number
+    }>
+  >()
   for (const edge of props.edges) {
     const items = edge.props.map((p) => ({
-      propIri: p.iri, propLabel: p.label,
-      rangeIri: edge.targetIri, rangeLabel: nodeLabel(edge.targetIri),
+      propIri: p.iri,
+      propLabel: p.label,
+      rangeIri: edge.targetIri,
+      rangeLabel: nodeLabel(edge.targetIri),
       count: p.count,
     }))
     const existing = m.get(edge.sourceIri)
@@ -203,11 +255,16 @@ const outgoingByNode = computed(() => {
 })
 
 const incomingByNode = computed(() => {
-  const m = new Map<string, Array<{ sourceIri: string; sourceLabel: string; propIri: string; propLabel: string }>>()
+  const m = new Map<
+    string,
+    Array<{ sourceIri: string; sourceLabel: string; propIri: string; propLabel: string }>
+  >()
   for (const edge of props.edges) {
     const items = edge.props.map((p) => ({
-      sourceIri: edge.sourceIri, sourceLabel: nodeLabel(edge.sourceIri),
-      propIri: p.iri, propLabel: p.label,
+      sourceIri: edge.sourceIri,
+      sourceLabel: nodeLabel(edge.sourceIri),
+      propIri: p.iri,
+      propLabel: p.label,
     }))
     const existing = m.get(edge.targetIri)
     if (existing) existing.push(...items)
@@ -490,10 +547,18 @@ function runLayout() {
 
 // ── Toolbar actions ───────────────────────────────────────────────────────────
 
-function zoomIn() { cy?.zoom(cy.zoom() * 1.2) }
-function zoomOut() { cy?.zoom(cy.zoom() / 1.2) }
-function fitGraph() { cy?.fit(undefined, 40) }
-function rerunLayout() { runLayout() }
+function zoomIn() {
+  cy?.zoom(cy.zoom() * 1.2)
+}
+function zoomOut() {
+  cy?.zoom(cy.zoom() / 1.2)
+}
+function fitGraph() {
+  cy?.fit(undefined, 40)
+}
+function rerunLayout() {
+  runLayout()
+}
 
 function toggleEdgeLabels() {
   showEdgeLabels.value = !showEdgeLabels.value
@@ -507,8 +572,11 @@ watch(
   () => props.nodes.length,
   (n, prev) => {
     if (n === 0) {
-      layout?.stop(); cy?.destroy(); cy = null
-      renderedNodeCount = 0; renderedEdgeCount = 0
+      layout?.stop()
+      cy?.destroy()
+      cy = null
+      renderedNodeCount = 0
+      renderedEdgeCount = 0
     } else if (!cy || prev === 0) {
       initCytoscape()
     } else if (n > renderedNodeCount) {
@@ -524,12 +592,21 @@ watch(
 // New edges arrived — add incrementally without restarting layout
 watch(
   () => props.edges.length,
-  () => { if (cy) addNewEdges() },
+  () => {
+    if (cy) addNewEdges()
+  },
 )
 
-onMounted(() => { if (props.nodes.length > 0) initCytoscape() })
+onMounted(() => {
+  if (props.nodes.length > 0) initCytoscape()
+})
 
-onUnmounted(() => { layout?.stop(); layout = null; cy?.destroy(); cy = null })
+onUnmounted(() => {
+  layout?.stop()
+  layout = null
+  cy?.destroy()
+  cy = null
+})
 </script>
 
 <style scoped>
@@ -694,8 +771,14 @@ onUnmounted(() => { layout?.stop(); layout = null; cy?.destroy(); cy = null })
 }
 
 @keyframes icon-ring-pulse {
-  0%   { transform: scale(1);    opacity: 0.6; }
-  100% { transform: scale(1.75); opacity: 0; }
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(1.75);
+    opacity: 0;
+  }
 }
 
 .empty-icon-wrap::after {

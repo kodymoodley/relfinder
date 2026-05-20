@@ -7,18 +7,19 @@
     </div>
 
     <!-- ── Empty state ─────────────────────────────────────────────────────── -->
-    <div v-if="pinnedStore.pins.length === 0 && pinnedStore.history.length === 0" class="panel-empty">
+    <div
+      v-if="pinnedStore.pins.length === 0 && pinnedStore.history.length === 0"
+      class="panel-empty"
+    >
       <i class="pi pi-bookmark empty-icon" />
-      <p class="empty-text">Pin up to 2 entities from the class list to explore their relationship.</p>
+      <p class="empty-text">
+        Pin up to 2 entities from the class list to explore their relationship.
+      </p>
     </div>
 
     <!-- ── Pin list ─────────────────────────────────────────────────────────── -->
     <ul v-if="pinnedStore.pins.length > 0" class="pin-list">
-      <li
-        v-for="(pin, index) in pinnedStore.pins"
-        :key="pin.iri"
-        class="pin-item"
-      >
+      <li v-for="(pin, index) in pinnedStore.pins" :key="pin.iri" class="pin-item">
         <i class="pi pi-circle-fill pin-dot" :style="{ color: DOT_COLORS[index] }" />
         <div class="pin-info">
           <span class="pin-label" :title="pin.iri">{{ pin.label }}</span>
@@ -48,7 +49,10 @@
     <div class="query-options-section">
       <button class="query-options-toggle" @click="optionsOpen = !optionsOpen">
         <span class="query-options-title">Query Options</span>
-        <i class="pi toggle-chevron" :class="optionsOpen ? 'pi-chevron-down' : 'pi-chevron-right'" />
+        <i
+          class="pi toggle-chevron"
+          :class="optionsOpen ? 'pi-chevron-down' : 'pi-chevron-right'"
+        />
       </button>
       <QueryOptionsPanel v-if="optionsOpen" v-model="queryOptions" />
     </div>
@@ -105,15 +109,20 @@ const queryOptions = ref<QueryConfig>({
   customLabelProperties: [],
 })
 
-function navigateToGraph(pair: { entity1: { iri: string; label: string; class: string }; entity2: { iri: string; label: string; class: string } }) {
+function navigateToGraph(pair: {
+  entity1: { iri: string; label: string; class: string }
+  entity2: { iri: string; label: string; class: string }
+}) {
   router.push({
     name: 'graph',
     state: {
-      example: JSON.parse(JSON.stringify({
-        entity1: pair.entity1,
-        entity2: pair.entity2,
-        options: queryOptions.value,
-      })),
+      example: JSON.parse(
+        JSON.stringify({
+          entity1: pair.entity1,
+          entity2: pair.entity2,
+          options: queryOptions.value,
+        }),
+      ),
     },
   })
 }
@@ -306,8 +315,13 @@ function onReExplore(pair: ExploredPair) {
 }
 
 @keyframes ready-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--rf-primary) 60%, transparent); }
-  50%       { box-shadow: 0 0 0 8px color-mix(in srgb, var(--rf-primary) 0%, transparent); }
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--rf-primary) 60%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 8px color-mix(in srgb, var(--rf-primary) 0%, transparent);
+  }
 }
 
 .cta-hint {

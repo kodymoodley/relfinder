@@ -90,7 +90,13 @@
       data-testid="connect-btn"
     />
 
-    <Message v-if="connectionError" severity="error" :closable="true" @close="connectionError = ''" data-testid="connection-error-msg">
+    <Message
+      v-if="connectionError"
+      severity="error"
+      :closable="true"
+      @close="connectionError = ''"
+      data-testid="connection-error-msg"
+    >
       {{ connectionError }}
     </Message>
   </form>
@@ -186,7 +192,11 @@ async function onSubmit() {
   connectionError.value = ''
 
   const endpointUrl = form.proxyUrl.trim() || form.endpointUrl.trim()
-  try { connectingHost.value = new URL(endpointUrl).hostname } catch { connectingHost.value = endpointUrl }
+  try {
+    connectingHost.value = new URL(endpointUrl).hostname
+  } catch {
+    connectingHost.value = endpointUrl
+  }
   const authHeader = form.username.trim()
     ? `Basic ${btoa(`${form.username.trim()}:${form.password}`)}`
     : undefined

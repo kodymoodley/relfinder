@@ -65,7 +65,9 @@
         <ul v-else class="connection-list">
           <li v-for="item in incoming" :key="item.sourceIri" class="connection-item">
             <span class="conn-label">{{ item.sourceLabel }}</span>
-            <span class="conn-via">via <em>{{ item.dominantProp }}</em></span>
+            <span class="conn-via"
+              >via <em>{{ item.dominantProp }}</em></span
+            >
           </li>
         </ul>
       </div>
@@ -74,9 +76,17 @@
     <!-- Edge view -->
     <template v-else-if="props.selectedEdge && !props.selectedNode">
       <div class="detail-section edge-header-row">
-        <Tag :value="resolveLabel(props.selectedEdge.sourceIri)" severity="secondary" class="edge-tag" />
+        <Tag
+          :value="resolveLabel(props.selectedEdge.sourceIri)"
+          severity="secondary"
+          class="edge-tag"
+        />
         <i class="pi pi-arrow-right edge-arrow" />
-        <Tag :value="resolveLabel(props.selectedEdge.targetIri)" severity="secondary" class="edge-tag" />
+        <Tag
+          :value="resolveLabel(props.selectedEdge.targetIri)"
+          severity="secondary"
+          class="edge-tag"
+        />
       </div>
 
       <div class="detail-section">
@@ -135,7 +145,9 @@ const visible = ref(false)
 
 watch(
   () => [props.selectedNode, props.selectedEdge] as const,
-  ([n, e]) => { visible.value = n !== null || e !== null },
+  ([n, e]) => {
+    visible.value = n !== null || e !== null
+  },
   { immediate: true },
 )
 
@@ -198,7 +210,9 @@ const loadingDataProps = computed(() =>
 )
 
 const dataPropsStatusMsg = computed(() =>
-  props.selectedNode ? (schemaStore.dataPropsStatus.get(props.selectedNode.iri) ?? 'Querying endpoint…') : '',
+  props.selectedNode
+    ? (schemaStore.dataPropsStatus.get(props.selectedNode.iri) ?? 'Querying endpoint…')
+    : '',
 )
 
 const dataProps = computed(() =>

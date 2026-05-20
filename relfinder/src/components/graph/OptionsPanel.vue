@@ -4,8 +4,13 @@
     <div class="option-group">
       <button class="section-toggle" @click="open.language = !open.language">
         <span class="option-label">Label Language</span>
-        <span v-if="!open.language && modelValue.language" class="section-badge">{{ modelValue.language }}</span>
-        <i class="pi pi-chevron-right toggle-chevron" :class="{ 'toggle-chevron--open': open.language }" />
+        <span v-if="!open.language && modelValue.language" class="section-badge">{{
+          modelValue.language
+        }}</span>
+        <i
+          class="pi pi-chevron-right toggle-chevron"
+          :class="{ 'toggle-chevron--open': open.language }"
+        />
       </button>
       <div class="section-body" :class="{ 'section-body--open': open.language }">
         <div class="section-body-inner">
@@ -37,13 +42,21 @@
     <div class="option-group">
       <button class="section-toggle" @click="open.classFilter = !open.classFilter">
         <span class="option-label">Hide Node Types</span>
-        <span v-if="!open.classFilter && modelValue.hiddenClasses.length > 0" class="section-badge">{{ modelValue.hiddenClasses.length }}</span>
-        <i class="pi pi-chevron-right toggle-chevron" :class="{ 'toggle-chevron--open': open.classFilter }" />
+        <span
+          v-if="!open.classFilter && modelValue.hiddenClasses.length > 0"
+          class="section-badge"
+          >{{ modelValue.hiddenClasses.length }}</span
+        >
+        <i
+          class="pi pi-chevron-right toggle-chevron"
+          :class="{ 'toggle-chevron--open': open.classFilter }"
+        />
       </button>
       <div class="section-body" :class="{ 'section-body--open': open.classFilter }">
         <div class="section-body-inner">
           <p class="option-hint">
-            Select node types to remove from the graph view. Changes apply instantly without re-querying.
+            Select node types to remove from the graph view. Changes apply instantly without
+            re-querying.
           </p>
           <div v-if="modelValue.hiddenClasses.length > 0" class="chip-list">
             <div v-for="(iri, idx) in modelValue.hiddenClasses" :key="iri" class="prop-chip">
@@ -64,21 +77,35 @@
               :loading="!graphClasses && loadingClasses"
               filter
               filter-placeholder="Search types…"
-              :filter-input-props="{ id: 'opt-class-filter-search', 'aria-label': 'Search node types' }"
-              :empty-message="loadingClasses ? 'Loading…' : classLoadError || (graphClasses?.length === 0 ? 'No classes in current graph' : 'No classes found')"
+              :filter-input-props="{
+                id: 'opt-class-filter-search',
+                'aria-label': 'Search node types',
+              }"
+              :empty-message="
+                loadingClasses
+                  ? 'Loading…'
+                  : classLoadError ||
+                    (graphClasses?.length === 0
+                      ? 'No classes in current graph'
+                      : 'No classes found')
+              "
               size="small"
               fluid
               @show="onDropdownShow"
               @change="onClassSelect"
             />
           </div>
-          <Message v-if="!graphClasses && classLoadError" severity="warn" :closable="false" class="class-error">
+          <Message
+            v-if="!graphClasses && classLoadError"
+            severity="warn"
+            :closable="false"
+            class="class-error"
+          >
             {{ classLoadError }}
           </Message>
         </div>
       </div>
     </div>
-
   </div>
 </template>
 
@@ -206,8 +233,6 @@ function removeClass(idx: number) {
   updated.splice(idx, 1)
   update('hiddenClasses', updated)
 }
-
-
 </script>
 
 <style scoped>

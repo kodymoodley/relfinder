@@ -31,7 +31,12 @@
           on-icon="pi pi-check"
           off-icon="pi pi-times"
           size="small"
-          @update:model-value="update('avoidCycles', $event ? QueryCyclesStrategy.NO_INTERMEDIATE_DUPLICATES : QueryCyclesStrategy.NONE)"
+          @update:model-value="
+            update(
+              'avoidCycles',
+              $event ? QueryCyclesStrategy.NO_INTERMEDIATE_DUPLICATES : QueryCyclesStrategy.NONE,
+            )
+          "
         />
       </div>
     </div>
@@ -40,8 +45,15 @@
     <div class="option-group">
       <button class="section-toggle" @click="open.ignoredProps = !open.ignoredProps">
         <span class="option-label">Ignored Properties</span>
-        <span v-if="!open.ignoredProps && modelValue.ignoredProperties.length > 0" class="section-badge">{{ modelValue.ignoredProperties.length }}</span>
-        <i class="pi pi-chevron-right toggle-chevron" :class="{ 'toggle-chevron--open': open.ignoredProps }" />
+        <span
+          v-if="!open.ignoredProps && modelValue.ignoredProperties.length > 0"
+          class="section-badge"
+          >{{ modelValue.ignoredProperties.length }}</span
+        >
+        <i
+          class="pi pi-chevron-right toggle-chevron"
+          :class="{ 'toggle-chevron--open': open.ignoredProps }"
+        />
       </button>
       <div class="section-body" :class="{ 'section-body--open': open.ignoredProps }">
         <div class="section-body-inner">
@@ -80,8 +92,15 @@
     <div class="option-group">
       <button class="section-toggle" @click="open.customLabels = !open.customLabels">
         <span class="option-label">Extra Label Properties</span>
-        <span v-if="!open.customLabels && modelValue.customLabelProperties.length > 0" class="section-badge">{{ modelValue.customLabelProperties.length }}</span>
-        <i class="pi pi-chevron-right toggle-chevron" :class="{ 'toggle-chevron--open': open.customLabels }" />
+        <span
+          v-if="!open.customLabels && modelValue.customLabelProperties.length > 0"
+          class="section-badge"
+          >{{ modelValue.customLabelProperties.length }}</span
+        >
+        <i
+          class="pi pi-chevron-right toggle-chevron"
+          :class="{ 'toggle-chevron--open': open.customLabels }"
+        />
       </button>
       <div class="section-body" :class="{ 'section-body--open': open.customLabels }">
         <div class="section-body-inner">
@@ -90,7 +109,11 @@
             <code>http://schema.org/alternateName</code>).
           </p>
           <div v-if="modelValue.customLabelProperties.length > 0" class="chip-list">
-            <div v-for="(iri, idx) in modelValue.customLabelProperties" :key="iri" class="prop-chip">
+            <div
+              v-for="(iri, idx) in modelValue.customLabelProperties"
+              :key="iri"
+              class="prop-chip"
+            >
               <span class="prop-chip-label" :title="iri">{{ shortIri(iri) }}</span>
               <button class="chip-remove" @click="removeCustomLabel(idx)" aria-label="Remove">
                 <span aria-hidden="true">×</span>

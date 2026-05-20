@@ -40,8 +40,8 @@ const NODES: SchemaNode[] = [
 function makeCallbacks() {
   return {
     onClassesLoaded: vi.fn(),
-    onEdgesLoaded:   vi.fn(),
-    onProgress:      vi.fn(),
+    onEdgesLoaded: vi.fn(),
+    onProgress: vi.fn(),
     onClassProcessed: vi.fn(),
   } satisfies SchemaExtractionCallbacks
 }
@@ -62,7 +62,8 @@ describe('extractSchema — Phase 2 abort guard', () => {
       controller.abort()
 
       await extractSchema(
-        CONTEXT, undefined,
+        CONTEXT,
+        undefined,
         { preloadedNodes: NODES },
         makeCallbacks(),
         controller.signal,
@@ -101,12 +102,15 @@ describe('extractSchema — Phase 2 abort guard', () => {
       const controller = new AbortController()
 
       let resolveQuery!: () => void
-      const slowQuery = new Promise<SparqlBinding[]>(resolve => { resolveQuery = () => resolve([]) })
+      const slowQuery = new Promise<SparqlBinding[]>((resolve) => {
+        resolveQuery = () => resolve([])
+      })
       vi.mocked(executeSelect).mockReturnValue(slowQuery)
 
       const cbs = makeCallbacks()
       const done = extractSchema(
-        CONTEXT, undefined,
+        CONTEXT,
+        undefined,
         { preloadedNodes: [NODES[0]] },
         cbs,
         controller.signal,
@@ -123,12 +127,15 @@ describe('extractSchema — Phase 2 abort guard', () => {
       const controller = new AbortController()
 
       let resolveQuery!: () => void
-      const slowQuery = new Promise<SparqlBinding[]>(resolve => { resolveQuery = () => resolve([]) })
+      const slowQuery = new Promise<SparqlBinding[]>((resolve) => {
+        resolveQuery = () => resolve([])
+      })
       vi.mocked(executeSelect).mockReturnValue(slowQuery)
 
       const cbs = makeCallbacks()
       const done = extractSchema(
-        CONTEXT, undefined,
+        CONTEXT,
+        undefined,
         { preloadedNodes: [NODES[0]] },
         cbs,
         controller.signal,
@@ -147,16 +154,19 @@ describe('extractSchema — Phase 2 abort guard', () => {
       // Return a non-empty result so onEdgesLoaded would fire if not guarded
       const edgeRow: SparqlBinding = {
         prop: { value: 'http://example.org/rel', type: 'NamedNode' },
-        c2:   { value: 'http://example.org/B',   type: 'NamedNode' },
-        n:    { value: '5', type: 'Literal' },
+        c2: { value: 'http://example.org/B', type: 'NamedNode' },
+        n: { value: '5', type: 'Literal' },
       }
       let resolveQuery!: (rows: SparqlBinding[]) => void
-      const slowQuery = new Promise<SparqlBinding[]>(resolve => { resolveQuery = resolve })
+      const slowQuery = new Promise<SparqlBinding[]>((resolve) => {
+        resolveQuery = resolve
+      })
       vi.mocked(executeSelect).mockReturnValue(slowQuery)
 
       const cbs = makeCallbacks()
       const done = extractSchema(
-        CONTEXT, undefined,
+        CONTEXT,
+        undefined,
         { preloadedNodes: [NODES[0]], skipClasses: new Set([NODES[1].iri]) },
         cbs,
         controller.signal,
@@ -173,15 +183,18 @@ describe('extractSchema — Phase 2 abort guard', () => {
       const controller = new AbortController()
 
       let resolveFirst!: () => void
-      const firstQuery = new Promise<SparqlBinding[]>(resolve => { resolveFirst = () => resolve([]) })
+      const firstQuery = new Promise<SparqlBinding[]>((resolve) => {
+        resolveFirst = () => resolve([])
+      })
       vi.mocked(executeSelect)
-        .mockReturnValueOnce(firstQuery)           // class A (slow)
-        .mockResolvedValue([])                     // class B (fast — should never be reached)
+        .mockReturnValueOnce(firstQuery) // class A (slow)
+        .mockResolvedValue([]) // class B (fast — should never be reached)
 
       const cbs = makeCallbacks()
       // concurrency=1 so workers run sequentially, making queue order deterministic
       const done = extractSchema(
-        CONTEXT, undefined,
+        CONTEXT,
+        undefined,
         { preloadedNodes: NODES, concurrency: 1 },
         cbs,
         controller.signal,
@@ -211,22 +224,17 @@ describe('extractSchema — Phase 2 abort guard', () => {
     it('calls onEdgesLoaded when edges are returned', async () => {
       const edgeRow: SparqlBinding = {
         prop: { value: 'http://example.org/rel', type: 'NamedNode' },
-        c2:   { value: 'http://example.org/B',   type: 'NamedNode' },
-        n:    { value: '3', type: 'Literal' },
+        c2: { value: 'http://example.org/B', type: 'NamedNode' },
+        n: { value: '3', type: 'Literal' },
       }
       vi.mocked(executeSelect)
-        .mockResolvedValueOnce([edgeRow])  // class A has edges
-        .mockResolvedValue([])             // class B has none
+        .mockResolvedValueOnce([edgeRow]) // class A has edges
+        .mockResolvedValue([]) // class B has none
 
       const controller = new AbortController()
       const cbs = makeCallbacks()
 
-      await extractSchema(
-        CONTEXT, undefined,
-        { preloadedNodes: NODES },
-        cbs,
-        controller.signal,
-      )
+      await extractSchema(CONTEXT, undefined, { preloadedNodes: NODES }, cbs, controller.signal)
 
       expect(cbs.onEdgesLoaded).toHaveBeenCalledTimes(1)
     })
@@ -237,7 +245,8 @@ describe('extractSchema — Phase 2 abort guard', () => {
       const cbs = makeCallbacks()
 
       await extractSchema(
-        CONTEXT, undefined,
+        CONTEXT,
+        undefined,
         { preloadedNodes: NODES, skipClasses: new Set([NODES[0].iri]) },
         cbs,
         controller.signal,

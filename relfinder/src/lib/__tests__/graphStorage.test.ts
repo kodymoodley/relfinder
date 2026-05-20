@@ -1,7 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import {
-  saveGraph, loadGraph, lookupGraph, listRecentGraphs,
-  deleteGraphEntry, clearAllGraphs, makeGraphId,
+  saveGraph,
+  loadGraph,
+  lookupGraph,
+  listRecentGraphs,
+  deleteGraphEntry,
+  clearAllGraphs,
+  makeGraphId,
 } from '../cache/graphStorage'
 import type { RelationshipGraph, EntitySearchResult } from '../sparql/types'
 
@@ -9,27 +14,46 @@ import type { RelationshipGraph, EntitySearchResult } from '../sparql/types'
 
 const ENDPOINT = 'https://example.org/sparql'
 
-const ENTITY1: EntitySearchResult = { iri: 'http://example.org/Alice', label: 'Alice', class: 'http://example.org/Person' }
-const ENTITY2: EntitySearchResult = { iri: 'http://example.org/Bob',   label: 'Bob',   class: 'http://example.org/Person' }
+const ENTITY1: EntitySearchResult = {
+  iri: 'http://example.org/Alice',
+  label: 'Alice',
+  class: 'http://example.org/Person',
+}
+const ENTITY2: EntitySearchResult = {
+  iri: 'http://example.org/Bob',
+  label: 'Bob',
+  class: 'http://example.org/Person',
+}
 
 function makeGraph(overrides: Partial<RelationshipGraph> = {}): RelationshipGraph {
   return {
     nodes: [
-      { id: 0, iri: 'http://example.org/Alice', label: 'Alice', class: 'http://example.org/Person', isEndpoint: true },
-      { id: 1, iri: 'http://example.org/Bob',   label: 'Bob',   class: 'http://example.org/Person', isEndpoint: true },
+      {
+        id: 0,
+        iri: 'http://example.org/Alice',
+        label: 'Alice',
+        class: 'http://example.org/Person',
+        isEndpoint: true,
+      },
+      {
+        id: 1,
+        iri: 'http://example.org/Bob',
+        label: 'Bob',
+        class: 'http://example.org/Person',
+        isEndpoint: true,
+      },
     ],
-    edges: [
-      { sid: 0, tid: 1, iris: ['http://example.org/knows'], label: 'knows' },
-    ],
+    edges: [{ sid: 0, tid: 1, iris: ['http://example.org/knows'], label: 'knows' }],
     classes: ['http://example.org/Person'],
-    allLabels: new Map([
-      ['http://example.org/knows', [{ value: 'knows', lang: 'en' }]],
-    ]),
+    allLabels: new Map([['http://example.org/knows', [{ value: 'knows', lang: 'en' }]]]),
     ...overrides,
   }
 }
 
-const DEFAULT_OPTIONS = { maxDistance: 2, ignoredProperties: ['http://www.w3.org/1999/02/22-rdf-syntax-ns#type'] }
+const DEFAULT_OPTIONS = {
+  maxDistance: 2,
+  ignoredProperties: ['http://www.w3.org/1999/02/22-rdf-syntax-ns#type'],
+}
 
 beforeEach(() => localStorage.clear())
 afterEach(() => vi.useRealTimers())
@@ -40,7 +64,14 @@ describe('graphStorage', () => {
   describe('saveGraph / loadGraph round-trip', () => {
     it('persists and restores all graph fields including Map<string, LabelEntry[]>', () => {
       const graph = makeGraph()
-      const id = saveGraph(ENDPOINT, ENTITY1, ENTITY2, DEFAULT_OPTIONS.maxDistance, DEFAULT_OPTIONS.ignoredProperties, graph)
+      const id = saveGraph(
+        ENDPOINT,
+        ENTITY1,
+        ENTITY2,
+        DEFAULT_OPTIONS.maxDistance,
+        DEFAULT_OPTIONS.ignoredProperties,
+        graph,
+      )
 
       const restored = loadGraph(id)
       expect(restored).not.toBeNull()
@@ -51,32 +82,57 @@ describe('graphStorage', () => {
 
       // Map is correctly reconstructed
       expect(restored!.allLabels).toBeInstanceOf(Map)
-      expect(restored!.allLabels.get('http://example.org/knows')).toEqual([{ value: 'knows', lang: 'en' }])
+      expect(restored!.allLabels.get('http://example.org/knows')).toEqual([
+        { value: 'knows', lang: 'en' },
+      ])
     })
 
     it('allLabels with multiple languages round-trips correctly', () => {
       const graph = makeGraph({
         allLabels: new Map([
-          ['http://example.org/knows', [
-            { value: 'knows', lang: 'en' },
-            { value: 'kennt', lang: 'de' },
-          ]],
+          [
+            'http://example.org/knows',
+            [
+              { value: 'knows', lang: 'en' },
+              { value: 'kennt', lang: 'de' },
+            ],
+          ],
         ]),
       })
-      const id = saveGraph(ENDPOINT, ENTITY1, ENTITY2, DEFAULT_OPTIONS.maxDistance, DEFAULT_OPTIONS.ignoredProperties, graph)
+      const id = saveGraph(
+        ENDPOINT,
+        ENTITY1,
+        ENTITY2,
+        DEFAULT_OPTIONS.maxDistance,
+        DEFAULT_OPTIONS.ignoredProperties,
+        graph,
+      )
       const restored = loadGraph(id)
 
       const labels = restored!.allLabels.get('http://example.org/knows')!
       expect(labels).toHaveLength(2)
-      expect(labels.find(l => l.lang === 'de')?.value).toBe('kennt')
+      expect(labels.find((l) => l.lang === 'de')?.value).toBe('kennt')
     })
   })
 
   describe('lookupGraph', () => {
     it('finds an entry by endpoint + entity IRIs + options', () => {
-      saveGraph(ENDPOINT, ENTITY1, ENTITY2, DEFAULT_OPTIONS.maxDistance, DEFAULT_OPTIONS.ignoredProperties, makeGraph())
+      saveGraph(
+        ENDPOINT,
+        ENTITY1,
+        ENTITY2,
+        DEFAULT_OPTIONS.maxDistance,
+        DEFAULT_OPTIONS.ignoredProperties,
+        makeGraph(),
+      )
 
-      const result = lookupGraph(ENDPOINT, ENTITY1.iri, ENTITY2.iri, DEFAULT_OPTIONS.maxDistance, DEFAULT_OPTIONS.ignoredProperties)
+      const result = lookupGraph(
+        ENDPOINT,
+        ENTITY1.iri,
+        ENTITY2.iri,
+        DEFAULT_OPTIONS.maxDistance,
+        DEFAULT_OPTIONS.ignoredProperties,
+      )
       expect(result).not.toBeNull()
       expect(result!.nodes).toHaveLength(2)
     })
@@ -88,7 +144,9 @@ describe('graphStorage', () => {
 
     it('misses when ignoredProperties differ', () => {
       saveGraph(ENDPOINT, ENTITY1, ENTITY2, 2, ['http://example.org/p1'], makeGraph())
-      expect(lookupGraph(ENDPOINT, ENTITY1.iri, ENTITY2.iri, 2, ['http://example.org/p2'])).toBeNull()
+      expect(
+        lookupGraph(ENDPOINT, ENTITY1.iri, ENTITY2.iri, 2, ['http://example.org/p2']),
+      ).toBeNull()
     })
 
     it('is order-sensitive for entity pair (A→B ≠ B→A)', () => {
@@ -99,7 +157,9 @@ describe('graphStorage', () => {
 
     it('misses for a different endpoint even with identical entities + options', () => {
       saveGraph(ENDPOINT, ENTITY1, ENTITY2, 2, [], makeGraph())
-      expect(lookupGraph('https://other.example/sparql', ENTITY1.iri, ENTITY2.iri, 2, [])).toBeNull()
+      expect(
+        lookupGraph('https://other.example/sparql', ENTITY1.iri, ENTITY2.iri, 2, []),
+      ).toBeNull()
     })
 
     it('returns null for an entry that was never saved', () => {
@@ -144,16 +204,24 @@ describe('graphStorage', () => {
   describe('duplicate saves', () => {
     it('re-saving with the same entity pair moves entry to front without duplication', () => {
       // Save A→B, then C→D, then A→B again
-      const e3: EntitySearchResult = { iri: 'http://example.org/C', label: 'C', class: 'http://example.org/Thing' }
-      const e4: EntitySearchResult = { iri: 'http://example.org/D', label: 'D', class: 'http://example.org/Thing' }
+      const e3: EntitySearchResult = {
+        iri: 'http://example.org/C',
+        label: 'C',
+        class: 'http://example.org/Thing',
+      }
+      const e4: EntitySearchResult = {
+        iri: 'http://example.org/D',
+        label: 'D',
+        class: 'http://example.org/Thing',
+      }
 
       saveGraph(ENDPOINT, ENTITY1, ENTITY2, 2, [], makeGraph())
       saveGraph(ENDPOINT, e3, e4, 2, [], makeGraph())
-      saveGraph(ENDPOINT, ENTITY1, ENTITY2, 2, [], makeGraph())  // re-save A→B
+      saveGraph(ENDPOINT, ENTITY1, ENTITY2, 2, [], makeGraph()) // re-save A→B
 
       const recent = listRecentGraphs(ENDPOINT)
-      expect(recent).toHaveLength(2)        // no duplicate
-      expect(recent[0].entity1.iri).toBe(ENTITY1.iri)  // moved to front
+      expect(recent).toHaveLength(2) // no duplicate
+      expect(recent[0].entity1.iri).toBe(ENTITY1.iri) // moved to front
     })
   })
 
@@ -163,21 +231,37 @@ describe('graphStorage', () => {
 
       // Fill up to the limit
       for (let i = 0; i < limit; i++) {
-        const e1: EntitySearchResult = { iri: `http://example.org/E${i}a`, label: `E${i}a`, class: 'http://example.org/Thing' }
-        const e2: EntitySearchResult = { iri: `http://example.org/E${i}b`, label: `E${i}b`, class: 'http://example.org/Thing' }
+        const e1: EntitySearchResult = {
+          iri: `http://example.org/E${i}a`,
+          label: `E${i}a`,
+          class: 'http://example.org/Thing',
+        }
+        const e2: EntitySearchResult = {
+          iri: `http://example.org/E${i}b`,
+          label: `E${i}b`,
+          class: 'http://example.org/Thing',
+        }
         saveGraph(ENDPOINT, e1, e2, 2, [], makeGraph())
       }
       expect(listRecentGraphs(ENDPOINT)).toHaveLength(limit)
 
       // One more entry — oldest should be pruned
-      const extra1: EntitySearchResult = { iri: 'http://example.org/extra1', label: 'Extra1', class: 'http://example.org/Thing' }
-      const extra2: EntitySearchResult = { iri: 'http://example.org/extra2', label: 'Extra2', class: 'http://example.org/Thing' }
+      const extra1: EntitySearchResult = {
+        iri: 'http://example.org/extra1',
+        label: 'Extra1',
+        class: 'http://example.org/Thing',
+      }
+      const extra2: EntitySearchResult = {
+        iri: 'http://example.org/extra2',
+        label: 'Extra2',
+        class: 'http://example.org/Thing',
+      }
       saveGraph(ENDPOINT, extra1, extra2, 2, [], makeGraph())
 
       const recent = listRecentGraphs(ENDPOINT)
       expect(recent).toHaveLength(limit)
       // The first entry saved (E0a → E0b) should have been pruned
-      expect(recent.some(e => e.entity1.iri === 'http://example.org/E0a')).toBe(false)
+      expect(recent.some((e) => e.entity1.iri === 'http://example.org/E0a')).toBe(false)
       // The new extra entry should be at the front
       expect(recent[0].entity1.iri).toBe('http://example.org/extra1')
     })
@@ -188,8 +272,16 @@ describe('graphStorage', () => {
       const limit = 20
 
       for (let i = 0; i < limit; i++) {
-        const e1: EntitySearchResult = { iri: `http://example.org/E${i}a`, label: `E${i}a`, class: 'http://example.org/Thing' }
-        const e2: EntitySearchResult = { iri: `http://example.org/E${i}b`, label: `E${i}b`, class: 'http://example.org/Thing' }
+        const e1: EntitySearchResult = {
+          iri: `http://example.org/E${i}a`,
+          label: `E${i}a`,
+          class: 'http://example.org/Thing',
+        }
+        const e2: EntitySearchResult = {
+          iri: `http://example.org/E${i}b`,
+          label: `E${i}b`,
+          class: 'http://example.org/Thing',
+        }
         saveGraph(ep1, e1, e2, 2, [], makeGraph())
         saveGraph(ep2, e1, e2, 2, [], makeGraph())
       }
@@ -237,8 +329,16 @@ describe('graphStorage', () => {
 
   describe('listRecentGraphs', () => {
     it('returns metadata without graph data, newest first', () => {
-      const e3: EntitySearchResult = { iri: 'http://example.org/C', label: 'C', class: 'http://example.org/Thing' }
-      const e4: EntitySearchResult = { iri: 'http://example.org/D', label: 'D', class: 'http://example.org/Thing' }
+      const e3: EntitySearchResult = {
+        iri: 'http://example.org/C',
+        label: 'C',
+        class: 'http://example.org/Thing',
+      }
+      const e4: EntitySearchResult = {
+        iri: 'http://example.org/D',
+        label: 'D',
+        class: 'http://example.org/Thing',
+      }
 
       saveGraph(ENDPOINT, ENTITY1, ENTITY2, 2, [], makeGraph())
       saveGraph(ENDPOINT, e3, e4, 3, [], makeGraph())

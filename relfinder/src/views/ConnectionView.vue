@@ -201,5 +201,4 @@ const { dark, toggle: toggleDark } = useDarkMode()
 .tab-panel {
   padding: var(--rf-space-6) var(--rf-space-8) var(--rf-space-8);
 }
-
 </style>

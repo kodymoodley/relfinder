@@ -53,7 +53,7 @@ function makeStoredSchema(overrides: Partial<PersistedSchema> = {}): PersistedSc
     edgeLimit: EDGE_LIMIT,
     nodes: NODES,
     edges: [],
-    processedClassIris: NODES.map(n => n.iri),   // all processed = fully cached
+    processedClassIris: NODES.map((n) => n.iri), // all processed = fully cached
     dataPropsCache: [],
     descriptionCache: [],
     ...overrides,
@@ -67,15 +67,17 @@ function makeStoredSchema(overrides: Partial<PersistedSchema> = {}): PersistedSc
  * as the caller, completing Phase 1 + all of Phase 2 before yielding.
  */
 function mockFullExtraction(nodes: SchemaNode[] = NODES) {
-  vi.mocked(extractSchema).mockImplementation(async (_ctx, _store, _opts, callbacks: SchemaExtractionCallbacks) => {
-    callbacks.onClassesLoaded?.(nodes)
-    for (let i = 0; i < nodes.length; i++) {
-      callbacks.onEdgesLoaded?.([])
-      callbacks.onProgress?.(i + 1, nodes.length)
-      callbacks.onClassProcessed?.(nodes[i].iri)
-    }
-    return { nodes, edges: [] }
-  })
+  vi.mocked(extractSchema).mockImplementation(
+    async (_ctx, _store, _opts, callbacks: SchemaExtractionCallbacks) => {
+      callbacks.onClassesLoaded?.(nodes)
+      for (let i = 0; i < nodes.length; i++) {
+        callbacks.onEdgesLoaded?.([])
+        callbacks.onProgress?.(i + 1, nodes.length)
+        callbacks.onClassProcessed?.(nodes[i].iri)
+      }
+      return { nodes, edges: [] }
+    },
+  )
 }
 
 /**
@@ -86,15 +88,19 @@ function mockFullExtraction(nodes: SchemaNode[] = NODES) {
  */
 function mockGatedExtraction(nodes: SchemaNode[] = NODES): () => void {
   let openGate!: () => void
-  const gate = new Promise<void>(resolve => { openGate = resolve })
-
-  vi.mocked(extractSchema).mockImplementation(async (_ctx, _store, _opts, callbacks: SchemaExtractionCallbacks) => {
-    callbacks.onClassesLoaded?.(nodes)
-    await gate
-    callbacks.onProgress?.(1, nodes.length)
-    callbacks.onClassProcessed?.(nodes[0].iri)
-    return { nodes, edges: [] }
+  const gate = new Promise<void>((resolve) => {
+    openGate = resolve
   })
+
+  vi.mocked(extractSchema).mockImplementation(
+    async (_ctx, _store, _opts, callbacks: SchemaExtractionCallbacks) => {
+      callbacks.onClassesLoaded?.(nodes)
+      await gate
+      callbacks.onProgress?.(1, nodes.length)
+      callbacks.onClassProcessed?.(nodes[0].iri)
+      return { nodes, edges: [] }
+    },
+  )
 
   return openGate
 }
@@ -142,10 +148,18 @@ describe('schema store — caching', () => {
     })
 
     it('restores dataPropsCache and descriptionCache', async () => {
-      saveSchema(ENDPOINT, makeStoredSchema({
-        dataPropsCache: [['http://example.org/A', [{ iri: 'http://example.org/name', label: 'name', datatypes: ['xsd:string'] }]]],
-        descriptionCache: [['http://example.org/A', 'A class called A']],
-      }))
+      saveSchema(
+        ENDPOINT,
+        makeStoredSchema({
+          dataPropsCache: [
+            [
+              'http://example.org/A',
+              [{ iri: 'http://example.org/name', label: 'name', datatypes: ['xsd:string'] }],
+            ],
+          ],
+          descriptionCache: [['http://example.org/A', 'A class called A']],
+        }),
+      )
       const store = useSchemaStore()
       await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
 
@@ -155,8 +169,8 @@ describe('schema store — caching', () => {
 
     it('ignores cache when classLimit differs', async () => {
       mockFullExtraction()
-      saveSchema(ENDPOINT, makeStoredSchema({ classLimit: 50 }))  // stored with limit 50
-      await useSchemaStore().start(CONTEXT, undefined, 100, EDGE_LIMIT)  // request limit 100
+      saveSchema(ENDPOINT, makeStoredSchema({ classLimit: 50 })) // stored with limit 50
+      await useSchemaStore().start(CONTEXT, undefined, 100, EDGE_LIMIT) // request limit 100
 
       expect(extractSchema).toHaveBeenCalledOnce()
     })
@@ -231,7 +245,7 @@ describe('schema store — caching', () => {
       const saved = loadSchema(ENDPOINT)
       expect(saved).not.toBeNull()
       expect(saved!.nodes).toHaveLength(NODES.length)
-      expect(saved!.processedClassIris).toHaveLength(0)  // no Phase 2 classes yet
+      expect(saved!.processedClassIris).toHaveLength(0) // no Phase 2 classes yet
 
       openGate()
       await done

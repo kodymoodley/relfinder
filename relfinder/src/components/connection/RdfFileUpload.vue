@@ -40,7 +40,13 @@
       </template>
     </div>
 
-    <Message v-if="parseError" severity="error" :closable="true" @close="parseError = ''" data-testid="parse-error-msg">
+    <Message
+      v-if="parseError"
+      severity="error"
+      :closable="true"
+      @close="parseError = ''"
+      data-testid="parse-error-msg"
+    >
       {{ parseError }}
     </Message>
 
@@ -100,7 +106,9 @@ async function processFile(file: File) {
   parseElapsed.value = 0
   loadedFile.value = null
   loadedStore.value = null
-  parseTimer = setInterval(() => { parseElapsed.value++ }, 1000)
+  parseTimer = setInterval(() => {
+    parseElapsed.value++
+  }, 1000)
 
   try {
     const store = await fileToStore(file)
@@ -111,7 +119,10 @@ async function processFile(file: File) {
     parseError.value = err instanceof Error ? err.message : 'Failed to parse the RDF file.'
   } finally {
     parsing.value = false
-    if (parseTimer) { clearInterval(parseTimer); parseTimer = null }
+    if (parseTimer) {
+      clearInterval(parseTimer)
+      parseTimer = null
+    }
   }
 }
 
