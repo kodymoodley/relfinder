@@ -3,11 +3,16 @@
     <!-- Empty state -->
     <div v-if="props.nodes.length === 0" class="canvas-empty" data-testid="schema-canvas-empty">
       <div class="empty-icon-wrap">
-        <i class="pi pi-sitemap empty-icon" />
+        <i :class="['pi', props.extracting ? 'pi-spinner pi-spin' : 'pi-sitemap', 'empty-icon']" />
       </div>
-      <p class="empty-title">No schema loaded</p>
+      <p class="empty-title">{{ props.extracting ? 'Extracting schema…' : 'No schema loaded' }}</p>
       <p class="empty-hint">
-        Connect to a SPARQL endpoint and click <strong>Extract Schema</strong>
+        <template v-if="props.extracting">
+          Discovering classes and relationships
+        </template>
+        <template v-else>
+          Connect to a SPARQL endpoint and click <strong>Extract Schema</strong>
+        </template>
       </p>
     </div>
 
@@ -188,6 +193,7 @@ cytoscape.use(d3Force as unknown as cytoscape.Ext)
 const props = defineProps<{
   nodes: SchemaNode[]
   edges: SchemaEdge[]
+  extracting?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -633,6 +639,7 @@ onUnmounted(() => {
   position: absolute;
   z-index: 200;
   pointer-events: none;
+  user-select: none;
   background: rgba(15, 23, 42, 0.96);
   color: #e2e8f0;
   border: 1px solid rgba(255, 255, 255, 0.1);

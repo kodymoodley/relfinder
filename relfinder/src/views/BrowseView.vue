@@ -204,6 +204,7 @@
       <SchemaCanvas
         :nodes="displayNodes"
         :edges="schemaStore.edges"
+        :extracting="schemaStore.extracting"
         @node-click="onNodeClick"
         @edge-click="onEdgeClick"
       />
