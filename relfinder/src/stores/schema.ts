@@ -2,6 +2,7 @@ import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import type { Store } from 'n3'
 import { extractSchema, fetchSchemaDataProperties } from '@/lib/sparql/schemaExtractor'
+import { fetchInstancesByClass } from '@/lib/sparql/entitySearch'
 import { fetchClassDescription } from '@/lib/sparql/classDescription'
 import { loadSchema, saveSchema } from '@/lib/cache/schemaStorage'
 import type { PersistedSchema } from '@/lib/cache/schemaStorage'
@@ -40,6 +41,11 @@ export const useSchemaStore = defineStore('schema', () => {
   const descriptionCache = ref(new Map<string, string>())
   const descriptionLoading = ref(new Set<string>())
   const descriptionStatus = ref(new Map<string, string>())
+
+  // ── Instances cache ──────────────────────────────────────────────────────────
+
+  const instancesCache = ref(new Map<string, Array<{ iri: string; label: string }>>())
+  const instancesLoading = ref(new Set<string>())
 
   // ── Internal helpers ─────────────────────────────────────────────────────────
 
@@ -383,6 +389,28 @@ export const useSchemaStore = defineStore('schema', () => {
     }
   }
 
+  // ── Per-class instances ───────────────────────────────────────────────────
+
+  async function fetchInstances(
+    classIri: string,
+    context: QueryContext,
+    n3Store: Store | undefined,
+  ) {
+    if (instancesCache.value.has(classIri)) return
+    if (instancesLoading.value.has(classIri)) return
+
+    instancesLoading.value = new Set(instancesLoading.value).add(classIri)
+
+    try {
+      const items = await fetchInstancesByClass(classIri, context, n3Store, 20)
+      instancesCache.value = new Map(instancesCache.value).set(classIri, items)
+    } finally {
+      const next = new Set(instancesLoading.value)
+      next.delete(classIri)
+      instancesLoading.value = next
+    }
+  }
+
   // ── Exports ───────────────────────────────────────────────────────────────
 
   return {
@@ -413,5 +441,9 @@ export const useSchemaStore = defineStore('schema', () => {
     clear,
     fetchDataProps,
     fetchDescription,
+    // instances
+    instancesCache,
+    instancesLoading,
+    fetchInstances,
   }
 })
