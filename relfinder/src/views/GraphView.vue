@@ -226,6 +226,7 @@ import Message from 'primevue/message'
 import Tag from 'primevue/tag'
 import { useConnectionStore } from '@/stores/connection'
 import { findRelationships, refreshGraphLabels } from '@/lib/sparql/entitySearch'
+import { fetchNeighbourhoodStore } from '@/lib/sparql/subgraphStrategy'
 import { cacheGet } from '@/lib/cache/queryCache'
 import {
   saveGraph,
@@ -397,8 +398,20 @@ async function onFindRelationships() {
 
   try {
     const context = connectionStore.queryContext
-    const store = connectionStore.rdfStore ?? undefined
     const effectiveContext = context ?? { endpointUrl: '' }
+
+    // Resolve which N3 store to use for local query execution.
+    // Wait for any in-progress probe/fetch to settle first.
+    await connectionStore.waitForSubgraph()
+    let store: import('n3').Store | undefined
+    if (connectionStore.isFileSource) {
+      store = connectionStore.rdfStore ?? undefined
+    } else if (connectionStore.localRdfStore) {
+      store = connectionStore.localRdfStore
+    } else if (context) {
+      // Large endpoint (> 50 000 triples) — fetch 2-hop neighbourhoods on demand.
+      store = await fetchNeighbourhoodStore(entity1.value.iri, entity2.value.iri, context)
+    }
 
     graph.value = await findRelationships(
       entity1.value.iri,
