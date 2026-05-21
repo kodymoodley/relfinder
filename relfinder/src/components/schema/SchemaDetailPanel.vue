@@ -25,6 +25,37 @@
         <p v-else-if="description" class="description-text">{{ description }}</p>
       </div>
 
+      <!-- Instances (sample) -->
+      <div class="detail-section">
+        <p class="section-label">Instances <span class="section-label-hint">(sample)</span></p>
+        <div v-if="loadingInstances" class="spinner-row">
+          <ProgressSpinner stroke-width="4" style="width: 20px; height: 20px" />
+          <span class="spinner-status">Loading…</span>
+        </div>
+        <p v-else-if="instances.length === 0" class="list-empty">No instances found.</p>
+        <ul v-else class="instance-list">
+          <li v-for="inst in instances.slice(0, 20)" :key="inst.iri" class="instance-item">
+            <span class="instance-label" :title="inst.iri">{{ inst.label }}</span>
+            <div class="instance-btns">
+              <Button
+                size="small"
+                text
+                label="E1"
+                class="entity-btn entity-btn--1"
+                @click="emit('set-entity', 1, { iri: inst.iri, label: inst.label, class: props.selectedNode!.iri })"
+              />
+              <Button
+                size="small"
+                text
+                label="E2"
+                class="entity-btn entity-btn--2"
+                @click="emit('set-entity', 2, { iri: inst.iri, label: inst.label, class: props.selectedNode!.iri })"
+              />
+            </div>
+          </li>
+        </ul>
+      </div>
+
       <!-- Data properties -->
       <div class="detail-section">
         <p class="section-label">Data Properties</p>
@@ -136,6 +167,7 @@ const emit = defineEmits<{
   explore: [sourceIri: string, targetIri: string]
   'update:selectedNode': [value: SchemaNode | null]
   'update:selectedEdge': [value: SchemaEdge | null]
+  'set-entity': [slot: 1 | 2, entity: { iri: string; label: string; class: string }]
 }>()
 
 const connectionStore = useConnectionStore()
@@ -164,9 +196,10 @@ watch(
     if (!node) return
     nextTick(() => {
       const context = connectionStore.queryContext ?? { endpointUrl: '' }
-      const store = connectionStore.rdfStore ?? undefined
+      const store = connectionStore.rdfStore ?? connectionStore.localRdfStore ?? undefined
       schemaStore.fetchDataProps(node.iri, context, store).catch(() => {})
       schemaStore.fetchDescription(node.iri, context, store).catch(() => {})
+      schemaStore.fetchInstances(node.iri, context, store).catch(() => {})
     })
   },
 )
@@ -217,6 +250,14 @@ const dataPropsStatusMsg = computed(() =>
 
 const dataProps = computed(() =>
   props.selectedNode ? (schemaStore.dataPropsCache.get(props.selectedNode.iri) ?? []) : [],
+)
+
+const loadingInstances = computed(() =>
+  props.selectedNode ? schemaStore.instancesLoading.has(props.selectedNode.iri) : false,
+)
+
+const instances = computed(() =>
+  props.selectedNode ? (schemaStore.instancesCache.get(props.selectedNode.iri) ?? []) : [],
 )
 
 const objectProps = computed(() => {
@@ -431,5 +472,63 @@ function emitExplore() {
   font-size: var(--rf-text-xs);
   color: var(--rf-text-muted);
   font-variant-numeric: tabular-nums;
+}
+
+.section-label-hint {
+  font-weight: var(--rf-weight-normal);
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--rf-text-muted);
+}
+
+.instance-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--rf-space-1);
+}
+
+.instance-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--rf-space-2);
+  padding: var(--rf-space-1) var(--rf-space-2) var(--rf-space-1) var(--rf-space-3);
+  background: var(--rf-surface-alt);
+  border-radius: var(--rf-radius-md);
+  border: 1px solid var(--rf-border);
+}
+
+.instance-label {
+  font-size: var(--rf-text-sm);
+  color: var(--rf-text);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.instance-btns {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.entity-btn {
+  font-size: 10px;
+  font-weight: var(--rf-weight-semibold);
+  padding: 2px 6px;
+  min-width: unset;
+}
+
+.entity-btn--1 {
+  color: #f97316;
+}
+
+.entity-btn--2 {
+  color: #8b5cf6;
 }
 </style>
