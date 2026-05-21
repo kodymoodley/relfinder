@@ -22,6 +22,9 @@ import type * as RDF from '@rdfjs/types'
 import type { Store } from 'n3'
 import type { SparqlBinding, QueryContext } from './types'
 
+// Re-export the RDF quad type so callers don't need a direct @rdfjs/types import.
+export type { RDF }
+
 // ── Engine singleton ──────────────────────────────────────────────────────────
 
 const engine = new QueryEngine()
@@ -105,4 +108,22 @@ export async function executeSelectOnStore(query: string, store: Store): Promise
   const bindingsStream = await engine.queryBindings(query, { sources: [store as any] })
   const rawBindings = await bindingsStream.toArray()
   return rawBindings.map(convertBindings)
+}
+
+/**
+ * Executes a SPARQL CONSTRUCT query against a remote SPARQL endpoint and
+ * returns the resulting triples as an array of RDF.js Quad objects.
+ *
+ * Callers are responsible for loading the quads into an N3 Store if needed.
+ */
+export async function executeConstruct(
+  query: string,
+  context: QueryContext,
+  signal?: AbortSignal,
+): Promise<RDF.Quad[]> {
+  const quadStream = await engine.queryQuads(query, {
+    sources: [{ type: 'sparql', value: context.endpointUrl }],
+    fetch: makeFetch(context.authorizationHeader, signal),
+  })
+  return quadStream.toArray()
 }
