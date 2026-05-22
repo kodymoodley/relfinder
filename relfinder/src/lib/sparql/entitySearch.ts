@@ -207,14 +207,35 @@ export async function fetchInstancesByClass(
   let query: string
 
   if (store) {
+    // Preferred label predicates tried first; any string literal is the fallback
+    // so custom vocabularies still produce a human-readable label.
+    const preferredProps = [
+      'http://www.w3.org/2000/01/rdf-schema#label',
+      'http://www.w3.org/2004/02/skos/core#prefLabel',
+      'http://www.w3.org/2004/02/skos/core#altLabel',
+      'http://xmlns.com/foaf/0.1/name',
+      'http://schema.org/name',
+      'http://purl.org/dc/elements/1.1/title',
+      'http://purl.org/dc/terms/title',
+    ]
+      .map((p) => `<${p}>`)
+      .join('\n          ')
+
+    const preferredLangFilter = langFilterClause('?preferredLabel', language)
+
     query = `
-      SELECT DISTINCT ?s ?label WHERE {
+      SELECT DISTINCT ?s (COALESCE(?preferredLabel, ?fallbackLabel) AS ?label) WHERE {
         ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <${classIri}> .
         OPTIONAL {
-          ?s ?lp ?label .
-          FILTER (isLiteral(?label) && (
-            datatype(?label) = <http://www.w3.org/2001/XMLSchema#string> ||
-            lang(?label) != ''
+          VALUES ?lp { ${preferredProps} }
+          ?s ?lp ?preferredLabel .
+          ${preferredLangFilter}
+        }
+        OPTIONAL {
+          ?s ?anyProp ?fallbackLabel .
+          FILTER (isLiteral(?fallbackLabel) && (
+            datatype(?fallbackLabel) = <http://www.w3.org/2001/XMLSchema#string> ||
+            lang(?fallbackLabel) != ''
           ))
         }
       } LIMIT ${limit}
