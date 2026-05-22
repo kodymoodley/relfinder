@@ -2,7 +2,7 @@ import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import type { Store } from 'n3'
 import { extractSchema, fetchSchemaDataProperties } from '@/lib/sparql/schemaExtractor'
-import { fetchInstancesByClass } from '@/lib/sparql/entitySearch'
+import { fetchInstancesByClass, fetchEntityProps } from '@/lib/sparql/entitySearch'
 import { fetchClassDescription } from '@/lib/sparql/classDescription'
 import { loadSchema, saveSchema } from '@/lib/cache/schemaStorage'
 import type { PersistedSchema } from '@/lib/cache/schemaStorage'
@@ -46,6 +46,12 @@ export const useSchemaStore = defineStore('schema', () => {
 
   const instancesCache = ref(new Map<string, Array<{ iri: string; label: string }>>())
   const instancesLoading = ref(new Set<string>())
+
+  // ── Entity props cache ────────────────────────────────────────────────────────
+
+  type EntityProp = { predIri: string; predLabel: string; value: string }
+  const entityPropsCache = ref(new Map<string, EntityProp[]>())
+  const entityPropsLoading = ref(new Set<string>())
 
   // ── Internal helpers ─────────────────────────────────────────────────────────
 
@@ -335,6 +341,10 @@ export const useSchemaStore = defineStore('schema', () => {
     descriptionCache.value = new Map()
     descriptionLoading.value = new Set()
     descriptionStatus.value = new Map()
+    instancesCache.value = new Map()
+    instancesLoading.value = new Set()
+    entityPropsCache.value = new Map()
+    entityPropsLoading.value = new Set()
     _processedSet.clear()
     _context = null
     _n3Store = undefined
@@ -416,6 +426,28 @@ export const useSchemaStore = defineStore('schema', () => {
     }
   }
 
+  // ── Per-instance entity properties ───────────────────────────────────────
+
+  async function fetchEntityPropsForInstance(
+    entityIri: string,
+    context: QueryContext,
+    n3Store: Store | undefined,
+  ) {
+    if (entityPropsCache.value.has(entityIri)) return
+    if (entityPropsLoading.value.has(entityIri)) return
+
+    entityPropsLoading.value = new Set(entityPropsLoading.value).add(entityIri)
+
+    try {
+      const props = await fetchEntityProps(entityIri, context, n3Store)
+      entityPropsCache.value = new Map(entityPropsCache.value).set(entityIri, props)
+    } finally {
+      const next = new Set(entityPropsLoading.value)
+      next.delete(entityIri)
+      entityPropsLoading.value = next
+    }
+  }
+
   // ── Exports ───────────────────────────────────────────────────────────────
 
   return {
@@ -450,5 +482,9 @@ export const useSchemaStore = defineStore('schema', () => {
     instancesCache,
     instancesLoading,
     fetchInstances,
+    // entity props
+    entityPropsCache,
+    entityPropsLoading,
+    fetchEntityPropsForInstance,
   }
 })

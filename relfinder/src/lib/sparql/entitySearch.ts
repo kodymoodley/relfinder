@@ -284,6 +284,50 @@ export async function fetchInstancesByClass(
   return result
 }
 
+// ── Entity property details ───────────────────────────────────────────────────
+
+/**
+ * Fetches all literal properties of a single entity for display in the
+ * instance detail panel.
+ *
+ * Unlike `fetchDataProperties`, this does not require predicates to carry
+ * an rdfs:label — the local IRI name is used as a fallback so custom
+ * vocabularies and file-based graphs still produce readable output.
+ */
+export async function fetchEntityProps(
+  entityIri: string,
+  context: QueryContext,
+  store?: Store,
+  limit = 20,
+): Promise<Array<{ predIri: string; predLabel: string; value: string }>> {
+  const query = `
+    SELECT DISTINCT ?p ?pLabel ?o WHERE {
+      <${entityIri}> ?p ?o .
+      OPTIONAL { ?p <http://www.w3.org/2000/01/rdf-schema#label> ?pLabel . }
+      FILTER(isLiteral(?o))
+    } LIMIT ${limit}
+  `
+
+  const bindings = await runSelect(query, context, store)
+
+  const seen = new Map<string, { predIri: string; predLabel: string; value: string }>()
+  for (const b of bindings) {
+    const p = b['p']
+    const o = b['o']
+    if (!p || !o) continue
+    const key = `${p.value}::${o.value}`
+    if (!seen.has(key)) {
+      seen.set(key, {
+        predIri: p.value,
+        predLabel: b['pLabel']?.value ?? shortIri(p.value),
+        value: o.value,
+      })
+    }
+  }
+
+  return Array.from(seen.values())
+}
+
 // ── Label fetching ────────────────────────────────────────────────────────────
 
 /**

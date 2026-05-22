@@ -48,25 +48,52 @@
               v-for="inst in instances.slice(0, 20)"
               :key="inst.iri"
               class="instance-item"
-              :class="{ 'instance-item--start': pendingStart?.iri === inst.iri }"
+              :class="{ 'instance-item--start': pendingStart?.iri === inst.iri, 'instance-item--expanded': expandedInstances.has(inst.iri) }"
             >
-              <span class="instance-label" :title="inst.iri">{{ inst.label }}</span>
-              <Button
-                v-if="!pendingStart"
-                size="small"
-                text
-                label="Set as start"
-                class="set-start-btn"
-                @click="pendingStart = { iri: inst.iri, label: inst.label, class: props.selectedNode!.iri }"
-              />
-              <Button
-                v-else-if="pendingStart.iri !== inst.iri"
-                size="small"
-                text
-                label="Find path →"
-                class="find-path-btn"
-                @click="emit('find-paths', pendingStart!, { iri: inst.iri, label: inst.label, class: props.selectedNode!.iri })"
-              />
+              <div class="instance-row">
+                <button
+                  class="info-btn"
+                  :aria-label="expandedInstances.has(inst.iri) ? 'Hide details' : 'Show details'"
+                  @click.stop="toggleExpand(inst.iri)"
+                >
+                  <i :class="['pi', expandedInstances.has(inst.iri) ? 'pi-chevron-down' : 'pi-info-circle']" />
+                </button>
+                <span class="instance-label" :title="inst.iri">{{ inst.label }}</span>
+                <Button
+                  v-if="!pendingStart"
+                  size="small"
+                  text
+                  label="Set as start"
+                  class="set-start-btn"
+                  @click="pendingStart = { iri: inst.iri, label: inst.label, class: props.selectedNode!.iri }"
+                />
+                <Button
+                  v-else-if="pendingStart.iri !== inst.iri"
+                  size="small"
+                  text
+                  label="Find path →"
+                  class="find-path-btn"
+                  @click="emit('find-paths', pendingStart!, { iri: inst.iri, label: inst.label, class: props.selectedNode!.iri })"
+                />
+              </div>
+              <div v-if="expandedInstances.has(inst.iri)" class="instance-detail">
+                <a :href="inst.iri" target="_blank" rel="noopener" class="instance-iri">
+                  {{ inst.iri }}<i class="pi pi-external-link" style="font-size:0.65rem;margin-left:0.25rem" />
+                </a>
+                <div v-if="schemaStore.entityPropsLoading.has(inst.iri)" class="spinner-row">
+                  <ProgressSpinner stroke-width="4" style="width:16px;height:16px" />
+                  <span class="spinner-status">Loading…</span>
+                </div>
+                <template v-else>
+                  <p v-if="entityProps(inst.iri).length === 0" class="list-empty">No data properties found.</p>
+                  <table v-else class="entity-props-table">
+                    <tr v-for="p in entityProps(inst.iri)" :key="p.predIri + p.value" class="entity-prop-row">
+                      <td class="entity-prop-pred" :title="p.predIri">{{ p.predLabel }}</td>
+                      <td class="entity-prop-val">{{ p.value }}</td>
+                    </tr>
+                  </table>
+                </template>
+              </div>
             </li>
           </ul>
         </template>
@@ -180,6 +207,24 @@ const emit = defineEmits<{
 }>()
 
 const pendingStart = ref<{ iri: string; label: string; class: string } | null>(null)
+const expandedInstances = ref<Set<string>>(new Set())
+
+function toggleExpand(iri: string) {
+  const next = new Set(expandedInstances.value)
+  if (next.has(iri)) {
+    next.delete(iri)
+  } else {
+    next.add(iri)
+    const context = connectionStore.queryContext ?? { endpointUrl: '' }
+    const store = connectionStore.rdfStore ?? connectionStore.localRdfStore ?? undefined
+    schemaStore.fetchEntityPropsForInstance(iri, context, store).catch(() => {})
+  }
+  expandedInstances.value = next
+}
+
+function entityProps(iri: string) {
+  return schemaStore.entityPropsCache.get(iri) ?? []
+}
 
 const connectionStore = useConnectionStore()
 const schemaStore = useSchemaStore()
@@ -497,13 +542,18 @@ const incoming = computed(() => {
 
 .instance-item {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--rf-space-2);
-  padding: var(--rf-space-1) var(--rf-space-2) var(--rf-space-1) var(--rf-space-3);
+  flex-direction: column;
   background: var(--rf-surface-alt);
   border-radius: var(--rf-radius-md);
   border: 1px solid var(--rf-border);
+  overflow: hidden;
+}
+
+.instance-row {
+  display: flex;
+  align-items: center;
+  gap: var(--rf-space-2);
+  padding: var(--rf-space-1) var(--rf-space-2) var(--rf-space-1) var(--rf-space-2);
 }
 
 .instance-label {
@@ -514,6 +564,76 @@ const incoming = computed(() => {
   text-overflow: ellipsis;
   white-space: nowrap;
   flex: 1;
+}
+
+.info-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--rf-text-muted);
+  border-radius: var(--rf-radius-sm);
+  padding: 0;
+  transition: color var(--rf-duration-fast) var(--rf-ease-out);
+}
+
+.info-btn:hover {
+  color: var(--rf-primary);
+}
+
+.info-btn .pi {
+  font-size: 0.7rem;
+}
+
+.instance-detail {
+  padding: var(--rf-space-2) var(--rf-space-3);
+  border-top: 1px solid var(--rf-border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--rf-space-2);
+}
+
+.instance-iri {
+  font-size: 10px;
+  color: var(--rf-primary);
+  text-decoration: none;
+  word-break: break-all;
+  line-height: 1.4;
+}
+
+.instance-iri:hover {
+  text-decoration: underline;
+}
+
+.entity-props-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--rf-text-xs);
+}
+
+.entity-prop-row + .entity-prop-row td {
+  border-top: 1px solid var(--rf-border);
+}
+
+.entity-prop-pred {
+  color: var(--rf-text-muted);
+  font-weight: var(--rf-weight-medium);
+  white-space: nowrap;
+  padding: 2px var(--rf-space-2) 2px 0;
+  vertical-align: top;
+  width: 35%;
+}
+
+.entity-prop-val {
+  color: var(--rf-text);
+  padding: 2px 0;
+  vertical-align: top;
+  word-break: break-word;
 }
 
 .instance-item--start {
