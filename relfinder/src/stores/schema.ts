@@ -104,7 +104,11 @@ export const useSchemaStore = defineStore('schema', () => {
     _edgeLimit = edgeLimit
     _processedSet.clear()
 
-    const endpointUrl = context.endpointUrl || '__file__'
+    // File sources (N3 Store) are never cached — extraction is in-memory and
+    // fast, and using a shared '__file__' key would cause different uploads to
+    // collide in localStorage.
+    const isFileSource = n3Store !== undefined
+    const endpointUrl = isFileSource ? '' : (context.endpointUrl || '__file__')
 
     console.log(
       '[schema] start() called — force:',
@@ -116,7 +120,7 @@ export const useSchemaStore = defineStore('schema', () => {
     )
 
     // ── Try to restore from persistent storage ──────────────────────────────
-    const saved = force ? null : loadSchema(endpointUrl)
+    const saved = force || isFileSource ? null : loadSchema(endpointUrl)
     const canResume =
       saved !== null && saved.classLimit === classLimit && saved.edgeLimit === edgeLimit
 
@@ -184,7 +188,7 @@ export const useSchemaStore = defineStore('schema', () => {
             nodes.value = incoming
             progress.value = { completed: _processedSet.size, total: incoming.length }
             statusMessage.value = ''
-            persist(endpointUrl)
+            if (!isFileSource) persist(endpointUrl)
           },
           onEdgesLoaded(incoming) {
             edges.value = [...edges.value, ...incoming]
@@ -208,7 +212,7 @@ export const useSchemaStore = defineStore('schema', () => {
               '| extracting:',
               extracting.value,
             )
-            persist(endpointUrl)
+            if (!isFileSource) persist(endpointUrl)
           },
         },
         abortController.signal,
@@ -249,7 +253,8 @@ export const useSchemaStore = defineStore('schema', () => {
     const edgeLimit = _edgeLimit
     const offset = nodes.value.length
     const existingIris = nodes.value.map((n) => n.iri)
-    const endpointUrl = context.endpointUrl || '__file__'
+    const isFileSource = n3Store !== undefined
+    const endpointUrl = isFileSource ? '' : (context.endpointUrl || '__file__')
 
     abortController = new AbortController()
     extracting.value = true
@@ -278,7 +283,7 @@ export const useSchemaStore = defineStore('schema', () => {
             nodes.value = [...nodes.value, ...incoming]
             progress.value = { completed: _processedSet.size, total: nodes.value.length }
             statusMessage.value = ''
-            persist(endpointUrl)
+            if (!isFileSource) persist(endpointUrl)
           },
           onEdgesLoaded(incoming) {
             edges.value = [...edges.value, ...incoming]
@@ -289,7 +294,7 @@ export const useSchemaStore = defineStore('schema', () => {
           onClassProcessed(classIri) {
             batchProcessed.add(classIri)
             _processedSet.add(classIri)
-            persist(endpointUrl)
+            if (!isFileSource) persist(endpointUrl)
           },
         },
         abortController.signal,

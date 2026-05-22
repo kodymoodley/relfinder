@@ -78,11 +78,13 @@ import { useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import Message from 'primevue/message'
 import { useConnectionStore } from '@/stores/connection'
+import { useSchemaStore } from '@/stores/schema'
 import { fileToStore, storeSize } from '@/lib/rdf/parser'
 import type { Store } from 'n3'
 
 const router = useRouter()
 const connectionStore = useConnectionStore()
+const schemaStore = useSchemaStore()
 
 const acceptedExtensions = '.ttl,.n3,.nt,.nq,.trig'
 
@@ -151,6 +153,7 @@ function reset() {
 function onConnect() {
   if (!loadedFile.value || !loadedStore.value) return
 
+  schemaStore.clear()
   connectionStore.connectFile({
     fileName: loadedFile.value.name,
     store: loadedStore.value,
