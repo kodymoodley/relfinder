@@ -341,9 +341,7 @@ export const useSchemaStore = defineStore('schema', () => {
     descriptionCache.value = new Map()
     descriptionLoading.value = new Set()
     descriptionStatus.value = new Map()
-    instancesCache.value = new Map()
     instancesLoading.value = new Set()
-    entityPropsCache.value = new Map()
     entityPropsLoading.value = new Set()
     _processedSet.clear()
     _context = null
