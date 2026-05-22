@@ -149,7 +149,7 @@
             Options
           </p>
           <template v-if="optionsOpen">
-            <div v-if="!connectionStore.isFileSource" class="option-row">
+            <div class="option-row">
               <label class="option-label" for="class-limit">Class limit</label>
               <InputNumber
                 id="class-limit"
