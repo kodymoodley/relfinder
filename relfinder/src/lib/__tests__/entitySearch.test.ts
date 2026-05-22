@@ -36,7 +36,7 @@ import {
 } from '@/lib/sparql/entitySearch'
 import { executeSelect, executeSelectOnStore } from '@/lib/sparql/engine'
 import { cacheInvalidate } from '@/lib/cache/queryCache'
-import type { RelationshipGraph } from '@/lib/sparql/types'
+import type { RelationshipGraph, SparqlTerm } from '@/lib/sparql/types'
 
 vi.mock('@/lib/sparql/engine', () => ({
   executeSelect: vi.fn(),
@@ -45,12 +45,12 @@ vi.mock('@/lib/sparql/engine', () => ({
 
 const CTX = { endpointUrl: 'https://dbpedia.org/sparql' }
 
-/** Helpers that produce minimal RDF.js-compatible Term objects */
-function namedNode(value: string) {
-  return { value, termType: 'NamedNode' }
+/** Helpers that produce minimal SparqlTerm objects for mocking executeSelect results */
+function namedNode(value: string): SparqlTerm {
+  return { value, type: 'NamedNode' }
 }
-function literal(value: string, lang = '') {
-  return { value, lang, termType: 'Literal' }
+function literal(value: string, lang = ''): SparqlTerm {
+  return { value, lang, type: 'Literal' }
 }
 
 beforeEach(() => {
@@ -93,7 +93,7 @@ describe('fetchInstancesByClass', () => {
 
     const results = await fetchInstancesByClass('http://example.org/ontology/Person', CTX)
 
-    expect(results[0].label).toBe('person_42')
+    expect(results[0]!.label).toBe('person_42')
   })
 
   it('returns the cached list on repeated calls — the Browse panel can open and close without re-fetching', async () => {
@@ -119,7 +119,7 @@ describe('fetchInstancesByClass', () => {
 
     expect(executeSelectOnStore).toHaveBeenCalledTimes(1)
     expect(executeSelect).not.toHaveBeenCalled()
-    expect(results[0].label).toBe('Alice')
+    expect(results[0]!.label).toBe('Alice')
   })
 
   it('deduplicates IRIs that appear in multiple bindings (e.g. entity has two matching label predicates)', async () => {
@@ -150,8 +150,8 @@ describe('fetchEntityProps', () => {
     const props = await fetchEntityProps('http://dbpedia.org/resource/Cillian_Murphy', CTX)
 
     expect(props).toHaveLength(1)
-    expect(props[0].predLabel).toBe('birth date')
-    expect(props[0].value).toBe('1976-05-21')
+    expect(props[0]!.predLabel).toBe('birth date')
+    expect(props[0]!.value).toBe('1976-05-21')
   })
 
   it('falls back to the IRI local name when the predicate has no rdfs:label — custom vocab still readable', async () => {
@@ -165,7 +165,7 @@ describe('fetchEntityProps', () => {
 
     const props = await fetchEntityProps('http://example.org/Alice', CTX)
 
-    expect(props[0].predLabel).toBe('hairColour')
+    expect(props[0]!.predLabel).toBe('hairColour')
   })
 
   it('deduplicates rows with the same predicate+value so the panel does not show repeated entries', async () => {
@@ -189,7 +189,7 @@ describe('fetchEntityProps', () => {
     const props = await fetchEntityProps('http://example.org/Alice', CTX, new Store())
 
     expect(executeSelectOnStore).toHaveBeenCalledTimes(1)
-    expect(props[0].predLabel).toBe('name') // shortIri fallback since no pLabel
+    expect(props[0]!.predLabel).toBe('name') // shortIri fallback since no pLabel
   })
 })
 
@@ -209,9 +209,9 @@ describe('searchEntities', () => {
 
     expect(executeSelect).toHaveBeenCalledTimes(1)
     // Remote path uses VALUES clause for label predicates
-    const query = vi.mocked(executeSelect).mock.calls[0][0]
+    const query = vi.mocked(executeSelect).mock.calls[0]![0]!
     expect(query).toContain('VALUES ?lp')
-    expect(results[0].label).toBe('Cillian Murphy')
+    expect(results[0]!.label).toBe('Cillian Murphy')
   })
 
   it('generates a FILTER clause when allowedClasses is provided', async () => {
@@ -219,7 +219,7 @@ describe('searchEntities', () => {
 
     await searchEntities(CTX, ['http://dbpedia.org/ontology/Actor'])
 
-    const query = vi.mocked(executeSelect).mock.calls[0][0]
+    const query = vi.mocked(executeSelect).mock.calls[0]![0]!
     expect(query).toContain('FILTER (?ctype IN')
     expect(query).toContain('<http://dbpedia.org/ontology/Actor>')
   })
@@ -229,7 +229,7 @@ describe('searchEntities', () => {
 
     await searchEntities(CTX, [])
 
-    const query = vi.mocked(executeSelect).mock.calls[0][0]
+    const query = vi.mocked(executeSelect).mock.calls[0]![0]!
     expect(query).not.toContain('FILTER (?ctype IN')
   })
 
@@ -238,7 +238,7 @@ describe('searchEntities', () => {
 
     await searchEntities(CTX, [], undefined, 50, 'nolan')
 
-    const query = vi.mocked(executeSelect).mock.calls[0][0]
+    const query = vi.mocked(executeSelect).mock.calls[0]![0]!
     expect(query).toContain('STRSTARTS')
     expect(query).toContain('nolan')
   })
@@ -250,7 +250,7 @@ describe('searchEntities', () => {
 
     expect(executeSelectOnStore).toHaveBeenCalledTimes(1)
     // Local path scans any string literal predicate
-    const query = vi.mocked(executeSelectOnStore).mock.calls[0][0]
+    const query = vi.mocked(executeSelectOnStore).mock.calls[0]![0]!
     expect(query).toContain('isLiteral(?label)')
   })
 
@@ -383,17 +383,17 @@ describe('refreshGraphLabels', () => {
 
     refreshGraphLabels(graph, 'fr')
 
-    expect(graph.nodes[0].label).toBe('Oppenheimer (film)')
-    expect(graph.edges[0].label).toBe('réalisateur')
+    expect(graph.nodes[0]!.label).toBe('Oppenheimer (film)')
+    expect(graph.edges[0]!.label).toBe('réalisateur')
   })
 
   it('keeps the existing label unchanged when the IRI has no entry in allLabels', () => {
     const graph = baseGraph()
-    graph.nodes[0].iri = 'http://dbpedia.org/resource/Unknown' // not in allLabels
+    graph.nodes[0]!.iri = 'http://dbpedia.org/resource/Unknown' // not in allLabels
 
     refreshGraphLabels(graph, 'en')
 
-    expect(graph.nodes[0].label).toBe('Oppenheimer') // unchanged
+    expect(graph.nodes[0]!.label).toBe('Oppenheimer') // unchanged
   })
 
   it('falls back to the English label when the requested language has no match', () => {
@@ -402,7 +402,7 @@ describe('refreshGraphLabels', () => {
     refreshGraphLabels(graph, 'de')
 
     // pickLabel: no 'de' exact, no untagged, language !== 'en' → tries 'en' fallback
-    expect(graph.nodes[0].label).toBe('Oppenheimer')
+    expect(graph.nodes[0]!.label).toBe('Oppenheimer')
   })
 
   it('uses an untagged literal before falling back to English', () => {
@@ -414,7 +414,7 @@ describe('refreshGraphLabels', () => {
 
     refreshGraphLabels(graph, 'de') // no 'de' match → untagged wins over 'en'
 
-    expect(graph.nodes[0].label).toBe('Oppenheimer plain')
+    expect(graph.nodes[0]!.label).toBe('Oppenheimer plain')
   })
 
   it('skips the exact-language check when language is empty — falls through to the untagged entry', () => {
@@ -427,7 +427,7 @@ describe('refreshGraphLabels', () => {
 
     refreshGraphLabels(graph, '')
 
-    expect(graph.nodes[0].label).toBe('Oppenheimer plain')
+    expect(graph.nodes[0]!.label).toBe('Oppenheimer plain')
   })
 
   it("returns the first available entry when language is 'en' and there is no 'en' label", () => {
@@ -439,7 +439,7 @@ describe('refreshGraphLabels', () => {
 
     refreshGraphLabels(graph, 'en')
 
-    expect(graph.nodes[0].label).toBe('Oppenheimer auf Deutsch')
+    expect(graph.nodes[0]!.label).toBe('Oppenheimer auf Deutsch')
   })
 })
 

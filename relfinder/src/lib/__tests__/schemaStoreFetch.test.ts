@@ -55,7 +55,7 @@ describe('fetchDataProps', () => {
       {
         iri: 'http://dbpedia.org/ontology/birthDate',
         label: 'birth date',
-        sampleValue: '1976-05-21',
+        datatypes: ['date'],
       },
     ]
     vi.mocked(fetchSchemaDataProperties).mockResolvedValue(props)

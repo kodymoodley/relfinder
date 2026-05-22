@@ -137,8 +137,8 @@ describe('recordPair', () => {
     store.recordPair(ALICE, BOB)
 
     expect(store.history).toHaveLength(1)
-    expect(store.history[0].entity1.iri).toBe(ALICE.iri)
-    expect(store.history[0].entity2.iri).toBe(BOB.iri)
+    expect(store.history[0]!.entity1.iri).toBe(ALICE.iri)
+    expect(store.history[0]!.entity2.iri).toBe(BOB.iri)
   })
 
   it('prepends to history so the most recent exploration appears first', () => {
@@ -147,8 +147,8 @@ describe('recordPair', () => {
 
     store.recordPair(BOB, CAROL)
 
-    expect(store.history[0].entity1.iri).toBe(BOB.iri)
-    expect(store.history[1].entity1.iri).toBe(ALICE.iri)
+    expect(store.history[0]!.entity1.iri).toBe(BOB.iri)
+    expect(store.history[1]!.entity1.iri).toBe(ALICE.iri)
   })
 
   it('caps history at 10 entries — prevents unbounded memory growth in long sessions', () => {
@@ -165,7 +165,7 @@ describe('recordPair', () => {
 
     expect(store.history).toHaveLength(10)
     // Most recent entry is first
-    expect(store.history[0].entity1.iri).toBe('http://example.org/Entity10')
+    expect(store.history[0]!.entity1.iri).toBe('http://example.org/Entity10')
     // Oldest entry (Entity0) was evicted
     expect(store.history.some((p) => p.entity1.iri === 'http://example.org/Entity0')).toBe(false)
   })
