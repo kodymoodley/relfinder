@@ -1,7 +1,7 @@
 <template>
   <div class="entity-search">
     <div class="field">
-      <label :for="`entity-${id}-input`">{{ label }}</label>
+      <label>{{ label }}</label>
 
       <!--
         AutoComplete is only mounted while no entity is selected.
@@ -10,7 +10,10 @@
         force-selection to clear the value when the new suggestion list
         doesn't contain an exact match.
       -->
-      <div v-if="!selectedEntity" :class="['autocomplete-wrap', { 'autocomplete-wrap--searching': searching }]">
+      <div
+        v-if="!selectedEntity"
+        :class="['autocomplete-wrap', { 'autocomplete-wrap--searching': searching }]"
+      >
         <AutoComplete
           :inputId="`entity-${id}-input`"
           v-model="inputText"
@@ -48,10 +51,14 @@
       </Transition>
 
       <!-- Chip replaces the input once an entity is selected -->
-      <div v-if="selectedEntity" class="selected-chip">
+      <div
+        v-if="selectedEntity"
+        class="selected-chip"
+        :class="{ 'selected-chip--locked': !!initialEntity }"
+      >
         <i class="pi pi-circle-fill chip-dot" :style="{ color: dotColor }" />
         <span class="chip-label" :title="selectedEntity.iri">{{ selectedEntity.label }}</span>
-        <button class="chip-remove" @click="onClear" aria-label="Remove">
+        <button v-if="!initialEntity" class="chip-remove" @click="onClear" aria-label="Remove">
           <i class="pi pi-times" />
         </button>
       </div>
@@ -67,19 +74,18 @@ import { useConnectionStore } from '@/stores/connection'
 import { searchEntities } from '@/lib/sparql/entitySearch'
 import type { EntitySearchResult } from '@/lib/sparql/types'
 import { shortIri } from '@/lib/utils/iri'
+import { cacheGet, cacheSet } from '@/lib/cache/queryCache'
 
 const props = defineProps<{
   id: string
   label: string
   placeholder?: string
-  /** CSS colour used for the dot indicator — lets the parent colour-code entities */
   dotColor?: string
-  /** RDF class IRIs to restrict search to. Empty = all classes. */
   allowedClasses?: string[]
-  /** RDF language tag for label matching (e.g. 'en'). Empty = any language. */
   language?: string
-  /** Extra predicate IRIs to recognise as labels in addition to the built-in set. */
   customLabelProperties?: string[]
+  /** Pre-fills the selection; when set the field is shown in a locked/disabled state. */
+  initialEntity?: EntitySearchResult | null
 }>()
 
 const emit = defineEmits<{
@@ -91,47 +97,69 @@ const connectionStore = useConnectionStore()
 // Separate refs: inputText drives the AutoComplete input; selectedEntity drives
 // the chip. Using v-if on the AutoComplete means these never conflict.
 const inputText = ref<string | EntitySearchResult>('')
-const selectedEntity = ref<EntitySearchResult | null>(null)
+const selectedEntity = ref<EntitySearchResult | null>(props.initialEntity ?? null)
 const suggestions = ref<EntitySearchResult[]>([])
 const searching = ref(false)
 const currentQuery = ref('')
 const statusMessage = ref('')
 let statusClearTimer: ReturnType<typeof setTimeout> | null = null
+let debounceTimer: ReturnType<typeof setTimeout> | null = null
 
 // ── Search ────────────────────────────────────────────────────────────────────
 
-async function onSearch(event: { query: string }) {
-  const query = event.query.trim()
+function onSearch(event: { query: string }) {
+  if (debounceTimer) clearTimeout(debounceTimer)
+  debounceTimer = setTimeout(() => runSearch(event.query.trim()), 400)
+}
+
+async function runSearch(query: string) {
   currentQuery.value = query
   searching.value = true
   statusMessage.value = ''
-  if (statusClearTimer) { clearTimeout(statusClearTimer); statusClearTimer = null }
+  if (statusClearTimer) {
+    clearTimeout(statusClearTimer)
+    statusClearTimer = null
+  }
 
   try {
     const context = connectionStore.queryContext
     const store = connectionStore.rdfStore ?? undefined
     const effectiveContext = context ?? { endpointUrl: '' }
+    const lang = props.language ?? 'en'
+    const classes = props.allowedClasses ?? []
+    const cacheKey = `search:${effectiveContext.endpointUrl}:${lang}:${classes.join(',')}:${query}`
 
-    suggestions.value = await searchEntities(
-      effectiveContext,
-      props.allowedClasses ?? [],
-      store,
-      50,
-      query,
-      props.language ?? 'en',
-      props.customLabelProperties ?? [],
-    )
+    const cached = cacheGet<EntitySearchResult[]>(cacheKey)
+    if (cached) {
+      suggestions.value = cached
+    } else {
+      const results = await searchEntities(
+        effectiveContext,
+        classes,
+        store,
+        50,
+        query,
+        lang,
+        props.customLabelProperties ?? [],
+      )
+      cacheSet(cacheKey, results)
+      suggestions.value = results
+    }
 
     if (suggestions.value.length === 0) {
       statusMessage.value = `No results for "${query}"`
     } else {
       statusMessage.value = `${suggestions.value.length} result${suggestions.value.length === 1 ? '' : 's'} for "${query}"`
     }
-    statusClearTimer = setTimeout(() => { statusMessage.value = '' }, 3000)
+    statusClearTimer = setTimeout(() => {
+      statusMessage.value = ''
+    }, 3000)
   } catch {
     suggestions.value = []
     statusMessage.value = 'Search failed — check your connection'
-    statusClearTimer = setTimeout(() => { statusMessage.value = '' }, 4000)
+    statusClearTimer = setTimeout(() => {
+      statusMessage.value = ''
+    }, 4000)
   } finally {
     searching.value = false
   }
@@ -171,6 +199,8 @@ function onClear() {
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--rf-text-subtle);
+  margin-bottom: var(--rf-space-2);
+  display: block;
 }
 
 .suggestion-item {
@@ -254,6 +284,15 @@ function onClear() {
 
 .selected-chip:hover {
   border-color: var(--rf-border-strong);
+}
+
+.selected-chip--locked {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.selected-chip--locked:hover {
+  border-color: var(--rf-border);
 }
 
 .chip-dot {

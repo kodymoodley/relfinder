@@ -22,10 +22,13 @@
         <div
           v-for="(stage, i) in LOADING_STAGES"
           :key="i"
-          :class="['loading-stage', {
-            'loading-stage--done': i < loadingStageIndex,
-            'loading-stage--active': i === loadingStageIndex,
-          }]"
+          :class="[
+            'loading-stage',
+            {
+              'loading-stage--done': i < loadingStageIndex,
+              'loading-stage--active': i === loadingStageIndex,
+            },
+          ]"
         >
           <span class="loading-stage-dot" />
           {{ stage }}
@@ -35,7 +38,12 @@
     </div>
 
     <!-- Cytoscape mount point — always in the DOM so cy can attach -->
-    <div ref="cyContainer" class="cy-container" :class="{ hidden: !hasGraph }" />
+    <div
+      ref="cyContainer"
+      class="cy-container"
+      :class="{ hidden: !hasGraph }"
+      data-testid="graph-canvas"
+    />
 
     <!-- Select mode indicator -->
     <Transition name="mode-badge">
@@ -50,21 +58,27 @@
       <Button
         v-tooltip.top="'Zoom in'"
         icon="pi pi-plus"
-        text rounded size="small"
+        text
+        rounded
+        size="small"
         @click="zoomIn"
         aria-label="Zoom in"
       />
       <Button
         v-tooltip.top="'Zoom out'"
         icon="pi pi-minus"
-        text rounded size="small"
+        text
+        rounded
+        size="small"
         @click="zoomOut"
         aria-label="Zoom out"
       />
       <Button
         v-tooltip.top="'Fit graph to screen'"
         icon="pi pi-arrows-alt"
-        text rounded size="small"
+        text
+        rounded
+        size="small"
         @click="fitGraph"
         aria-label="Fit graph"
       />
@@ -72,7 +86,9 @@
       <Button
         v-tooltip.top="'Re-run force layout'"
         icon="pi pi-refresh"
-        text rounded size="small"
+        text
+        rounded
+        size="small"
         @click="rerunLayout"
         aria-label="Re-run layout"
       />
@@ -80,7 +96,9 @@
       <Button
         v-tooltip.top="showEdgeLabels ? 'Hide edge labels' : 'Show edge labels'"
         :icon="showEdgeLabels ? 'pi pi-eye' : 'pi pi-eye-slash'"
-        text rounded size="small"
+        text
+        rounded
+        size="small"
         :style="{ opacity: showEdgeLabels ? 1 : 0.45 }"
         @click="toggleEdgeLabels"
         :aria-label="showEdgeLabels ? 'Hide edge labels' : 'Show edge labels'"
@@ -89,7 +107,9 @@
       <Button
         v-tooltip.top="selectionMode === 'select' ? 'Back to pan mode' : 'Select subgraph'"
         icon="pi pi-expand"
-        text rounded size="small"
+        text
+        rounded
+        size="small"
         :style="{ color: selectionMode === 'select' ? 'var(--rf-primary)' : undefined }"
         @click="toggleSelectionMode"
         :aria-label="selectionMode === 'select' ? 'Back to pan mode' : 'Box select to focus labels'"
@@ -99,7 +119,9 @@
         <Button
           v-tooltip.top="'Filter subgraph'"
           icon="pi pi-filter"
-          text rounded size="small"
+          text
+          rounded
+          size="small"
           @click="cropToSelection"
           aria-label="Crop to selection"
         />
@@ -109,7 +131,9 @@
         <Button
           v-tooltip.top="'Undo filtering'"
           icon="pi pi-undo"
-          text rounded size="small"
+          text
+          rounded
+          size="small"
           @click="undoCrop"
           aria-label="Undo crop"
         />
@@ -172,14 +196,22 @@ const loadingStageIndex = computed(() => {
   return 2
 })
 
-watch(() => props.loading, (isLoading) => {
-  if (isLoading) {
-    elapsedSeconds.value = 0
-    elapsedTimer = setInterval(() => { elapsedSeconds.value++ }, 1000)
-  } else {
-    if (elapsedTimer) { clearInterval(elapsedTimer); elapsedTimer = null }
-  }
-})
+watch(
+  () => props.loading,
+  (isLoading) => {
+    if (isLoading) {
+      elapsedSeconds.value = 0
+      elapsedTimer = setInterval(() => {
+        elapsedSeconds.value++
+      }, 1000)
+    } else {
+      if (elapsedTimer) {
+        clearInterval(elapsedTimer)
+        elapsedTimer = null
+      }
+    }
+  },
+)
 
 // Colour palette for node classes — matches --rf-cat-* tokens in tokens.css
 const PALETTE = [
@@ -525,7 +557,10 @@ onUnmounted(() => {
   layout = null
   cy?.destroy()
   cy = null
-  if (elapsedTimer) { clearInterval(elapsedTimer); elapsedTimer = null }
+  if (elapsedTimer) {
+    clearInterval(elapsedTimer)
+    elapsedTimer = null
+  }
 })
 
 // Expose palette so parent can assign colours consistently
@@ -580,8 +615,14 @@ defineExpose({ PALETTE })
 }
 
 @keyframes icon-ring-pulse {
-  0%   { transform: scale(1);    opacity: 0.6; }
-  100% { transform: scale(1.75); opacity: 0; }
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(1.75);
+    opacity: 0;
+  }
 }
 
 .empty-icon-wrap::after {
@@ -664,7 +705,9 @@ defineExpose({ PALETTE })
   font-size: var(--rf-text-xs);
   color: var(--rf-text-subtle);
   opacity: 0.35;
-  transition: opacity var(--rf-duration-base) var(--rf-ease-out), color var(--rf-duration-base) var(--rf-ease-out);
+  transition:
+    opacity var(--rf-duration-base) var(--rf-ease-out),
+    color var(--rf-duration-base) var(--rf-ease-out);
 }
 
 .loading-stage--active {
@@ -686,8 +729,15 @@ defineExpose({ PALETTE })
 }
 
 @keyframes stage-dot-pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50%       { opacity: 0.4; transform: scale(0.7); }
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(0.7);
+  }
 }
 
 .loading-stage--active .loading-stage-dot {
@@ -713,7 +763,9 @@ defineExpose({ PALETTE })
   background: var(--rf-surface);
   border: 1px solid var(--rf-primary);
   border-radius: var(--rf-radius-full);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--rf-primary) 15%, transparent), var(--rf-shadow-md);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--rf-primary) 15%, transparent),
+    var(--rf-shadow-md);
   font-family: var(--rf-font-body);
   font-size: var(--rf-text-xs);
   font-weight: var(--rf-weight-semibold);

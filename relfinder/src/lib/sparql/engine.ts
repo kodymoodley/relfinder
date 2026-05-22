@@ -22,6 +22,9 @@ import type * as RDF from '@rdfjs/types'
 import type { Store } from 'n3'
 import type { SparqlBinding, QueryContext } from './types'
 
+// Re-export the RDF quad type so callers don't need a direct @rdfjs/types import.
+export type { RDF }
+
 // ── Engine singleton ──────────────────────────────────────────────────────────
 
 const engine = new QueryEngine()
@@ -33,13 +36,13 @@ const engine = new QueryEngine()
  * when `authorizationHeader` is present. Falls back to the global `fetch`
  * when no credentials are configured.
  */
-function makeFetch(authorizationHeader?: string): typeof fetch {
-  if (!authorizationHeader) return fetch
+function makeFetch(authorizationHeader?: string, signal?: AbortSignal): typeof fetch {
+  if (!authorizationHeader && !signal) return fetch
 
   return (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     const headers = new Headers(init?.headers)
-    headers.set('Authorization', authorizationHeader)
-    return fetch(input, { ...init, headers })
+    if (authorizationHeader) headers.set('Authorization', authorizationHeader)
+    return fetch(input, { ...init, headers, signal })
   }
 }
 
@@ -80,10 +83,11 @@ function convertBindings(binding: RDF.Bindings): SparqlBinding {
 export async function executeSelect(
   query: string,
   context: QueryContext,
+  signal?: AbortSignal,
 ): Promise<SparqlBinding[]> {
   const bindingsStream = await engine.queryBindings(query, {
     sources: [{ type: 'sparql', value: context.endpointUrl }],
-    fetch: makeFetch(context.authorizationHeader),
+    fetch: makeFetch(context.authorizationHeader, signal),
   })
 
   const rawBindings = await bindingsStream.toArray()
@@ -100,8 +104,28 @@ export async function executeSelect(
  * perfectly match Comunica's internal source union type.
  */
 export async function executeSelectOnStore(query: string, store: Store): Promise<SparqlBinding[]> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const bindingsStream = await engine.queryBindings(query, { sources: [store as any] })
+  const bindingsStream = await engine.queryBindings(query, {
+    sources: [store as unknown as RDF.Store],
+    unionDefaultGraph: true,
+  })
   const rawBindings = await bindingsStream.toArray()
   return rawBindings.map(convertBindings)
+}
+
+/**
+ * Executes a SPARQL CONSTRUCT query against a remote SPARQL endpoint and
+ * returns the resulting triples as an array of RDF.js Quad objects.
+ *
+ * Callers are responsible for loading the quads into an N3 Store if needed.
+ */
+export async function executeConstruct(
+  query: string,
+  context: QueryContext,
+  signal?: AbortSignal,
+): Promise<RDF.Quad[]> {
+  const quadStream = await engine.queryQuads(query, {
+    sources: [{ type: 'sparql', value: context.endpointUrl }],
+    fetch: makeFetch(context.authorizationHeader, signal),
+  })
+  return quadStream.toArray()
 }

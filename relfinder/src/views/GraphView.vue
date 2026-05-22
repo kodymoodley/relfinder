@@ -3,16 +3,10 @@
     <!-- ── Sidebar ──────────────────────────────────────────────────────────── -->
     <aside class="sidebar" :class="{ 'sidebar--collapsed': sidebarCollapsed }">
       <div class="sidebar-header">
-        <span v-show="!sidebarCollapsed" class="app-brand">RelFinder</span>
+        <div v-show="!sidebarCollapsed" class="header-left">
+          <span class="app-brand">RelFinder</span>
+        </div>
         <div class="header-actions">
-          <Button
-            :icon="sidebarCollapsed ? 'pi pi-chevron-right' : 'pi pi-chevron-left'"
-            text
-            rounded
-            size="small"
-            @click="sidebarCollapsed = !sidebarCollapsed"
-            :aria-label="sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'"
-          />
           <Button
             v-show="!sidebarCollapsed"
             :icon="dark ? 'pi pi-sun' : 'pi pi-moon'"
@@ -31,34 +25,60 @@
             severity="danger"
             @click="onDisconnect"
             aria-label="Disconnect"
+            data-testid="disconnect-btn-graph"
+          />
+          <Button
+            icon="pi pi-bars"
+            text
+            rounded
+            size="small"
+            @click="sidebarCollapsed = !sidebarCollapsed"
+            :aria-label="sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'"
           />
         </div>
       </div>
 
+      <nav v-show="!sidebarCollapsed" class="sidebar-nav">
+        <button
+          class="view-tab"
+          @click="router.push({ name: 'browse' })"
+          data-testid="nav-schema-graph"
+        >
+          Schema
+        </button>
+        <button class="view-tab view-tab--active" aria-current="page" data-testid="nav-paths-graph">
+          Paths
+        </button>
+      </nav>
+
       <div v-show="!sidebarCollapsed" class="sidebar-body">
         <!-- Entity selection -->
-        <section class="sidebar-section">
+        <section class="sidebar-section" data-testid="entity1-search">
           <EntitySearch
+            :key="`e1-${entitySearchKey}`"
             id="entity1"
-            label="Entity 1"
+            label="Source"
             placeholder="Search…"
             dot-color="#f97316"
             :allowed-classes="graphOptions.allowedClasses"
             :language="graphOptions.language"
             :custom-label-properties="graphOptions.customLabelProperties"
+            :initial-entity="presetEntity1"
             @select="entity1 = $event"
           />
         </section>
 
-        <section class="sidebar-section">
+        <section class="sidebar-section" data-testid="entity2-search">
           <EntitySearch
+            :key="`e2-${entitySearchKey}`"
             id="entity2"
-            label="Entity 2"
+            label="Target"
             placeholder="Search…"
             dot-color="#8b5cf6"
             :allowed-classes="graphOptions.allowedClasses"
             :language="graphOptions.language"
             :custom-label-properties="graphOptions.customLabelProperties"
+            :initial-entity="presetEntity2"
             @select="entity2 = $event"
           />
         </section>
@@ -72,11 +92,52 @@
             :disabled="!entity1 || !entity2"
             :class="{ 'ready-pulse': entity1 && entity2 && !searching }"
             fluid
+            data-testid="find-relationships-btn"
             @click="onFindRelationships"
           />
           <Message v-if="searchError" severity="error" :closable="true" @close="searchError = ''">
             {{ searchError }}
           </Message>
+        </section>
+
+        <!-- Recent graphs -->
+        <section v-if="recentGraphs.length > 0" class="sidebar-section">
+          <p class="section-label collapsible" @click="recentOpen = !recentOpen">
+            <i :class="['pi', recentOpen ? 'pi-chevron-down' : 'pi-chevron-right']" />
+            Recent ({{ recentGraphs.length }})
+          </p>
+          <ul v-if="recentOpen" class="recent-list">
+            <li
+              v-for="entry in recentGraphs"
+              :key="entry.id"
+              class="recent-item"
+              @click="onLoadRecent(entry)"
+            >
+              <div class="recent-pair">
+                <span class="recent-entity" :title="entry.entity1.label">{{
+                  entry.entity1.label
+                }}</span>
+                <i class="pi pi-arrow-right recent-arrow" />
+                <span class="recent-entity" :title="entry.entity2.label">{{
+                  entry.entity2.label
+                }}</span>
+              </div>
+              <div class="recent-meta">
+                <Tag
+                  :value="`${entry.maxDistance} hop${entry.maxDistance !== 1 ? 's' : ''}`"
+                  severity="secondary"
+                  class="recent-tag"
+                />
+                <button
+                  class="recent-delete"
+                  @click.stop="onDeleteRecent(entry.id)"
+                  aria-label="Remove from recent"
+                >
+                  <i class="pi pi-times" />
+                </button>
+              </div>
+            </li>
+          </ul>
         </section>
 
         <!-- Results summary -->
@@ -99,7 +160,7 @@
 
         <!-- Legend -->
         <section
-          v-if="graph && graph.classes.length > 0"
+          v-if="displayClasses.length > 0"
           class="sidebar-section"
           v-motion
           :initial="{ opacity: 0, x: -12 }"
@@ -107,7 +168,7 @@
         >
           <p class="section-label">Legend</p>
           <div class="legend">
-            <div v-for="cls in graph.classes" :key="cls" class="legend-item">
+            <div v-for="cls in displayClasses" :key="cls" class="legend-item">
               <span class="legend-dot" :style="{ background: classColors.get(cls) ?? '#94a3b8' }" />
               <span class="legend-label" :title="cls">{{ shortIri(cls) }}</span>
             </div>
@@ -119,9 +180,14 @@
         <section class="sidebar-section">
           <p class="section-label collapsible" @click="optionsOpen = !optionsOpen">
             <i :class="['pi', optionsOpen ? 'pi-chevron-down' : 'pi-chevron-right']" />
-            Query Options
+            Graph Filters
           </p>
-          <OptionsPanel v-if="optionsOpen" v-model="graphOptions" />
+          <OptionsPanel
+            v-if="optionsOpen"
+            v-model="graphOptions"
+            :available-languages="availableLanguages"
+            :graph-classes="graph?.classes"
+          />
         </section>
       </div>
     </aside>
@@ -129,8 +195,8 @@
     <!-- ── Graph canvas ─────────────────────────────────────────────────────── -->
     <main class="graph-main">
       <GraphCanvas
-        :nodes="graph?.nodes ?? []"
-        :edges="graph?.edges ?? []"
+        :nodes="displayNodes"
+        :edges="displayEdges"
         :loading="searching"
         :class-colors="classColors"
         :endpoint1-iri="entity1?.iri"
@@ -151,7 +217,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch, computed, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import { useDarkMode } from '@/composables/useDarkMode'
@@ -159,7 +225,17 @@ import Divider from 'primevue/divider'
 import Message from 'primevue/message'
 import Tag from 'primevue/tag'
 import { useConnectionStore } from '@/stores/connection'
-import { findRelationships } from '@/lib/sparql/entitySearch'
+import { findRelationships, refreshGraphLabels } from '@/lib/sparql/entitySearch'
+import { fetchNeighbourhoodStore } from '@/lib/sparql/subgraphStrategy'
+import { cacheGet } from '@/lib/cache/queryCache'
+import {
+  saveGraph,
+  loadGraph,
+  lookupGraph,
+  listRecentGraphs,
+  deleteGraphEntry,
+} from '@/lib/cache/graphStorage'
+import type { GraphHistoryMeta } from '@/lib/cache/graphStorage'
 import { QueryCyclesStrategy } from '@/lib/sparql/types'
 import type { EntitySearchResult, RelationshipGraph, GraphNode } from '@/lib/sparql/types'
 import EntitySearch from '@/components/graph/EntitySearch.vue'
@@ -174,14 +250,29 @@ const { dark, toggle: toggleDark } = useDarkMode()
 
 // ── State ─────────────────────────────────────────────────────────────────────
 
-const entity1 = ref<EntitySearchResult | null>(null)
-const entity2 = ref<EntitySearchResult | null>(null)
+// Read synchronously so EntitySearch receives preset values on first render.
+const _historyExample = (history.state as Record<string, unknown>)?.example as
+  | {
+      entity1: EntitySearchResult
+      entity2: EntitySearchResult
+      options?: Partial<GraphOptions>
+      cacheKey?: string
+    }
+  | undefined
+
+const presetEntity1 = ref<EntitySearchResult | null>(_historyExample?.entity1 ?? null)
+const presetEntity2 = ref<EntitySearchResult | null>(_historyExample?.entity2 ?? null)
+const entity1 = ref<EntitySearchResult | null>(presetEntity1.value)
+const entity2 = ref<EntitySearchResult | null>(presetEntity2.value)
 const graph = ref<RelationshipGraph | null>(null)
 const searching = ref(false)
 const searchError = ref('')
 const selectedNode = ref<GraphNode | null>(null)
 const sidebarCollapsed = ref(false)
 const optionsOpen = ref(false)
+const recentOpen = ref(true)
+const recentGraphs = ref<GraphHistoryMeta[]>([])
+const entitySearchKey = ref(0)
 
 const graphOptions = ref<GraphOptions>({
   maxDistance: 2,
@@ -191,8 +282,10 @@ const graphOptions = ref<GraphOptions>({
   ],
   avoidCycles: QueryCyclesStrategy.NO_INTERMEDIATE_DUPLICATES,
   allowedClasses: [],
+  hiddenClasses: [],
   language: '',
   customLabelProperties: [],
+  ..._historyExample?.options,
 })
 
 // ── Class colour assignment ───────────────────────────────────────────────────
@@ -210,6 +303,36 @@ const PALETTE = [
 
 const classColors = ref(new Map<string, string>())
 
+// ── Client-side display filtering ─────────────────────────────────────────────
+
+const displayClasses = computed(() => {
+  if (!graph.value) return []
+  return graph.value.classes.filter((c) => !graphOptions.value.hiddenClasses.includes(c))
+})
+
+const displayNodes = computed(() => {
+  if (!graph.value) return []
+  const hidden = graphOptions.value.hiddenClasses
+  if (hidden.length === 0) return graph.value.nodes
+  return graph.value.nodes.filter((n) => !hidden.includes(n.class))
+})
+
+const displayEdges = computed(() => {
+  if (!graph.value) return []
+  if (graphOptions.value.hiddenClasses.length === 0) return graph.value.edges
+  const visibleIds = new Set(displayNodes.value.map((n) => n.id))
+  return graph.value.edges.filter((e) => visibleIds.has(e.sid) && visibleIds.has(e.tid))
+})
+
+const availableLanguages = computed(() => {
+  if (!graph.value) return []
+  const langs = new Set<string>()
+  for (const entries of graph.value.allLabels.values()) {
+    for (const entry of entries) langs.add(entry.lang)
+  }
+  return [...langs].sort()
+})
+
 watch(
   () => graph.value?.classes,
   (classes) => {
@@ -221,6 +344,47 @@ watch(
     classColors.value = map
   },
 )
+
+// ── Recent graphs ─────────────────────────────────────────────────────────────
+
+function endpointKey(): string {
+  return connectionStore.queryContext?.endpointUrl ?? '__file__'
+}
+
+function refreshRecent() {
+  recentGraphs.value = listRecentGraphs(endpointKey())
+}
+
+async function onLoadRecent(entry: GraphHistoryMeta) {
+  // Seed EntitySearch chips via initial-entity (unlocked after nextTick)
+  presetEntity1.value = entry.entity1
+  presetEntity2.value = entry.entity2
+  entity1.value = entry.entity1
+  entity2.value = entry.entity2
+  entitySearchKey.value++
+
+  // Unlock chips so the user can still change entities
+  await nextTick()
+  presetEntity1.value = null
+  presetEntity2.value = null
+
+  const restored = loadGraph(entry.id)
+  if (!restored) {
+    // TTL expired — re-query transparently
+    onFindRelationships()
+    return
+  }
+
+  graph.value = restored
+  selectedNode.value = null
+  searchError.value = ''
+  refreshRecent()
+}
+
+function onDeleteRecent(id: string) {
+  deleteGraphEntry(id)
+  refreshRecent()
+}
 
 // ── Find relationships ────────────────────────────────────────────────────────
 
@@ -234,8 +398,20 @@ async function onFindRelationships() {
 
   try {
     const context = connectionStore.queryContext
-    const store = connectionStore.rdfStore ?? undefined
     const effectiveContext = context ?? { endpointUrl: '' }
+
+    // Resolve which N3 store to use for local query execution.
+    // Wait for any in-progress probe/fetch to settle first.
+    await connectionStore.waitForSubgraph()
+    let store: import('n3').Store | undefined
+    if (connectionStore.isFileSource) {
+      store = connectionStore.rdfStore ?? undefined
+    } else if (connectionStore.localRdfStore) {
+      store = connectionStore.localRdfStore
+    } else if (context) {
+      // Large endpoint (> 50 000 triples) — fetch 2-hop neighbourhoods on demand.
+      store = await fetchNeighbourhoodStore(entity1.value.iri, entity2.value.iri, context)
+    }
 
     graph.value = await findRelationships(
       entity1.value.iri,
@@ -252,6 +428,17 @@ async function onFindRelationships() {
 
     if (graph.value.nodes.length === 0) {
       searchError.value = 'No relationships found between the selected entities.'
+    } else {
+      // Persist for future sessions
+      saveGraph(
+        endpointKey(),
+        entity1.value,
+        entity2.value,
+        graphOptions.value.maxDistance,
+        graphOptions.value.ignoredProperties,
+        graph.value,
+      )
+      refreshRecent()
     }
   } catch (err) {
     searchError.value =
@@ -270,24 +457,51 @@ function onDisconnect() {
   router.push({ name: 'connection' })
 }
 
-// ── Example auto-run (from quick-start examples panel) ───────────────────────
+// ── Auto-run when entities are preset (from browse or examples panel) ────────
 
 onMounted(() => {
-  const state = (history.state as Record<string, unknown>)?.example as
-    | {
-        entity1: EntitySearchResult
-        entity2: EntitySearchResult
-        options: Partial<GraphOptions>
-      }
-    | undefined
-  if (!state) return
-  entity1.value = state.entity1
-  entity2.value = state.entity2
-  if (state.options) {
-    graphOptions.value = { ...graphOptions.value, ...state.options }
+  refreshRecent()
+
+  if (!_historyExample) return
+
+  // 1. Session cache (fastest — avoids even a localStorage read)
+  if (_historyExample.cacheKey) {
+    const cached = cacheGet<RelationshipGraph>(_historyExample.cacheKey)
+    if (cached) {
+      graph.value = cached
+      return
+    }
   }
+
+  // 2. Persistent localStorage cache
+  if (entity1.value && entity2.value) {
+    const restored = lookupGraph(
+      endpointKey(),
+      entity1.value.iri,
+      entity2.value.iri,
+      graphOptions.value.maxDistance,
+      graphOptions.value.ignoredProperties,
+    )
+    if (restored) {
+      graph.value = restored
+      return
+    }
+  }
+
+  // 3. Full query
   onFindRelationships()
 })
+
+// ── Re-run on options change ──────────────────────────────────────────────────
+
+// Language-only change: re-apply labels from the stored allLabels map — no
+// network calls needed since all language tags were fetched up front.
+watch(
+  () => graphOptions.value.language,
+  (lang) => {
+    if (graph.value) refreshGraphLabels(graph.value, lang)
+  },
+)
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -324,8 +538,8 @@ function shortIri(iri: string): string {
 }
 
 .sidebar--collapsed .sidebar-header {
-  justify-content: center;
-  padding-inline: 0;
+  justify-content: flex-end;
+  padding-inline: var(--rf-space-2);
 }
 
 .sidebar-header {
@@ -337,6 +551,43 @@ function shortIri(iri: string): string {
   flex-shrink: 0;
   min-height: 52px;
   background: linear-gradient(135deg, var(--rf-surface) 0%, var(--rf-surface-raised) 100%);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--rf-space-1);
+  min-width: 0;
+}
+
+.sidebar-nav {
+  display: flex;
+  border-bottom: 1px solid var(--rf-border);
+  flex-shrink: 0;
+}
+
+.view-tab {
+  flex: 1;
+  padding: var(--rf-space-2) 0;
+  font-size: var(--rf-text-sm);
+  font-weight: var(--rf-weight-medium);
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--rf-text-muted);
+  cursor: pointer;
+  transition:
+    color var(--rf-duration-fast) var(--rf-ease-out),
+    border-color var(--rf-duration-fast) var(--rf-ease-out);
+}
+
+.view-tab:hover {
+  color: var(--rf-text);
+}
+
+.view-tab--active {
+  color: var(--rf-primary);
+  border-bottom-color: var(--rf-primary);
 }
 
 .app-brand {
@@ -383,6 +634,7 @@ function shortIri(iri: string): string {
   cursor: pointer;
   display: flex;
   align-items: center;
+  margin-bottom: var(--rf-space-2);
   gap: var(--rf-space-2);
   user-select: none;
   transition: color var(--rf-duration-fast) var(--rf-ease-out);
@@ -445,8 +697,13 @@ function shortIri(iri: string): string {
 /* ── Find Relationships pulse ─────────────────────────────────────────────── */
 
 @keyframes ready-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--rf-primary) 70%, transparent); }
-  50%       { box-shadow: 0 0 0 10px color-mix(in srgb, var(--rf-primary) 0%, transparent); }
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--rf-primary) 70%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 10px color-mix(in srgb, var(--rf-primary) 0%, transparent);
+  }
 }
 
 .ready-pulse {
@@ -459,5 +716,92 @@ function shortIri(iri: string): string {
   flex: 1;
   position: relative;
   overflow: hidden;
+}
+
+/* ── Recent graphs ────────────────────────────────────────────────────────── */
+
+.recent-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--rf-space-1);
+}
+
+.recent-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--rf-space-2);
+  padding: var(--rf-space-2) var(--rf-space-3);
+  border-radius: var(--rf-radius-md);
+  border: 1px solid var(--rf-border);
+  background: var(--rf-surface-alt);
+  cursor: pointer;
+  transition:
+    border-color var(--rf-duration-fast) var(--rf-ease-out),
+    background var(--rf-duration-fast) var(--rf-ease-out);
+}
+
+.recent-item:hover {
+  border-color: var(--rf-primary);
+  background: var(--rf-primary-soft);
+}
+
+.recent-pair {
+  display: flex;
+  align-items: center;
+  gap: var(--rf-space-1);
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+.recent-entity {
+  font-size: var(--rf-text-xs);
+  font-weight: var(--rf-weight-medium);
+  color: var(--rf-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 80px;
+}
+
+.recent-arrow {
+  font-size: 0.55rem;
+  color: var(--rf-text-muted);
+  flex-shrink: 0;
+}
+
+.recent-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--rf-space-1);
+  flex-shrink: 0;
+}
+
+.recent-tag {
+  font-size: 10px;
+}
+
+.recent-delete {
+  background: none;
+  border: none;
+  padding: 2px 4px;
+  cursor: pointer;
+  color: var(--rf-text-subtle);
+  font-size: 0.6rem;
+  display: flex;
+  align-items: center;
+  border-radius: var(--rf-radius-sm);
+  transition:
+    color var(--rf-duration-fast) var(--rf-ease-out),
+    background var(--rf-duration-fast) var(--rf-ease-out);
+}
+
+.recent-delete:hover {
+  color: var(--rf-danger);
+  background: var(--rf-danger-soft);
 }
 </style>

@@ -7,8 +7,13 @@
  * within the same session does not force the user to reconnect.
  */
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import type { Store } from 'n3'
+import { cacheInvalidate } from '@/lib/cache/queryCache'
+import { usePinnedStore } from './pinned'
+import { probeTripleCount, fetchFullGraph, SMALL_GRAPH_LIMIT } from '@/lib/sparql/subgraphStrategy'
+
+export type SubgraphStatus = 'idle' | 'probing' | 'fetching' | 'ready' | 'error'
 
 export type SourceType = 'sparql' | 'file'
 
@@ -39,11 +44,19 @@ export interface FileSource {
 
 export type Source = SparqlSource | FileSource
 
+// Module-level abort controller for in-flight subgraph fetch (not reactive).
+let _subgraphAbort: AbortController | null = null
+
 export const useConnectionStore = defineStore('connection', () => {
   // ── State ──────────────────────────────────────────────────────────────────
 
   const source = ref<Source | null>(null)
   const isConnected = ref(false)
+
+  // Local N3 store built from a CONSTRUCT fetch (SPARQL sources only).
+  const localRdfStore = ref<Store | null>(null)
+  const subgraphStatus = ref<SubgraphStatus>('idle')
+  const tripleCount = ref<number | null>(null)
 
   // ── Getters ────────────────────────────────────────────────────────────────
 
@@ -93,6 +106,66 @@ export const useConnectionStore = defineStore('connection', () => {
     if (config.proxyUrl) {
       sessionStorage.setItem('rf:proxyUrl', config.proxyUrl)
     }
+
+    // Kick off probe + optional full-graph fetch in the background.
+    _initSubgraph().catch(() => {
+      subgraphStatus.value = 'error'
+    })
+  }
+
+  async function _initSubgraph() {
+    // Cancel any previous in-flight run (e.g. user reconnected quickly).
+    _subgraphAbort?.abort()
+    _subgraphAbort = new AbortController()
+    const signal = _subgraphAbort.signal
+
+    localRdfStore.value = null
+    tripleCount.value = null
+    subgraphStatus.value = 'probing'
+
+    const ctx = queryContext.value
+    if (!ctx) {
+      subgraphStatus.value = 'error'
+      return
+    }
+
+    const n = await probeTripleCount(ctx, signal)
+    if (signal.aborted) return
+    tripleCount.value = n
+
+    if (n <= SMALL_GRAPH_LIMIT) {
+      subgraphStatus.value = 'fetching'
+      localRdfStore.value = await fetchFullGraph(ctx, signal)
+      if (signal.aborted) {
+        localRdfStore.value = null
+        return
+      }
+    }
+
+    subgraphStatus.value = 'ready'
+  }
+
+  /**
+   * Returns a Promise that resolves once the background subgraph init has
+   * reached 'ready' or 'error'. GraphView calls this before path finding so it
+   * can choose the right store without racing the probe.
+   */
+  function waitForSubgraph(): Promise<void> {
+    if (
+      subgraphStatus.value === 'ready' ||
+      subgraphStatus.value === 'error' ||
+      subgraphStatus.value === 'idle'
+    ) {
+      return Promise.resolve()
+    }
+    return new Promise((resolve) => {
+      const stop = watch(subgraphStatus, (v) => {
+        if (v === 'ready' || v === 'error') {
+          stop()
+          resolve()
+        }
+      })
+    })
   }
 
   function connectFile(config: { fileName: string; store: Store }) {
@@ -101,10 +174,17 @@ export const useConnectionStore = defineStore('connection', () => {
   }
 
   function disconnect() {
+    _subgraphAbort?.abort()
+    _subgraphAbort = null
     source.value = null
     isConnected.value = false
+    localRdfStore.value = null
+    subgraphStatus.value = 'idle'
+    tripleCount.value = null
     sessionStorage.removeItem('rf:endpointUrl')
     sessionStorage.removeItem('rf:proxyUrl')
+    cacheInvalidate()
+    usePinnedStore().clear()
   }
 
   /**
@@ -129,9 +209,13 @@ export const useConnectionStore = defineStore('connection', () => {
     authorizationHeader,
     queryContext,
     rdfStore,
+    localRdfStore,
+    subgraphStatus,
+    tripleCount,
     connectSparql,
     connectFile,
     disconnect,
     restoreSession,
+    waitForSubgraph,
   }
 })

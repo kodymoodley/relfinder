@@ -119,7 +119,6 @@ watch(
 watch(visible, (v) => {
   if (!v) emit('update:node', null)
 })
-
 </script>
 
 <style scoped>

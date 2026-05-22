@@ -30,6 +30,7 @@
           :class="{ 'tab-btn--active': activeTab === 'sparql' }"
           :aria-selected="activeTab === 'sparql'"
           @click="activeTab = 'sparql'"
+          data-testid="tab-sparql"
         >
           <i class="pi pi-server tab-icon" />
           SPARQL Endpoint
@@ -40,6 +41,7 @@
           :class="{ 'tab-btn--active': activeTab === 'file' }"
           :aria-selected="activeTab === 'file'"
           @click="activeTab = 'file'"
+          data-testid="tab-file"
         >
           <i class="pi pi-file tab-icon" />
           Upload File

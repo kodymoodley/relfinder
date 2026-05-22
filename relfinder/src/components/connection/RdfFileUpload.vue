@@ -4,17 +4,21 @@
     <div
       class="drop-zone"
       :class="{ 'drop-zone--over': isDragging, 'drop-zone--loaded': !!loadedFile }"
+      data-testid="rdf-drop-zone"
       @dragover.prevent="isDragging = true"
       @dragleave.prevent="isDragging = false"
       @drop.prevent="onDrop"
       @click="fileInput?.click()"
     >
       <input
+        id="rdf-file-upload"
         ref="fileInput"
         type="file"
         :accept="acceptedExtensions"
         class="hidden-input"
+        aria-label="Upload RDF file"
         @change="onFileChange"
+        data-testid="rdf-file-input"
       />
 
       <template v-if="!loadedFile && !parsing">
@@ -36,7 +40,13 @@
       </template>
     </div>
 
-    <Message v-if="parseError" severity="error" :closable="true" @close="parseError = ''">
+    <Message
+      v-if="parseError"
+      severity="error"
+      :closable="true"
+      @close="parseError = ''"
+      data-testid="parse-error-msg"
+    >
       {{ parseError }}
     </Message>
 
@@ -47,6 +57,7 @@
       icon-pos="right"
       fluid
       class="open-btn"
+      data-testid="open-graph-btn"
       @click="onConnect"
     />
 
@@ -67,11 +78,13 @@ import { useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import Message from 'primevue/message'
 import { useConnectionStore } from '@/stores/connection'
+import { useSchemaStore } from '@/stores/schema'
 import { fileToStore, storeSize } from '@/lib/rdf/parser'
 import type { Store } from 'n3'
 
 const router = useRouter()
 const connectionStore = useConnectionStore()
+const schemaStore = useSchemaStore()
 
 const acceptedExtensions = '.ttl,.n3,.nt,.nq,.trig'
 
@@ -95,7 +108,9 @@ async function processFile(file: File) {
   parseElapsed.value = 0
   loadedFile.value = null
   loadedStore.value = null
-  parseTimer = setInterval(() => { parseElapsed.value++ }, 1000)
+  parseTimer = setInterval(() => {
+    parseElapsed.value++
+  }, 1000)
 
   try {
     const store = await fileToStore(file)
@@ -106,7 +121,10 @@ async function processFile(file: File) {
     parseError.value = err instanceof Error ? err.message : 'Failed to parse the RDF file.'
   } finally {
     parsing.value = false
-    if (parseTimer) { clearInterval(parseTimer); parseTimer = null }
+    if (parseTimer) {
+      clearInterval(parseTimer)
+      parseTimer = null
+    }
   }
 }
 
@@ -135,12 +153,13 @@ function reset() {
 function onConnect() {
   if (!loadedFile.value || !loadedStore.value) return
 
+  schemaStore.clear()
   connectionStore.connectFile({
     fileName: loadedFile.value.name,
     store: loadedStore.value,
   })
 
-  router.push({ name: 'graph' })
+  router.push({ name: 'browse' })
 }
 </script>
 

@@ -10,6 +10,12 @@ const router = createRouter({
       component: () => import('@/views/ConnectionView.vue'),
     },
     {
+      path: '/browse',
+      name: 'browse',
+      component: () => import('@/views/BrowseView.vue'),
+      meta: { requiresConnection: true },
+    },
+    {
       path: '/graph',
       name: 'graph',
       component: () => import('@/views/GraphView.vue'),

@@ -9,6 +9,7 @@
         :invalid="!!errors.endpointUrl"
         fluid
         autocomplete="url"
+        data-testid="endpoint-url-input"
       />
       <small v-if="errors.endpointUrl" class="error-msg">{{ errors.endpointUrl }}</small>
     </div>
@@ -86,9 +87,16 @@
       :loading="connecting"
       fluid
       class="connect-btn"
+      data-testid="connect-btn"
     />
 
-    <Message v-if="connectionError" severity="error" :closable="true" @close="connectionError = ''">
+    <Message
+      v-if="connectionError"
+      severity="error"
+      :closable="true"
+      @close="connectionError = ''"
+      data-testid="connection-error-msg"
+    >
       {{ connectionError }}
     </Message>
   </form>
@@ -102,10 +110,13 @@ import Password from 'primevue/password'
 import Button from 'primevue/button'
 import Message from 'primevue/message'
 import { useConnectionStore } from '@/stores/connection'
+import { useSchemaStore } from '@/stores/schema'
 import { executeSelect } from '@/lib/sparql/engine'
+import { loadSchema } from '@/lib/cache/schemaStorage'
 
 const router = useRouter()
 const connectionStore = useConnectionStore()
+const schemaStore = useSchemaStore()
 
 // ── Form state ────────────────────────────────────────────────────────────────
 
@@ -183,14 +194,25 @@ async function onSubmit() {
   connectionError.value = ''
 
   const endpointUrl = form.proxyUrl.trim() || form.endpointUrl.trim()
-  try { connectingHost.value = new URL(endpointUrl).hostname } catch { connectingHost.value = endpointUrl }
+  try {
+    connectingHost.value = new URL(endpointUrl).hostname
+  } catch {
+    connectingHost.value = endpointUrl
+  }
   const authHeader = form.username.trim()
     ? `Basic ${btoa(`${form.username.trim()}:${form.password}`)}`
     : undefined
 
   try {
-    await testConnection(endpointUrl, authHeader)
+    // Skip the round-trip test when a cached schema already exists — the user
+    // will see the cached nodes instantly, and Phase 2 will surface any
+    // connectivity error if the endpoint is actually unreachable.
+    const hasCachedSchema = loadSchema(endpointUrl) !== null
+    if (!hasCachedSchema) {
+      await testConnection(endpointUrl, authHeader)
+    }
 
+    schemaStore.clear()
     connectionStore.connectSparql({
       endpointUrl,
       username: form.username.trim(),
@@ -198,7 +220,7 @@ async function onSubmit() {
       proxyUrl: form.proxyUrl.trim(),
     })
 
-    router.push({ name: 'graph' })
+    router.push({ name: 'browse' })
   } catch (err) {
     console.error('Connection test failed:', err)
     connectionError.value =

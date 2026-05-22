@@ -1,0 +1,95 @@
+@prefix :     <http://research.example.org/> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+
+# ── Classes ──────────────────────────────────────────────────────────────────
+
+:Person       rdf:type owl:Class ; rdfs:label "Person" .
+:Researcher   rdf:type owl:Class ; rdfs:label "Researcher" ; rdfs:subClassOf :Person .
+:Professor    rdf:type owl:Class ; rdfs:label "Professor"  ; rdfs:subClassOf :Researcher .
+:Student      rdf:type owl:Class ; rdfs:label "Student"    ; rdfs:subClassOf :Person .
+:Paper        rdf:type owl:Class ; rdfs:label "Paper" .
+:Journal      rdf:type owl:Class ; rdfs:label "Journal" .
+:Institution  rdf:type owl:Class ; rdfs:label "Institution" .
+:Topic        rdf:type owl:Class ; rdfs:label "Topic" .
+
+# ── Properties ───────────────────────────────────────────────────────────────
+
+:authored     rdf:type owl:ObjectProperty  ; rdfs:label "authored"      ;
+              rdfs:domain :Researcher ; rdfs:range :Paper .
+:publishedIn  rdf:type owl:ObjectProperty  ; rdfs:label "published in"  ;
+              rdfs:domain :Paper       ; rdfs:range :Journal .
+:affiliatedWith rdf:type owl:ObjectProperty ; rdfs:label "affiliated with" ;
+              rdfs:domain :Person      ; rdfs:range :Institution .
+:supervisedBy rdf:type owl:ObjectProperty  ; rdfs:label "supervised by" ;
+              rdfs:domain :Student     ; rdfs:range :Professor .
+:covers       rdf:type owl:ObjectProperty  ; rdfs:label "covers"        ;
+              rdfs:domain :Paper       ; rdfs:range :Topic .
+:name         rdf:type owl:DatatypeProperty ; rdfs:label "name"  ; rdfs:domain :Person ; rdfs:range xsd:string .
+:title        rdf:type owl:DatatypeProperty ; rdfs:label "title" ; rdfs:domain :Paper  ; rdfs:range xsd:string .
+:year         rdf:type owl:DatatypeProperty ; rdfs:label "year"  ; rdfs:domain :Paper  ; rdfs:range xsd:integer .
+:issn         rdf:type owl:DatatypeProperty ; rdfs:label "ISSN"  ; rdfs:domain :Journal ; rdfs:range xsd:string .
+
+# ── Institutions ──────────────────────────────────────────────────────────────
+
+:mit     rdf:type :Institution ; rdfs:label "MIT"    .
+:oxford  rdf:type :Institution ; rdfs:label "Oxford" .
+:eth     rdf:type :Institution ; rdfs:label "ETH Zurich" .
+
+# ── Journals ──────────────────────────────────────────────────────────────────
+
+:jair    rdf:type :Journal ; rdfs:label "Journal of AI Research" ; :issn "1076-9757" .
+:swj     rdf:type :Journal ; rdfs:label "Semantic Web Journal"   ; :issn "1570-0844" .
+
+# ── Topics ───────────────────────────────────────────────────────────────────
+
+:semweb   rdf:type :Topic ; rdfs:label "Semantic Web" .
+:nlp      rdf:type :Topic ; rdfs:label "Natural Language Processing" .
+:kg       rdf:type :Topic ; rdfs:label "Knowledge Graphs" .
+:ml       rdf:type :Topic ; rdfs:label "Machine Learning" .
+
+# ── People ───────────────────────────────────────────────────────────────────
+
+:alice   rdf:type :Professor  ; rdfs:label "Alice Smith"   ; :name "Alice Smith"   .
+:bob     rdf:type :Professor  ; rdfs:label "Bob Jones"     ; :name "Bob Jones"     .
+:carol   rdf:type :Researcher ; rdfs:label "Carol White"   ; :name "Carol White"   .
+:dave    rdf:type :Student    ; rdfs:label "Dave Brown"    ; :name "Dave Brown"    .
+:eve     rdf:type :Student    ; rdfs:label "Eve Davis"     ; :name "Eve Davis"     .
+
+:alice :affiliatedWith :mit    .
+:bob   :affiliatedWith :oxford .
+:carol :affiliatedWith :eth    .
+:dave  :affiliatedWith :mit    .
+:eve   :affiliatedWith :oxford .
+:dave  :supervisedBy   :alice  .
+:eve   :supervisedBy   :bob    .
+
+# ── Papers ───────────────────────────────────────────────────────────────────
+
+:p1  rdf:type :Paper ; rdfs:label "Knowledge Graph Embeddings"   ; :title "Knowledge Graph Embeddings"   ; :year 2022 .
+:p2  rdf:type :Paper ; rdfs:label "Semantic Web Services"         ; :title "Semantic Web Services"        ; :year 2021 .
+:p3  rdf:type :Paper ; rdfs:label "NLP for KG Construction"       ; :title "NLP for KG Construction"      ; :year 2023 .
+:p4  rdf:type :Paper ; rdfs:label "Transfer Learning Survey"      ; :title "Transfer Learning Survey"     ; :year 2020 .
+:p5  rdf:type :Paper ; rdfs:label "SPARQL Optimization Techniques" ; :title "SPARQL Optimization Techniques" ; :year 2022 .
+
+:alice :authored :p1 .
+:alice :authored :p2 .
+:bob   :authored :p3 .
+:carol :authored :p4 .
+:carol :authored :p5 .
+:dave  :authored :p1 .
+
+:p1 :publishedIn :jair .
+:p2 :publishedIn :swj  .
+:p3 :publishedIn :jair .
+:p4 :publishedIn :swj  .
+:p5 :publishedIn :swj  .
+
+:p1 :covers :kg     .
+:p2 :covers :semweb .
+:p3 :covers :nlp    .
+:p3 :covers :kg     .
+:p4 :covers :ml     .
+:p5 :covers :semweb .

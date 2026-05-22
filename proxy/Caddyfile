@@ -4,39 +4,59 @@
 # SPARQL endpoint that does not support cross-origin requests natively.
 #
 # Usage:
-#   Set the SPARQL_ENDPOINT environment variable to the target endpoint URL,
-#   then run `caddy run` in this directory, or use docker-compose.yml at the
+#   Set SPARQL_HOST to the scheme+host of the endpoint (no path), and
+#   SPARQL_PATH to the path component (defaults to /sparql).
+#   Then run `caddy run` in this directory, or use docker-compose.yml at the
 #   repo root.
 #
-# In the RelFinder UI, set the Proxy URL field to: http://localhost:8080
+#   Examples:
+#     SPARQL_HOST=https://query.wikidata.org   SPARQL_PATH=/sparql
+#     SPARQL_HOST=https://dbpedia.org          SPARQL_PATH=/sparql
+#     SPARQL_HOST=http://localhost:3030         SPARQL_PATH=/mydb/sparql
 #
-# The proxy forwards all requests to /sparql/* to the configured endpoint and
-# injects the necessary CORS headers so the browser accepts the response.
+# In the RelFinder UI, set the endpoint field to: http://localhost:8080
+#
+# The proxy forwards all requests to SPARQL_HOST+SPARQL_PATH and injects the
+# necessary CORS headers so the browser accepts the response.
 
 :{$PROXY_PORT:8080} {
-	handle /sparql/* {
-		# Strip the /sparql prefix before forwarding
-		uri strip_prefix /sparql
-
-		reverse_proxy {$SPARQL_ENDPOINT} {
-			# Forward the original Host header so the endpoint recognises the request
-			header_up Host {upstream_hostport}
-		}
-
-		# CORS headers — allow the RelFinder frontend origin
-		header Access-Control-Allow-Origin  {$ALLOWED_ORIGIN:*}
-		header Access-Control-Allow-Methods "GET, POST, OPTIONS"
-		header Access-Control-Allow-Headers "Content-Type, Authorization, Accept"
-
-		# Handle preflight requests
-		@preflight method OPTIONS
-		handle @preflight {
-			respond 204
-		}
-	}
-
-	# Health check — useful for Docker Compose depends_on healthcheck
 	handle /health {
 		respond "ok" 200
+	}
+
+	# Preflight requests need CORS headers but no upstream call
+	@preflight method OPTIONS
+	handle @preflight {
+		header Access-Control-Allow-Origin "{$ALLOWED_ORIGIN:*}"
+		header Access-Control-Allow-Methods "GET, POST, OPTIONS"
+		header Access-Control-Allow-Headers "Content-Type, Authorization, Accept"
+		respond 204
+	}
+
+	handle {
+		# Add CORS headers to every proxied response.
+		# `defer` ensures this runs after the upstream reply arrives.
+		# Deletions are NOT mixed in here — Caddy applies deletes after sets
+		# within the same header block, which would cancel the headers we add.
+		# Instead, upstream CORS headers are stripped inside reverse_proxy below.
+		header {
+			Access-Control-Allow-Origin "{$ALLOWED_ORIGIN:*}"
+			Access-Control-Allow-Methods "GET, POST, OPTIONS"
+			Access-Control-Allow-Headers "Content-Type, Authorization, Accept"
+			defer
+		}
+
+		# Rewrite every request to the target SPARQL path before forwarding.
+		# Caddy reverse_proxy only accepts scheme+host, so the path must be
+		# set via rewrite — it cannot be embedded in the upstream address.
+		rewrite * {$SPARQL_PATH:/sparql}
+
+		reverse_proxy {$SPARQL_HOST} {
+			header_up Host {upstream_hostport}
+			# Strip any CORS headers the upstream sends to prevent duplicates.
+			header_down -Access-Control-Allow-Origin
+			header_down -Access-Control-Allow-Methods
+			header_down -Access-Control-Allow-Headers
+		}
 	}
 }

@@ -78,6 +78,14 @@ export interface PathCollection {
   paths: SparqlBinding[]
 }
 
+// ── Label model ───────────────────────────────────────────────────────────────
+
+/** A single label value paired with its RDF language tag ('' = untagged). */
+export interface LabelEntry {
+  value: string
+  lang: string
+}
+
 // ── Graph model ───────────────────────────────────────────────────────────────
 
 export interface GraphNode {
@@ -119,6 +127,12 @@ export interface RelationshipGraph {
   edges: MergedEdge[]
   /** Distinct rdf:type IRIs present in the graph — used to colour nodes. */
   classes: string[]
+  /**
+   * All label values fetched for every node and edge IRI, keyed by IRI.
+   * Stored so that a language change can re-apply labels client-side
+   * without re-running the path traversal queries.
+   */
+  allLabels: Map<string, LabelEntry[]>
 }
 
 // ── Entity search ─────────────────────────────────────────────────────────────
@@ -133,6 +147,40 @@ export interface DataProperty {
   iri: string
   label: string
   value: string
+}
+
+// ── Schema graph ──────────────────────────────────────────────────────────────
+
+export interface SchemaNode {
+  iri: string
+  label: string
+}
+
+/** A data (literal) property on a class, with its observed XSD datatypes. */
+export interface SchemaDataProp {
+  iri: string
+  label: string
+  datatypes: string[]
+}
+
+/** One property connecting two classes, with occurrence count. */
+export interface SchemaProp {
+  iri: string
+  label: string
+  count: number
+}
+
+/** All properties from one class to another, collapsed into a single directed edge. */
+export interface SchemaEdge {
+  sourceIri: string
+  targetIri: string
+  props: SchemaProp[]
+  totalCount: number
+}
+
+export interface SchemaGraph {
+  nodes: SchemaNode[]
+  edges: SchemaEdge[]
 }
 
 // ── Engine context ────────────────────────────────────────────────────────────

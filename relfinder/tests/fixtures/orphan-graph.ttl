@@ -1,0 +1,16 @@
+@prefix :     <http://test.example.org/> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+
+# Two connected classes (instances define the classes)
+:alice  rdf:type :Person .
+:bob    rdf:type :Person .
+:proj1  rdf:type :Project .
+
+# Object property between Person and Project
+:alice  :worksOn  :proj1 .
+:bob    :worksOn  :proj1 .
+
+# Orphan class — sorts BEFORE Person/Project alphabetically so the
+# unhide-orphan regression test exercises the alphabetical-first case.
+:aardvark1  rdf:type  :Aardvark .
+:aardvark2  rdf:type  :Aardvark .

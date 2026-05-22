@@ -45,25 +45,45 @@ export const DEFAULT_PREFIXES: Record<string, string> = {
   owl: 'http://www.w3.org/2002/07/owl#',
   xsd: 'http://www.w3.org/2001/XMLSchema#',
   schema: 'https://schema.org/',
-  db: 'http://dbpedia.org/resource/',
-  dbo: 'http://dbpedia.org/ontology/',
-  dbp: 'http://dbpedia.org/property/',
-  wd: 'http://www.wikidata.org/entity/',
 }
 
 /**
- * Converts a full IRI to its prefixed form if a known prefix matches,
- * or wraps it in angle brackets otherwise.
+ * Returns true if `local` is safe to use as the local part of a SPARQL prefixed name.
+ *
+ * SPARQL 1.1 PN_LOCAL forbids (without backslash-escaping) apostrophes, parentheses,
+ * brackets, whitespace, and certain Unicode code points that fall outside the
+ * PN_CHARS_BASE ranges (e.g. en-dash U+2013 sits in the gap [U+200E–U+206F]).
+ * Real-world entity IRIs frequently contain these characters, so we conservatively
+ * fall back to angle-bracket form rather than produce an unparseable query.
+ */
+function isSafePNameLocal(local: string): boolean {
+  if (!local) return false
+  if (/['"()[\]{}\\^|\s<>]/.test(local)) return false
+  // Characters in Unicode gaps not covered by PN_CHARS_BASE:
+  // U+00D7 (×), U+00F7 (÷), and the range U+200E–U+206F (includes en-dash U+2013)
+  if (/[×÷‎-⁯]/.test(local)) return false
+  return true
+}
+
+/**
+ * Converts a full IRI to its prefixed form if a known prefix matches and the
+ * local name is safe for use in a PNAME_LN token, or wraps it in angle brackets
+ * otherwise.
  *
  * Examples:
- *   uri('http://www.w3.org/2000/01/rdf-schema#label')  → 'rdfs:label'
- *   uri('http://example.org/foo')                       → '<http://example.org/foo>'
- *   uri('rdfs:label')                                   → 'rdfs:label'  (already prefixed)
+ *   uri('http://www.w3.org/2000/01/rdf-schema#label')       → 'rdfs:label'
+ *   uri('http://dbpedia.org/resource/Women\'s_handball')     → '<http://...>'  (apostrophe)
+ *   uri('http://example.org/foo')                            → '<http://example.org/foo>'
+ *   uri('rdfs:label')                                        → 'rdfs:label'  (already prefixed)
  */
 export function uri(iri: string, prefixes: Record<string, string> = DEFAULT_PREFIXES): string {
   for (const [prefix, namespace] of Object.entries(prefixes)) {
     if (iri.startsWith(namespace)) {
-      return iri.replace(namespace, `${prefix}:`)
+      const local = iri.slice(namespace.length)
+      if (isSafePNameLocal(local)) {
+        return `${prefix}:${local}`
+      }
+      break // namespace matched but local is unsafe — use angle brackets
     }
   }
 

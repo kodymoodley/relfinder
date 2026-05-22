@@ -1,0 +1,387 @@
+<http://example.org/music/> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Ontology> <http://example.org/nq/ontology> .
+<http://example.org/music/> <http://purl.org/dc/elements/1.1/title> "Music Knowledge Base"@en <http://example.org/nq/ontology> .
+<http://example.org/music/> <http://purl.org/dc/elements/1.1/title> "Musik-Wissensbasis"@de <http://example.org/nq/ontology> .
+<http://example.org/music/> <http://purl.org/dc/elements/1.1/title> "Base de connaissances musicales"@fr <http://example.org/nq/ontology> .
+<http://example.org/music/> <http://purl.org/dc/terms/description> "RDF dataset about musicians, bands, albums, and labels."@en <http://example.org/nq/ontology> .
+<http://example.org/music/> <http://www.w3.org/2002/07/owl#versionInfo> "1.0.0" <http://example.org/nq/ontology> .
+
+<http://example.org/music/Artist> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> <http://example.org/nq/ontology> .
+<http://example.org/music/Artist> <http://www.w3.org/2000/01/rdf-schema#label> "Artist"@en <http://example.org/nq/ontology> .
+<http://example.org/music/Artist> <http://www.w3.org/2000/01/rdf-schema#label> "Künstler"@de <http://example.org/nq/ontology> .
+<http://example.org/music/Artist> <http://www.w3.org/2000/01/rdf-schema#label> "Artiste"@fr <http://example.org/nq/ontology> .
+<http://example.org/music/Artist> <http://www.w3.org/2000/01/rdf-schema#comment> "A musical artist, individual or group."@en <http://example.org/nq/ontology> .
+
+<http://example.org/music/SoloArtist> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> <http://example.org/nq/ontology> .
+<http://example.org/music/SoloArtist> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://example.org/music/Artist> <http://example.org/nq/ontology> .
+<http://example.org/music/SoloArtist> <http://www.w3.org/2000/01/rdf-schema#label> "Solo Artist"@en <http://example.org/nq/ontology> .
+<http://example.org/music/SoloArtist> <http://www.w3.org/2000/01/rdf-schema#label> "Solokünstler"@de <http://example.org/nq/ontology> .
+<http://example.org/music/SoloArtist> <http://www.w3.org/2000/01/rdf-schema#label> "Artiste solo"@fr <http://example.org/nq/ontology> .
+<http://example.org/music/SoloArtist> <http://www.w3.org/2000/01/rdf-schema#comment> "An individual performer."@en <http://example.org/nq/ontology> .
+
+<http://example.org/music/Band> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> <http://example.org/nq/ontology> .
+<http://example.org/music/Band> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://example.org/music/Artist> <http://example.org/nq/ontology> .
+<http://example.org/music/Band> <http://www.w3.org/2000/01/rdf-schema#label> "Band"@en <http://example.org/nq/ontology> .
+<http://example.org/music/Band> <http://www.w3.org/2000/01/rdf-schema#label> "Band"@de <http://example.org/nq/ontology> .
+<http://example.org/music/Band> <http://www.w3.org/2000/01/rdf-schema#label> "Groupe"@fr <http://example.org/nq/ontology> .
+<http://example.org/music/Band> <http://www.w3.org/2000/01/rdf-schema#comment> "A group of musicians performing together."@en <http://example.org/nq/ontology> .
+
+<http://example.org/music/Album> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> <http://example.org/nq/ontology> .
+<http://example.org/music/Album> <http://www.w3.org/2000/01/rdf-schema#label> "Album"@en <http://example.org/nq/ontology> .
+<http://example.org/music/Album> <http://www.w3.org/2000/01/rdf-schema#label> "Album"@de <http://example.org/nq/ontology> .
+<http://example.org/music/Album> <http://www.w3.org/2000/01/rdf-schema#label> "Album"@fr <http://example.org/nq/ontology> .
+<http://example.org/music/Album> <http://www.w3.org/2000/01/rdf-schema#comment> "A collection of audio recordings released as a single item."@en <http://example.org/nq/ontology> .
+
+<http://example.org/music/StudioAlbum> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> <http://example.org/nq/ontology> .
+<http://example.org/music/StudioAlbum> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://example.org/music/Album> <http://example.org/nq/ontology> .
+<http://example.org/music/StudioAlbum> <http://www.w3.org/2000/01/rdf-schema#label> "Studio Album"@en <http://example.org/nq/ontology> .
+<http://example.org/music/StudioAlbum> <http://www.w3.org/2000/01/rdf-schema#label> "Studioalbum"@de <http://example.org/nq/ontology> .
+<http://example.org/music/StudioAlbum> <http://www.w3.org/2000/01/rdf-schema#label> "Album studio"@fr <http://example.org/nq/ontology> .
+
+<http://example.org/music/RecordLabel> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> <http://example.org/nq/ontology> .
+<http://example.org/music/RecordLabel> <http://www.w3.org/2000/01/rdf-schema#label> "Record Label"@en <http://example.org/nq/ontology> .
+<http://example.org/music/RecordLabel> <http://www.w3.org/2000/01/rdf-schema#label> "Plattenlabel"@de <http://example.org/nq/ontology> .
+<http://example.org/music/RecordLabel> <http://www.w3.org/2000/01/rdf-schema#label> "Label discographique"@fr <http://example.org/nq/ontology> .
+<http://example.org/music/RecordLabel> <http://www.w3.org/2000/01/rdf-schema#comment> "A brand or trademark associated with the marketing of music recordings."@en <http://example.org/nq/ontology> .
+
+<http://example.org/music/Genre> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> <http://example.org/nq/ontology> .
+<http://example.org/music/Genre> <http://www.w3.org/2000/01/rdf-schema#label> "Music Genre"@en <http://example.org/nq/ontology> .
+<http://example.org/music/Genre> <http://www.w3.org/2000/01/rdf-schema#label> "Musikgenre"@de <http://example.org/nq/ontology> .
+<http://example.org/music/Genre> <http://www.w3.org/2000/01/rdf-schema#label> "Genre musical"@fr <http://example.org/nq/ontology> .
+
+<http://example.org/music/Award> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> <http://example.org/nq/ontology> .
+<http://example.org/music/Award> <http://www.w3.org/2000/01/rdf-schema#label> "Music Award"@en <http://example.org/nq/ontology> .
+<http://example.org/music/Award> <http://www.w3.org/2000/01/rdf-schema#label> "Musikpreis"@de <http://example.org/nq/ontology> .
+<http://example.org/music/Award> <http://www.w3.org/2000/01/rdf-schema#label> "Récompense musicale"@fr <http://example.org/nq/ontology> .
+
+<http://example.org/music/artistName> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#DatatypeProperty> <http://example.org/nq/ontology> .
+<http://example.org/music/artistName> <http://www.w3.org/2000/01/rdf-schema#domain> <http://example.org/music/Artist> <http://example.org/nq/ontology> .
+<http://example.org/music/artistName> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2001/XMLSchema#string> <http://example.org/nq/ontology> .
+<http://example.org/music/artistName> <http://www.w3.org/2000/01/rdf-schema#label> "artist name"@en <http://example.org/nq/ontology> .
+<http://example.org/music/artistName> <http://www.w3.org/2000/01/rdf-schema#label> "Künstlername"@de <http://example.org/nq/ontology> .
+
+<http://example.org/music/yearFormed> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#DatatypeProperty> <http://example.org/nq/ontology> .
+<http://example.org/music/yearFormed> <http://www.w3.org/2000/01/rdf-schema#domain> <http://example.org/music/Artist> <http://example.org/nq/ontology> .
+<http://example.org/music/yearFormed> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2001/XMLSchema#gYear> <http://example.org/nq/ontology> .
+<http://example.org/music/yearFormed> <http://www.w3.org/2000/01/rdf-schema#label> "year formed"@en <http://example.org/nq/ontology> .
+<http://example.org/music/yearFormed> <http://www.w3.org/2000/01/rdf-schema#label> "Gründungsjahr"@de <http://example.org/nq/ontology> .
+
+<http://example.org/music/monthlyListeners> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#DatatypeProperty> <http://example.org/nq/ontology> .
+<http://example.org/music/monthlyListeners> <http://www.w3.org/2000/01/rdf-schema#domain> <http://example.org/music/Artist> <http://example.org/nq/ontology> .
+<http://example.org/music/monthlyListeners> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2001/XMLSchema#nonNegativeInteger> <http://example.org/nq/ontology> .
+<http://example.org/music/monthlyListeners> <http://www.w3.org/2000/01/rdf-schema#label> "monthly listeners"@en <http://example.org/nq/ontology> .
+<http://example.org/music/monthlyListeners> <http://www.w3.org/2000/01/rdf-schema#label> "monatliche Zuhörer"@de <http://example.org/nq/ontology> .
+
+<http://example.org/music/releaseYear> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#DatatypeProperty> <http://example.org/nq/ontology> .
+<http://example.org/music/releaseYear> <http://www.w3.org/2000/01/rdf-schema#domain> <http://example.org/music/Album> <http://example.org/nq/ontology> .
+<http://example.org/music/releaseYear> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2001/XMLSchema#gYear> <http://example.org/nq/ontology> .
+<http://example.org/music/releaseYear> <http://www.w3.org/2000/01/rdf-schema#label> "release year"@en <http://example.org/nq/ontology> .
+<http://example.org/music/releaseYear> <http://www.w3.org/2000/01/rdf-schema#label> "Erscheinungsjahr"@de <http://example.org/nq/ontology> .
+
+<http://example.org/music/trackCount> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#DatatypeProperty> <http://example.org/nq/ontology> .
+<http://example.org/music/trackCount> <http://www.w3.org/2000/01/rdf-schema#domain> <http://example.org/music/Album> <http://example.org/nq/ontology> .
+<http://example.org/music/trackCount> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2001/XMLSchema#positiveInteger> <http://example.org/nq/ontology> .
+<http://example.org/music/trackCount> <http://www.w3.org/2000/01/rdf-schema#label> "track count"@en <http://example.org/nq/ontology> .
+<http://example.org/music/trackCount> <http://www.w3.org/2000/01/rdf-schema#label> "Titelanzahl"@de <http://example.org/nq/ontology> .
+
+<http://example.org/music/nationality> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#DatatypeProperty> <http://example.org/nq/ontology> .
+<http://example.org/music/nationality> <http://www.w3.org/2000/01/rdf-schema#domain> <http://example.org/music/Artist> <http://example.org/nq/ontology> .
+<http://example.org/music/nationality> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2001/XMLSchema#string> <http://example.org/nq/ontology> .
+<http://example.org/music/nationality> <http://www.w3.org/2000/01/rdf-schema#label> "nationality"@en <http://example.org/nq/ontology> .
+<http://example.org/music/nationality> <http://www.w3.org/2000/01/rdf-schema#label> "Nationalität"@de <http://example.org/nq/ontology> .
+
+<http://example.org/music/performedBy> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#ObjectProperty> <http://example.org/nq/ontology> .
+<http://example.org/music/performedBy> <http://www.w3.org/2000/01/rdf-schema#domain> <http://example.org/music/Album> <http://example.org/nq/ontology> .
+<http://example.org/music/performedBy> <http://www.w3.org/2000/01/rdf-schema#range> <http://example.org/music/Artist> <http://example.org/nq/ontology> .
+<http://example.org/music/performedBy> <http://www.w3.org/2000/01/rdf-schema#label> "performed by"@en <http://example.org/nq/ontology> .
+<http://example.org/music/performedBy> <http://www.w3.org/2000/01/rdf-schema#label> "aufgeführt von"@de <http://example.org/nq/ontology> .
+
+<http://example.org/music/releasedOn> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#ObjectProperty> <http://example.org/nq/ontology> .
+<http://example.org/music/releasedOn> <http://www.w3.org/2000/01/rdf-schema#domain> <http://example.org/music/Album> <http://example.org/nq/ontology> .
+<http://example.org/music/releasedOn> <http://www.w3.org/2000/01/rdf-schema#range> <http://example.org/music/RecordLabel> <http://example.org/nq/ontology> .
+<http://example.org/music/releasedOn> <http://www.w3.org/2000/01/rdf-schema#label> "released on"@en <http://example.org/nq/ontology> .
+<http://example.org/music/releasedOn> <http://www.w3.org/2000/01/rdf-schema#label> "veröffentlicht auf"@de <http://example.org/nq/ontology> .
+
+<http://example.org/music/hasGenre> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#ObjectProperty> <http://example.org/nq/ontology> .
+<http://example.org/music/hasGenre> <http://www.w3.org/2000/01/rdf-schema#domain> <http://example.org/music/Album> <http://example.org/nq/ontology> .
+<http://example.org/music/hasGenre> <http://www.w3.org/2000/01/rdf-schema#range> <http://example.org/music/Genre> <http://example.org/nq/ontology> .
+<http://example.org/music/hasGenre> <http://www.w3.org/2000/01/rdf-schema#label> "has genre"@en <http://example.org/nq/ontology> .
+<http://example.org/music/hasGenre> <http://www.w3.org/2000/01/rdf-schema#label> "hat Genre"@de <http://example.org/nq/ontology> .
+
+<http://example.org/music/memberOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#ObjectProperty> <http://example.org/nq/ontology> .
+<http://example.org/music/memberOf> <http://www.w3.org/2000/01/rdf-schema#domain> <http://example.org/music/SoloArtist> <http://example.org/nq/ontology> .
+<http://example.org/music/memberOf> <http://www.w3.org/2000/01/rdf-schema#range> <http://example.org/music/Band> <http://example.org/nq/ontology> .
+<http://example.org/music/memberOf> <http://www.w3.org/2000/01/rdf-schema#label> "member of"@en <http://example.org/nq/ontology> .
+<http://example.org/music/memberOf> <http://www.w3.org/2000/01/rdf-schema#label> "Mitglied von"@de <http://example.org/nq/ontology> .
+
+<http://example.org/music/influencedBy> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#ObjectProperty> <http://example.org/nq/ontology> .
+<http://example.org/music/influencedBy> <http://www.w3.org/2000/01/rdf-schema#domain> <http://example.org/music/Artist> <http://example.org/nq/ontology> .
+<http://example.org/music/influencedBy> <http://www.w3.org/2000/01/rdf-schema#range> <http://example.org/music/Artist> <http://example.org/nq/ontology> .
+<http://example.org/music/influencedBy> <http://www.w3.org/2000/01/rdf-schema#label> "influenced by"@en <http://example.org/nq/ontology> .
+<http://example.org/music/influencedBy> <http://www.w3.org/2000/01/rdf-schema#label> "beeinflusst von"@de <http://example.org/nq/ontology> .
+
+<http://example.org/music/Rock> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/music/Genre> <http://example.org/nq/ontology> .
+<http://example.org/music/Rock> <http://www.w3.org/2000/01/rdf-schema#label> "Rock"@en <http://example.org/nq/ontology> .
+<http://example.org/music/Rock> <http://www.w3.org/2000/01/rdf-schema#label> "Rock"@de <http://example.org/nq/ontology> .
+<http://example.org/music/Rock> <http://www.w3.org/2000/01/rdf-schema#label> "Rock"@fr <http://example.org/nq/ontology> .
+
+<http://example.org/music/Jazz> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/music/Genre> <http://example.org/nq/ontology> .
+<http://example.org/music/Jazz> <http://www.w3.org/2000/01/rdf-schema#label> "Jazz"@en <http://example.org/nq/ontology> .
+<http://example.org/music/Jazz> <http://www.w3.org/2000/01/rdf-schema#label> "Jazz"@de <http://example.org/nq/ontology> .
+<http://example.org/music/Jazz> <http://www.w3.org/2000/01/rdf-schema#label> "Jazz"@fr <http://example.org/nq/ontology> .
+
+<http://example.org/music/Electronic> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/music/Genre> <http://example.org/nq/ontology> .
+<http://example.org/music/Electronic> <http://www.w3.org/2000/01/rdf-schema#label> "Electronic"@en <http://example.org/nq/ontology> .
+<http://example.org/music/Electronic> <http://www.w3.org/2000/01/rdf-schema#label> "Elektronisch"@de <http://example.org/nq/ontology> .
+<http://example.org/music/Electronic> <http://www.w3.org/2000/01/rdf-schema#label> "Électronique"@fr <http://example.org/nq/ontology> .
+
+<http://example.org/music/Classical> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/music/Genre> <http://example.org/nq/ontology> .
+<http://example.org/music/Classical> <http://www.w3.org/2000/01/rdf-schema#label> "Classical"@en <http://example.org/nq/ontology> .
+<http://example.org/music/Classical> <http://www.w3.org/2000/01/rdf-schema#label> "Klassisch"@de <http://example.org/nq/ontology> .
+<http://example.org/music/Classical> <http://www.w3.org/2000/01/rdf-schema#label> "Classique"@fr <http://example.org/nq/ontology> .
+
+<http://example.org/music/Grammy> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/music/Award> <http://example.org/nq/ontology> .
+<http://example.org/music/Grammy> <http://www.w3.org/2000/01/rdf-schema#label> "Grammy Award"@en <http://example.org/nq/ontology> .
+<http://example.org/music/Grammy> <http://www.w3.org/2000/01/rdf-schema#label> "Grammy-Preis"@de <http://example.org/nq/ontology> .
+<http://example.org/music/Grammy> <http://www.w3.org/2000/01/rdf-schema#label> "Grammy"@fr <http://example.org/nq/ontology> .
+<http://example.org/music/Grammy> <http://purl.org/dc/terms/description> "Annual award recognising achievement in the music industry."@en <http://example.org/nq/ontology> .
+
+<http://example.org/music/MercuryPrize> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/music/Award> <http://example.org/nq/ontology> .
+<http://example.org/music/MercuryPrize> <http://www.w3.org/2000/01/rdf-schema#label> "Mercury Prize"@en <http://example.org/nq/ontology> .
+<http://example.org/music/MercuryPrize> <http://www.w3.org/2000/01/rdf-schema#label> "Mercury Prize"@de <http://example.org/nq/ontology> .
+<http://example.org/music/MercuryPrize> <http://purl.org/dc/terms/description> "Annual music prize awarded to the best UK or Irish album."@en <http://example.org/nq/ontology> .
+
+<http://example.org/music/EMI> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/music/RecordLabel> <http://example.org/nq/ontology> .
+<http://example.org/music/EMI> <http://www.w3.org/2000/01/rdf-schema#label> "EMI Records"@en <http://example.org/nq/ontology> .
+<http://example.org/music/EMI> <http://www.w3.org/2000/01/rdf-schema#label> "EMI Records"@de <http://example.org/nq/ontology> .
+<http://example.org/music/EMI> <http://purl.org/dc/terms/description> "British multinational record label founded in 1931."@en <http://example.org/nq/ontology> .
+
+<http://example.org/music/BluenoteRecords> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/music/RecordLabel> <http://example.org/nq/ontology> .
+<http://example.org/music/BluenoteRecords> <http://www.w3.org/2000/01/rdf-schema#label> "Blue Note Records"@en <http://example.org/nq/ontology> .
+<http://example.org/music/BluenoteRecords> <http://www.w3.org/2000/01/rdf-schema#label> "Blue Note Records"@de <http://example.org/nq/ontology> .
+<http://example.org/music/BluenoteRecords> <http://purl.org/dc/terms/description> "American jazz record label founded in 1939."@en <http://example.org/nq/ontology> .
+
+<http://example.org/music/DGG> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/music/RecordLabel> <http://example.org/nq/ontology> .
+<http://example.org/music/DGG> <http://www.w3.org/2000/01/rdf-schema#label> "Deutsche Grammophon"@en <http://example.org/nq/ontology> .
+<http://example.org/music/DGG> <http://www.w3.org/2000/01/rdf-schema#label> "Deutsche Grammophon"@de <http://example.org/nq/ontology> .
+<http://example.org/music/DGG> <http://www.w3.org/2000/01/rdf-schema#label> "Deutsche Grammophon"@fr <http://example.org/nq/ontology> .
+<http://example.org/music/DGG> <http://purl.org/dc/terms/description> "German classical music record label."@en <http://example.org/nq/ontology> .
+
+<http://example.org/music/BeatlesArtist> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/music/Band> <http://example.org/nq/artists> .
+<http://example.org/music/BeatlesArtist> <http://www.w3.org/2000/01/rdf-schema#label> "The Beatles"@en <http://example.org/nq/artists> .
+<http://example.org/music/BeatlesArtist> <http://www.w3.org/2000/01/rdf-schema#label> "The Beatles"@de <http://example.org/nq/artists> .
+<http://example.org/music/BeatlesArtist> <http://www.w3.org/2000/01/rdf-schema#label> "Les Beatles"@fr <http://example.org/nq/artists> .
+<http://example.org/music/BeatlesArtist> <http://example.org/music/artistName> "The Beatles" <http://example.org/nq/artists> .
+<http://example.org/music/BeatlesArtist> <http://example.org/music/yearFormed> "1960"^^<http://www.w3.org/2001/XMLSchema#gYear> <http://example.org/nq/artists> .
+<http://example.org/music/BeatlesArtist> <http://example.org/music/nationality> "British" <http://example.org/nq/artists> .
+<http://example.org/music/BeatlesArtist> <http://example.org/music/monthlyListeners> "29000000"^^<http://www.w3.org/2001/XMLSchema#nonNegativeInteger> <http://example.org/nq/artists> .
+<http://example.org/music/BeatlesArtist> <http://purl.org/dc/terms/description> "Legendary British rock band from Liverpool."@en <http://example.org/nq/artists> .
+<http://example.org/music/BeatlesArtist> <http://purl.org/dc/terms/description> "Legendäre britische Rockband aus Liverpool."@de <http://example.org/nq/artists> .
+
+<http://example.org/music/MilesD> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/music/SoloArtist> <http://example.org/nq/artists> .
+<http://example.org/music/MilesD> <http://www.w3.org/2000/01/rdf-schema#label> "Miles Davis"@en <http://example.org/nq/artists> .
+<http://example.org/music/MilesD> <http://www.w3.org/2000/01/rdf-schema#label> "Miles Davis"@de <http://example.org/nq/artists> .
+<http://example.org/music/MilesD> <http://www.w3.org/2000/01/rdf-schema#label> "Miles Davis"@fr <http://example.org/nq/artists> .
+<http://example.org/music/MilesD> <http://example.org/music/artistName> "Miles Davis" <http://example.org/nq/artists> .
+<http://example.org/music/MilesD> <http://example.org/music/yearFormed> "1944"^^<http://www.w3.org/2001/XMLSchema#gYear> <http://example.org/nq/artists> .
+<http://example.org/music/MilesD> <http://example.org/music/nationality> "American" <http://example.org/nq/artists> .
+<http://example.org/music/MilesD> <http://example.org/music/monthlyListeners> "4500000"^^<http://www.w3.org/2001/XMLSchema#nonNegativeInteger> <http://example.org/nq/artists> .
+<http://example.org/music/MilesD> <http://purl.org/dc/terms/description> "American jazz trumpeter and bandleader."@en <http://example.org/nq/artists> .
+
+<http://example.org/music/Beethoven> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/music/SoloArtist> <http://example.org/nq/artists> .
+<http://example.org/music/Beethoven> <http://www.w3.org/2000/01/rdf-schema#label> "Ludwig van Beethoven"@en <http://example.org/nq/artists> .
+<http://example.org/music/Beethoven> <http://www.w3.org/2000/01/rdf-schema#label> "Ludwig van Beethoven"@de <http://example.org/nq/artists> .
+<http://example.org/music/Beethoven> <http://www.w3.org/2000/01/rdf-schema#label> "Ludwig van Beethoven"@fr <http://example.org/nq/artists> .
+<http://example.org/music/Beethoven> <http://example.org/music/artistName> "Ludwig van Beethoven" <http://example.org/nq/artists> .
+<http://example.org/music/Beethoven> <http://example.org/music/yearFormed> "1795"^^<http://www.w3.org/2001/XMLSchema#gYear> <http://example.org/nq/artists> .
+<http://example.org/music/Beethoven> <http://example.org/music/nationality> "German" <http://example.org/nq/artists> .
+<http://example.org/music/Beethoven> <http://example.org/music/monthlyListeners> "7200000"^^<http://www.w3.org/2001/XMLSchema#nonNegativeInteger> <http://example.org/nq/artists> .
+<http://example.org/music/Beethoven> <http://purl.org/dc/terms/description> "German composer of the late Classical and early Romantic eras."@en <http://example.org/nq/artists> .
+<http://example.org/music/Beethoven> <http://purl.org/dc/terms/description> "Deutscher Komponist der Spätklassik und Frühromantik."@de <http://example.org/nq/artists> .
+
+<http://example.org/music/DaftPunk> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/music/Band> <http://example.org/nq/artists> .
+<http://example.org/music/DaftPunk> <http://www.w3.org/2000/01/rdf-schema#label> "Daft Punk"@en <http://example.org/nq/artists> .
+<http://example.org/music/DaftPunk> <http://www.w3.org/2000/01/rdf-schema#label> "Daft Punk"@de <http://example.org/nq/artists> .
+<http://example.org/music/DaftPunk> <http://www.w3.org/2000/01/rdf-schema#label> "Daft Punk"@fr <http://example.org/nq/artists> .
+<http://example.org/music/DaftPunk> <http://example.org/music/artistName> "Daft Punk" <http://example.org/nq/artists> .
+<http://example.org/music/DaftPunk> <http://example.org/music/yearFormed> "1993"^^<http://www.w3.org/2001/XMLSchema#gYear> <http://example.org/nq/artists> .
+<http://example.org/music/DaftPunk> <http://example.org/music/nationality> "French" <http://example.org/nq/artists> .
+<http://example.org/music/DaftPunk> <http://example.org/music/monthlyListeners> "8100000"^^<http://www.w3.org/2001/XMLSchema#nonNegativeInteger> <http://example.org/nq/artists> .
+<http://example.org/music/DaftPunk> <http://purl.org/dc/terms/description> "French electronic music duo."@en <http://example.org/nq/artists> .
+<http://example.org/music/DaftPunk> <http://purl.org/dc/terms/description> "Französisches Elektronikmusik-Duo."@de <http://example.org/nq/artists> .
+<http://example.org/music/DaftPunk> <http://purl.org/dc/terms/description> "Duo de musique électronique français."@fr <http://example.org/nq/artists> .
+
+<http://example.org/music/RadioheadBand> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/music/Band> <http://example.org/nq/artists> .
+<http://example.org/music/RadioheadBand> <http://www.w3.org/2000/01/rdf-schema#label> "Radiohead"@en <http://example.org/nq/artists> .
+<http://example.org/music/RadioheadBand> <http://www.w3.org/2000/01/rdf-schema#label> "Radiohead"@de <http://example.org/nq/artists> .
+<http://example.org/music/RadioheadBand> <http://example.org/music/artistName> "Radiohead" <http://example.org/nq/artists> .
+<http://example.org/music/RadioheadBand> <http://example.org/music/yearFormed> "1985"^^<http://www.w3.org/2001/XMLSchema#gYear> <http://example.org/nq/artists> .
+<http://example.org/music/RadioheadBand> <http://example.org/music/nationality> "British" <http://example.org/nq/artists> .
+<http://example.org/music/RadioheadBand> <http://example.org/music/monthlyListeners> "9800000"^^<http://www.w3.org/2001/XMLSchema#nonNegativeInteger> <http://example.org/nq/artists> .
+<http://example.org/music/RadioheadBand> <http://purl.org/dc/terms/description> "English alternative rock band from Abingdon, Oxfordshire."@en <http://example.org/nq/artists> .
+
+<http://example.org/music/AbbaGroup> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/music/Band> <http://example.org/nq/artists> .
+<http://example.org/music/AbbaGroup> <http://www.w3.org/2000/01/rdf-schema#label> "ABBA"@en <http://example.org/nq/artists> .
+<http://example.org/music/AbbaGroup> <http://www.w3.org/2000/01/rdf-schema#label> "ABBA"@de <http://example.org/nq/artists> .
+<http://example.org/music/AbbaGroup> <http://www.w3.org/2000/01/rdf-schema#label> "ABBA"@fr <http://example.org/nq/artists> .
+<http://example.org/music/AbbaGroup> <http://example.org/music/artistName> "ABBA" <http://example.org/nq/artists> .
+<http://example.org/music/AbbaGroup> <http://example.org/music/yearFormed> "1972"^^<http://www.w3.org/2001/XMLSchema#gYear> <http://example.org/nq/artists> .
+<http://example.org/music/AbbaGroup> <http://example.org/music/nationality> "Swedish" <http://example.org/nq/artists> .
+<http://example.org/music/AbbaGroup> <http://purl.org/dc/terms/description> "Swedish pop group, one of the best-selling music acts of all time."@en <http://example.org/nq/artists> .
+<http://example.org/music/AbbaGroup> <http://purl.org/dc/terms/description> "Schwedische Popgruppe, eine der meistverkauften Musikgruppen aller Zeiten."@de <http://example.org/nq/artists> .
+
+<http://example.org/music/AlbumAbbey> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/music/StudioAlbum> <http://example.org/nq/albums> .
+<http://example.org/music/AlbumAbbey> <http://www.w3.org/2000/01/rdf-schema#label> "Abbey Road"@en <http://example.org/nq/albums> .
+<http://example.org/music/AlbumAbbey> <http://www.w3.org/2000/01/rdf-schema#label> "Abbey Road"@de <http://example.org/nq/albums> .
+<http://example.org/music/AlbumAbbey> <http://www.w3.org/2000/01/rdf-schema#label> "Abbey Road"@fr <http://example.org/nq/albums> .
+<http://example.org/music/AlbumAbbey> <http://example.org/music/releaseYear> "1969"^^<http://www.w3.org/2001/XMLSchema#gYear> <http://example.org/nq/albums> .
+<http://example.org/music/AlbumAbbey> <http://example.org/music/trackCount> "17"^^<http://www.w3.org/2001/XMLSchema#positiveInteger> <http://example.org/nq/albums> .
+<http://example.org/music/AlbumAbbey> <http://example.org/music/performedBy> <http://example.org/music/BeatlesArtist> <http://example.org/nq/albums> .
+<http://example.org/music/AlbumAbbey> <http://example.org/music/releasedOn> <http://example.org/music/EMI> <http://example.org/nq/albums> .
+<http://example.org/music/AlbumAbbey> <http://example.org/music/hasGenre> <http://example.org/music/Rock> <http://example.org/nq/albums> .
+<http://example.org/music/AlbumAbbey> <http://purl.org/dc/terms/description> "The eleventh and final studio album by The Beatles."@en <http://example.org/nq/albums> .
+
+<http://example.org/music/AlbumKindOfBlue> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/music/StudioAlbum> <http://example.org/nq/albums> .
+<http://example.org/music/AlbumKindOfBlue> <http://www.w3.org/2000/01/rdf-schema#label> "Kind of Blue"@en <http://example.org/nq/albums> .
+<http://example.org/music/AlbumKindOfBlue> <http://www.w3.org/2000/01/rdf-schema#label> "Kind of Blue"@de <http://example.org/nq/albums> .
+<http://example.org/music/AlbumKindOfBlue> <http://www.w3.org/2000/01/rdf-schema#label> "Kind of Blue"@fr <http://example.org/nq/albums> .
+<http://example.org/music/AlbumKindOfBlue> <http://example.org/music/releaseYear> "1959"^^<http://www.w3.org/2001/XMLSchema#gYear> <http://example.org/nq/albums> .
+<http://example.org/music/AlbumKindOfBlue> <http://example.org/music/trackCount> "5"^^<http://www.w3.org/2001/XMLSchema#positiveInteger> <http://example.org/nq/albums> .
+<http://example.org/music/AlbumKindOfBlue> <http://example.org/music/performedBy> <http://example.org/music/MilesD> <http://example.org/nq/albums> .
+<http://example.org/music/AlbumKindOfBlue> <http://example.org/music/releasedOn> <http://example.org/music/BluenoteRecords> <http://example.org/nq/albums> .
+<http://example.org/music/AlbumKindOfBlue> <http://example.org/music/hasGenre> <http://example.org/music/Jazz> <http://example.org/nq/albums> .
+<http://example.org/music/AlbumKindOfBlue> <http://purl.org/dc/terms/description> "Landmark modal jazz album by Miles Davis."@en <http://example.org/nq/albums> .
+
+<http://example.org/music/AlbumRandomAccess> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/music/StudioAlbum> <http://example.org/nq/albums> .
+<http://example.org/music/AlbumRandomAccess> <http://www.w3.org/2000/01/rdf-schema#label> "Random Access Memories"@en <http://example.org/nq/albums> .
+<http://example.org/music/AlbumRandomAccess> <http://www.w3.org/2000/01/rdf-schema#label> "Random Access Memories"@de <http://example.org/nq/albums> .
+<http://example.org/music/AlbumRandomAccess> <http://www.w3.org/2000/01/rdf-schema#label> "Random Access Memories"@fr <http://example.org/nq/albums> .
+<http://example.org/music/AlbumRandomAccess> <http://example.org/music/releaseYear> "2013"^^<http://www.w3.org/2001/XMLSchema#gYear> <http://example.org/nq/albums> .
+<http://example.org/music/AlbumRandomAccess> <http://example.org/music/trackCount> "13"^^<http://www.w3.org/2001/XMLSchema#positiveInteger> <http://example.org/nq/albums> .
+<http://example.org/music/AlbumRandomAccess> <http://example.org/music/performedBy> <http://example.org/music/DaftPunk> <http://example.org/nq/albums> .
+<http://example.org/music/AlbumRandomAccess> <http://example.org/music/hasGenre> <http://example.org/music/Electronic> <http://example.org/nq/albums> .
+<http://example.org/music/AlbumRandomAccess> <http://purl.org/dc/terms/description> "Grammy Award-winning electronic album."@en <http://example.org/nq/albums> .
+<http://example.org/music/AlbumRandomAccess> <http://purl.org/dc/terms/description> "Grammy-preisgekröntes Elektronikalbum."@de <http://example.org/nq/albums> .
+
+<http://example.org/music/AlbumOKComputer> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/music/StudioAlbum> <http://example.org/nq/albums> .
+<http://example.org/music/AlbumOKComputer> <http://www.w3.org/2000/01/rdf-schema#label> "OK Computer"@en <http://example.org/nq/albums> .
+<http://example.org/music/AlbumOKComputer> <http://www.w3.org/2000/01/rdf-schema#label> "OK Computer"@de <http://example.org/nq/albums> .
+<http://example.org/music/AlbumOKComputer> <http://example.org/music/releaseYear> "1997"^^<http://www.w3.org/2001/XMLSchema#gYear> <http://example.org/nq/albums> .
+<http://example.org/music/AlbumOKComputer> <http://example.org/music/trackCount> "12"^^<http://www.w3.org/2001/XMLSchema#positiveInteger> <http://example.org/nq/albums> .
+<http://example.org/music/AlbumOKComputer> <http://example.org/music/performedBy> <http://example.org/music/RadioheadBand> <http://example.org/nq/albums> .
+<http://example.org/music/AlbumOKComputer> <http://example.org/music/releasedOn> <http://example.org/music/EMI> <http://example.org/nq/albums> .
+<http://example.org/music/AlbumOKComputer> <http://example.org/music/hasGenre> <http://example.org/music/Rock> <http://example.org/nq/albums> .
+<http://example.org/music/AlbumOKComputer> <http://purl.org/dc/terms/description> "Mercury Prize-winning alternative rock album."@en <http://example.org/nq/albums> .
+
+<http://example.org/music/AlbumAbba> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/music/StudioAlbum> <http://example.org/nq/albums> .
+<http://example.org/music/AlbumAbba> <http://www.w3.org/2000/01/rdf-schema#label> "ABBA"@en <http://example.org/nq/albums> .
+<http://example.org/music/AlbumAbba> <http://www.w3.org/2000/01/rdf-schema#label> "ABBA"@de <http://example.org/nq/albums> .
+<http://example.org/music/AlbumAbba> <http://www.w3.org/2000/01/rdf-schema#label> "ABBA"@fr <http://example.org/nq/albums> .
+<http://example.org/music/AlbumAbba> <http://example.org/music/releaseYear> "1975"^^<http://www.w3.org/2001/XMLSchema#gYear> <http://example.org/nq/albums> .
+<http://example.org/music/AlbumAbba> <http://example.org/music/trackCount> "10"^^<http://www.w3.org/2001/XMLSchema#positiveInteger> <http://example.org/nq/albums> .
+<http://example.org/music/AlbumAbba> <http://example.org/music/performedBy> <http://example.org/music/AbbaGroup> <http://example.org/nq/albums> .
+<http://example.org/music/AlbumAbba> <http://example.org/music/hasGenre> <http://example.org/music/Rock> <http://example.org/nq/albums> .
+<http://example.org/music/AlbumAbba> <http://purl.org/dc/terms/description> "Self-titled third studio album by ABBA."@en <http://example.org/nq/albums> .
+
+<http://example.org/music/Grammy> <http://example.org/music/awardedTo> <http://example.org/music/AlbumRandomAccess> <http://example.org/nq/relations> .
+<http://example.org/music/Grammy> <http://example.org/music/awardedTo> <http://example.org/music/AlbumKindOfBlue> <http://example.org/nq/relations> .
+<http://example.org/music/MercuryPrize> <http://example.org/music/awardedTo> <http://example.org/music/AlbumOKComputer> <http://example.org/nq/relations> .
+
+<http://example.org/music/BeatlesArtist> <http://example.org/music/influencedBy> <http://example.org/music/AbbaGroup> <http://example.org/nq/relations> .
+<http://example.org/music/DaftPunk> <http://example.org/music/influencedBy> <http://example.org/music/BeatlesArtist> <http://example.org/nq/relations> .
+<http://example.org/music/RadioheadBand> <http://example.org/music/influencedBy> <http://example.org/music/BeatlesArtist> <http://example.org/nq/relations> .
+<http://example.org/music/DaftPunk> <http://example.org/music/influencedBy> <http://example.org/music/AbbaGroup> <http://example.org/nq/relations> .
+<http://example.org/music/RadioheadBand> <http://example.org/music/influencedBy> <http://example.org/music/MilesD> <http://example.org/nq/relations> .
+<http://example.org/music/Grammy> <http://example.org/music/awardedTo> <http://example.org/music/AlbumAbbey> <http://example.org/nq/relations> .
+<http://example.org/music/Grammy> <http://example.org/music/awardedTo> <http://example.org/music/AlbumOKComputer> <http://example.org/nq/relations> .
+
+<http://example.org/music/PinkFloyd> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/music/Band> <http://example.org/nq/artists> .
+<http://example.org/music/PinkFloyd> <http://www.w3.org/2000/01/rdf-schema#label> "Pink Floyd"@en <http://example.org/nq/artists> .
+<http://example.org/music/PinkFloyd> <http://www.w3.org/2000/01/rdf-schema#label> "Pink Floyd"@de <http://example.org/nq/artists> .
+<http://example.org/music/PinkFloyd> <http://www.w3.org/2000/01/rdf-schema#label> "Pink Floyd"@fr <http://example.org/nq/artists> .
+<http://example.org/music/PinkFloyd> <http://example.org/music/artistName> "Pink Floyd" <http://example.org/nq/artists> .
+<http://example.org/music/PinkFloyd> <http://example.org/music/yearFormed> "1965"^^<http://www.w3.org/2001/XMLSchema#gYear> <http://example.org/nq/artists> .
+<http://example.org/music/PinkFloyd> <http://example.org/music/nationality> "British" <http://example.org/nq/artists> .
+<http://example.org/music/PinkFloyd> <http://example.org/music/monthlyListeners> "17000000"^^<http://www.w3.org/2001/XMLSchema#nonNegativeInteger> <http://example.org/nq/artists> .
+<http://example.org/music/PinkFloyd> <http://purl.org/dc/terms/description> "English rock band known for philosophical lyrics and experimental music."@en <http://example.org/nq/artists> .
+<http://example.org/music/PinkFloyd> <http://purl.org/dc/terms/description> "Englische Rockband bekannt für philosophische Texte und experimentelle Musik."@de <http://example.org/nq/artists> .
+
+<http://example.org/music/BillieHoliday> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/music/SoloArtist> <http://example.org/nq/artists> .
+<http://example.org/music/BillieHoliday> <http://www.w3.org/2000/01/rdf-schema#label> "Billie Holiday"@en <http://example.org/nq/artists> .
+<http://example.org/music/BillieHoliday> <http://www.w3.org/2000/01/rdf-schema#label> "Billie Holiday"@de <http://example.org/nq/artists> .
+<http://example.org/music/BillieHoliday> <http://www.w3.org/2000/01/rdf-schema#label> "Billie Holiday"@fr <http://example.org/nq/artists> .
+<http://example.org/music/BillieHoliday> <http://example.org/music/artistName> "Billie Holiday" <http://example.org/nq/artists> .
+<http://example.org/music/BillieHoliday> <http://example.org/music/yearFormed> "1930"^^<http://www.w3.org/2001/XMLSchema#gYear> <http://example.org/nq/artists> .
+<http://example.org/music/BillieHoliday> <http://example.org/music/nationality> "American" <http://example.org/nq/artists> .
+<http://example.org/music/BillieHoliday> <http://example.org/music/monthlyListeners> "2800000"^^<http://www.w3.org/2001/XMLSchema#nonNegativeInteger> <http://example.org/nq/artists> .
+<http://example.org/music/BillieHoliday> <http://purl.org/dc/terms/description> "American jazz singer and songwriter."@en <http://example.org/nq/artists> .
+<http://example.org/music/BillieHoliday> <http://purl.org/dc/terms/description> "Amerikanische Jazzsängerin und Songwriterin."@de <http://example.org/nq/artists> .
+
+<http://example.org/music/Kraftwerk> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/music/Band> <http://example.org/nq/artists> .
+<http://example.org/music/Kraftwerk> <http://www.w3.org/2000/01/rdf-schema#label> "Kraftwerk"@en <http://example.org/nq/artists> .
+<http://example.org/music/Kraftwerk> <http://www.w3.org/2000/01/rdf-schema#label> "Kraftwerk"@de <http://example.org/nq/artists> .
+<http://example.org/music/Kraftwerk> <http://www.w3.org/2000/01/rdf-schema#label> "Kraftwerk"@fr <http://example.org/nq/artists> .
+<http://example.org/music/Kraftwerk> <http://example.org/music/artistName> "Kraftwerk" <http://example.org/nq/artists> .
+<http://example.org/music/Kraftwerk> <http://example.org/music/yearFormed> "1970"^^<http://www.w3.org/2001/XMLSchema#gYear> <http://example.org/nq/artists> .
+<http://example.org/music/Kraftwerk> <http://example.org/music/nationality> "German" <http://example.org/nq/artists> .
+<http://example.org/music/Kraftwerk> <http://example.org/music/monthlyListeners> "3100000"^^<http://www.w3.org/2001/XMLSchema#nonNegativeInteger> <http://example.org/nq/artists> .
+<http://example.org/music/Kraftwerk> <http://purl.org/dc/terms/description> "German electronic band, pioneers of electronic and synth-pop music."@en <http://example.org/nq/artists> .
+<http://example.org/music/Kraftwerk> <http://purl.org/dc/terms/description> "Deutsche Elektronikband, Pioniere elektronischer und Synth-Pop-Musik."@de <http://example.org/nq/artists> .
+
+<http://example.org/music/AphexTwin> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/music/SoloArtist> <http://example.org/nq/artists> .
+<http://example.org/music/AphexTwin> <http://www.w3.org/2000/01/rdf-schema#label> "Aphex Twin"@en <http://example.org/nq/artists> .
+<http://example.org/music/AphexTwin> <http://www.w3.org/2000/01/rdf-schema#label> "Aphex Twin"@de <http://example.org/nq/artists> .
+<http://example.org/music/AphexTwin> <http://example.org/music/artistName> "Aphex Twin" <http://example.org/nq/artists> .
+<http://example.org/music/AphexTwin> <http://example.org/music/yearFormed> "1988"^^<http://www.w3.org/2001/XMLSchema#gYear> <http://example.org/nq/artists> .
+<http://example.org/music/AphexTwin> <http://example.org/music/nationality> "Irish-British" <http://example.org/nq/artists> .
+<http://example.org/music/AphexTwin> <http://example.org/music/monthlyListeners> "2200000"^^<http://www.w3.org/2001/XMLSchema#nonNegativeInteger> <http://example.org/nq/artists> .
+<http://example.org/music/AphexTwin> <http://purl.org/dc/terms/description> "British electronic music producer known for complex rhythmic structures."@en <http://example.org/nq/artists> .
+
+<http://example.org/music/AlbumDarkSide> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/music/StudioAlbum> <http://example.org/nq/albums> .
+<http://example.org/music/AlbumDarkSide> <http://www.w3.org/2000/01/rdf-schema#label> "The Dark Side of the Moon"@en <http://example.org/nq/albums> .
+<http://example.org/music/AlbumDarkSide> <http://www.w3.org/2000/01/rdf-schema#label> "Die dunkle Seite des Mondes"@de <http://example.org/nq/albums> .
+<http://example.org/music/AlbumDarkSide> <http://www.w3.org/2000/01/rdf-schema#label> "The Dark Side of the Moon"@fr <http://example.org/nq/albums> .
+<http://example.org/music/AlbumDarkSide> <http://example.org/music/releaseYear> "1973"^^<http://www.w3.org/2001/XMLSchema#gYear> <http://example.org/nq/albums> .
+<http://example.org/music/AlbumDarkSide> <http://example.org/music/trackCount> "10"^^<http://www.w3.org/2001/XMLSchema#positiveInteger> <http://example.org/nq/albums> .
+<http://example.org/music/AlbumDarkSide> <http://example.org/music/performedBy> <http://example.org/music/PinkFloyd> <http://example.org/nq/albums> .
+<http://example.org/music/AlbumDarkSide> <http://example.org/music/hasGenre> <http://example.org/music/Rock> <http://example.org/nq/albums> .
+<http://example.org/music/AlbumDarkSide> <http://purl.org/dc/terms/description> "One of the best-selling albums of all time."@en <http://example.org/nq/albums> .
+<http://example.org/music/AlbumDarkSide> <http://purl.org/dc/terms/description> "Eines der meistverkauften Alben aller Zeiten."@de <http://example.org/nq/albums> .
+
+<http://example.org/music/AlbumLadySings> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/music/StudioAlbum> <http://example.org/nq/albums> .
+<http://example.org/music/AlbumLadySings> <http://www.w3.org/2000/01/rdf-schema#label> "Lady Sings the Blues"@en <http://example.org/nq/albums> .
+<http://example.org/music/AlbumLadySings> <http://www.w3.org/2000/01/rdf-schema#label> "Lady Sings the Blues"@de <http://example.org/nq/albums> .
+<http://example.org/music/AlbumLadySings> <http://www.w3.org/2000/01/rdf-schema#label> "Lady Sings the Blues"@fr <http://example.org/nq/albums> .
+<http://example.org/music/AlbumLadySings> <http://example.org/music/releaseYear> "1956"^^<http://www.w3.org/2001/XMLSchema#gYear> <http://example.org/nq/albums> .
+<http://example.org/music/AlbumLadySings> <http://example.org/music/trackCount> "12"^^<http://www.w3.org/2001/XMLSchema#positiveInteger> <http://example.org/nq/albums> .
+<http://example.org/music/AlbumLadySings> <http://example.org/music/performedBy> <http://example.org/music/BillieHoliday> <http://example.org/nq/albums> .
+<http://example.org/music/AlbumLadySings> <http://example.org/music/releasedOn> <http://example.org/music/BluenoteRecords> <http://example.org/nq/albums> .
+<http://example.org/music/AlbumLadySings> <http://example.org/music/hasGenre> <http://example.org/music/Jazz> <http://example.org/nq/albums> .
+<http://example.org/music/AlbumLadySings> <http://purl.org/dc/terms/description> "Classic jazz album featuring Billie Holiday's iconic vocals."@en <http://example.org/nq/albums> .
+
+<http://example.org/music/AlbumAutobahn> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/music/StudioAlbum> <http://example.org/nq/albums> .
+<http://example.org/music/AlbumAutobahn> <http://www.w3.org/2000/01/rdf-schema#label> "Autobahn"@en <http://example.org/nq/albums> .
+<http://example.org/music/AlbumAutobahn> <http://www.w3.org/2000/01/rdf-schema#label> "Autobahn"@de <http://example.org/nq/albums> .
+<http://example.org/music/AlbumAutobahn> <http://www.w3.org/2000/01/rdf-schema#label> "Autobahn"@fr <http://example.org/nq/albums> .
+<http://example.org/music/AlbumAutobahn> <http://example.org/music/releaseYear> "1974"^^<http://www.w3.org/2001/XMLSchema#gYear> <http://example.org/nq/albums> .
+<http://example.org/music/AlbumAutobahn> <http://example.org/music/trackCount> "4"^^<http://www.w3.org/2001/XMLSchema#positiveInteger> <http://example.org/nq/albums> .
+<http://example.org/music/AlbumAutobahn> <http://example.org/music/performedBy> <http://example.org/music/Kraftwerk> <http://example.org/nq/albums> .
+<http://example.org/music/AlbumAutobahn> <http://example.org/music/releasedOn> <http://example.org/music/DGG> <http://example.org/nq/albums> .
+<http://example.org/music/AlbumAutobahn> <http://example.org/music/hasGenre> <http://example.org/music/Electronic> <http://example.org/nq/albums> .
+<http://example.org/music/AlbumAutobahn> <http://purl.org/dc/terms/description> "Landmark electronic album by Kraftwerk."@en <http://example.org/nq/albums> .
+<http://example.org/music/AlbumAutobahn> <http://purl.org/dc/terms/description> "Wegweisendes Elektronik-Album von Kraftwerk."@de <http://example.org/nq/albums> .
+
+<http://example.org/music/AlbumSelectedAmbient> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/music/StudioAlbum> <http://example.org/nq/albums> .
+<http://example.org/music/AlbumSelectedAmbient> <http://www.w3.org/2000/01/rdf-schema#label> "Selected Ambient Works 85-92"@en <http://example.org/nq/albums> .
+<http://example.org/music/AlbumSelectedAmbient> <http://www.w3.org/2000/01/rdf-schema#label> "Selected Ambient Works 85-92"@de <http://example.org/nq/albums> .
+<http://example.org/music/AlbumSelectedAmbient> <http://example.org/music/releaseYear> "1992"^^<http://www.w3.org/2001/XMLSchema#gYear> <http://example.org/nq/albums> .
+<http://example.org/music/AlbumSelectedAmbient> <http://example.org/music/trackCount> "13"^^<http://www.w3.org/2001/XMLSchema#positiveInteger> <http://example.org/nq/albums> .
+<http://example.org/music/AlbumSelectedAmbient> <http://example.org/music/performedBy> <http://example.org/music/AphexTwin> <http://example.org/nq/albums> .
+<http://example.org/music/AlbumSelectedAmbient> <http://example.org/music/hasGenre> <http://example.org/music/Electronic> <http://example.org/nq/albums> .
+<http://example.org/music/AlbumSelectedAmbient> <http://purl.org/dc/terms/description> "Influential ambient electronic double album."@en <http://example.org/nq/albums> .
+
+<http://example.org/music/Grammy> <http://example.org/music/awardedTo> <http://example.org/music/AlbumDarkSide> <http://example.org/nq/relations> .
+<http://example.org/music/PinkFloyd> <http://example.org/music/influencedBy> <http://example.org/music/BeatlesArtist> <http://example.org/nq/relations> .
+<http://example.org/music/Kraftwerk> <http://example.org/music/influencedBy> <http://example.org/music/BeatlesArtist> <http://example.org/nq/relations> .
+<http://example.org/music/DaftPunk> <http://example.org/music/influencedBy> <http://example.org/music/Kraftwerk> <http://example.org/nq/relations> .
+<http://example.org/music/AphexTwin> <http://example.org/music/influencedBy> <http://example.org/music/Kraftwerk> <http://example.org/nq/relations> .
+<http://example.org/music/BillieHoliday> <http://example.org/music/influencedBy> <http://example.org/music/MilesD> <http://example.org/nq/relations> .

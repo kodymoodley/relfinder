@@ -69,11 +69,17 @@ npm run lint
 # Type-check only
 npm run type-check
 
-# Run unit tests
+# Run unit tests (Vitest)
 npm run test:unit
 
-# Run unit tests + live endpoint integration tests (requires internet access)
-INTEGRATION=1 npm run test:unit
+# Run E2E tests (Playwright / Chromium)
+npm run test:e2e
+
+# Run E2E tests with the interactive Playwright UI
+npm run test:e2e:ui
+
+# Run a single E2E test file
+npx playwright test tests/schema-tooltips.spec.ts
 ```
 
 The application is built with:
@@ -88,6 +94,7 @@ The application is built with:
 - [N3.js](https://rdf.js.org/N3.js/) for local RDF parsing
 - [ESLint](https://eslint.org/) + [Prettier](https://prettier.io/) for linting and formatting
 - [Vitest](https://vitest.dev/) for unit testing
+- [Playwright](https://playwright.dev/) for end-to-end testing
 
 ## CORS Proxy
 
