@@ -355,12 +355,13 @@ function onSetEntity(slot: 1 | 2, entity: { iri: string; label: string; class: s
 
 function onFindPaths() {
   if (!browseEntity1.value || !browseEntity2.value) return
+  // Spread into plain objects — history.pushState cannot clone Vue Proxy objects.
   router.push({
     name: 'graph',
     state: {
       example: {
-        entity1: browseEntity1.value,
-        entity2: browseEntity2.value,
+        entity1: { ...browseEntity1.value },
+        entity2: { ...browseEntity2.value },
       },
     },
   })
