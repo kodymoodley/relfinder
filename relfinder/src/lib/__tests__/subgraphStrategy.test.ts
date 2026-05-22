@@ -37,7 +37,7 @@ vi.mock('@/lib/sparql/engine', () => ({
   executeConstruct: vi.fn(),
 }))
 
-const { namedNode, literal, quad, defaultGraph } = DataFactory
+const { namedNode, quad, defaultGraph } = DataFactory
 
 const CONTEXT = { endpointUrl: 'https://example.org/sparql' }
 
@@ -182,9 +182,16 @@ describe('fetchNeighbourhoodStore', () => {
     )
 
     // Both IRIs appear in the respective query strings
-    const queries = vi.mocked(executeConstruct).mock.calls.map((c) => c[0])
-    expect(queries[0]).toContain('http://dbpedia.org/resource/Albert_Einstein')
-    expect(queries[1]).toContain('http://dbpedia.org/resource/Niels_Bohr')
+    expect(executeConstruct).toHaveBeenCalledWith(
+      expect.stringContaining('http://dbpedia.org/resource/Albert_Einstein'),
+      expect.anything(),
+      undefined,
+    )
+    expect(executeConstruct).toHaveBeenCalledWith(
+      expect.stringContaining('http://dbpedia.org/resource/Niels_Bohr'),
+      expect.anything(),
+      undefined,
+    )
   })
 
   it('deduplicates triples that appear in both neighbourhoods', async () => {

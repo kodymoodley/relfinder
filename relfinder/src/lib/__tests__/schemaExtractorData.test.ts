@@ -248,9 +248,7 @@ describe('fetchSchemaDataProperties', () => {
 describe('extractSchema — Phase 1 label assignment from fetchLabels', () => {
   it('applies the best label to a class node when fetchLabels returns entries', async () => {
     vi.mocked(executeSelect)
-      .mockResolvedValueOnce([
-        { class: { value: 'http://example.org/A', type: 'NamedNode' } },
-      ])
+      .mockResolvedValueOnce([{ class: { value: 'http://example.org/A', type: 'NamedNode' } }])
       .mockResolvedValue([]) // descriptions + Phase 2 edges: empty
 
     // Override the default empty-Map return just for this call
@@ -269,9 +267,7 @@ describe('extractSchema — Phase 1 label assignment from fetchLabels', () => {
 describe('extractSchema — additionalClassIris option', () => {
   it('uses additionalClassIris to expand the edge-query class set without re-processing them', async () => {
     vi.mocked(executeSelect)
-      .mockResolvedValueOnce([
-        { class: { value: 'http://example.org/A', type: 'NamedNode' } },
-      ])
+      .mockResolvedValueOnce([{ class: { value: 'http://example.org/A', type: 'NamedNode' } }])
       .mockResolvedValue([]) // descriptions + Phase 2 edges: empty
 
     const result = await extractSchema(CTX, undefined, {
