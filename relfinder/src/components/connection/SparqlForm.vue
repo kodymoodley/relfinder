@@ -110,11 +110,13 @@ import Password from 'primevue/password'
 import Button from 'primevue/button'
 import Message from 'primevue/message'
 import { useConnectionStore } from '@/stores/connection'
+import { useSchemaStore } from '@/stores/schema'
 import { executeSelect } from '@/lib/sparql/engine'
 import { loadSchema } from '@/lib/cache/schemaStorage'
 
 const router = useRouter()
 const connectionStore = useConnectionStore()
+const schemaStore = useSchemaStore()
 
 // ── Form state ────────────────────────────────────────────────────────────────
 
@@ -210,6 +212,7 @@ async function onSubmit() {
       await testConnection(endpointUrl, authHeader)
     }
 
+    schemaStore.clear()
     connectionStore.connectSparql({
       endpointUrl,
       username: form.username.trim(),
