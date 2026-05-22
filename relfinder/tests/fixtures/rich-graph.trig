@@ -1,0 +1,530 @@
+@prefix :       <http://example.org/film/> .
+@prefix rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+@prefix owl:    <http://www.w3.org/2002/07/owl#> .
+@prefix foaf:   <http://xmlns.com/foaf/0.1/> .
+@prefix dc:     <http://purl.org/dc/elements/1.1/> .
+@prefix dct:    <http://purl.org/dc/terms/> .
+@prefix skos:   <http://www.w3.org/2004/02/skos/core#> .
+@prefix schema: <http://schema.org/> .
+
+# ── Default graph: ontology metadata ─────────────────────────────────────────
+{
+  <http://example.org/film/>
+    rdf:type owl:Ontology ;
+    dc:title "Cinema Knowledge Base"@en ;
+    dc:title "Filmwissensbasis"@de ;
+    dc:title "Base de connaissances cinématographiques"@fr ;
+    dct:description "RDF/TriG dataset about films, directors, actors, and studios."@en ;
+    owl:versionInfo "1.0.0" .
+}
+
+# ── Named graph: Schema ───────────────────────────────────────────────────────
+:schema {
+  :Film
+    rdf:type owl:Class ;
+    rdfs:label "Film"@en ;
+    rdfs:label "Film"@de ;
+    rdfs:label "Film"@fr ;
+    rdfs:comment "A motion picture."@en ;
+    rdfs:comment "Ein Spielfilm oder Dokumentarfilm."@de .
+
+  :FeatureFilm
+    rdf:type owl:Class ;
+    rdfs:subClassOf :Film ;
+    rdfs:label "Feature Film"@en ;
+    rdfs:label "Spielfilm"@de ;
+    rdfs:label "Long métrage"@fr ;
+    rdfs:comment "A full-length narrative motion picture."@en .
+
+  :Documentary
+    rdf:type owl:Class ;
+    rdfs:subClassOf :Film ;
+    rdfs:label "Documentary"@en ;
+    rdfs:label "Dokumentarfilm"@de ;
+    rdfs:label "Documentaire"@fr ;
+    rdfs:comment "A non-fictional motion picture intended to document reality."@en .
+
+  :Person
+    rdf:type owl:Class ;
+    rdfs:subClassOf foaf:Person ;
+    rdfs:label "Person"@en ;
+    rdfs:label "Person"@de ;
+    rdfs:label "Personne"@fr ;
+    rdfs:comment "A human individual."@en .
+
+  :Director
+    rdf:type owl:Class ;
+    rdfs:subClassOf :Person ;
+    rdfs:label "Director"@en ;
+    rdfs:label "Regisseur"@de ;
+    rdfs:label "Réalisateur"@fr ;
+    rdfs:comment "A person who directs a film."@en ;
+    rdfs:comment "Eine Person, die einen Film leitet."@de .
+
+  :Actor
+    rdf:type owl:Class ;
+    rdfs:subClassOf :Person ;
+    rdfs:label "Actor"@en ;
+    rdfs:label "Schauspieler"@de ;
+    rdfs:label "Acteur"@fr ;
+    rdfs:comment "A person who performs in a film."@en .
+
+  :Studio
+    rdf:type owl:Class ;
+    rdfs:label "Film Studio"@en ;
+    rdfs:label "Filmstudio"@de ;
+    rdfs:label "Studio de cinéma"@fr ;
+    rdfs:comment "A company that produces and distributes films."@en .
+
+  :Genre
+    rdf:type owl:Class ;
+    rdfs:label "Film Genre"@en ;
+    rdfs:label "Filmgenre"@de ;
+    rdfs:label "Genre cinématographique"@fr ;
+    rdfs:comment "A category of film defined by style and subject matter."@en .
+
+  :Award
+    rdf:type owl:Class ;
+    rdfs:label "Film Award"@en ;
+    rdfs:label "Filmpreis"@de ;
+    rdfs:label "Prix cinématographique"@fr ;
+    rdfs:comment "A prize awarded for achievement in cinema."@en .
+
+  :releaseYear
+    rdf:type owl:DatatypeProperty ;
+    rdfs:domain :Film ;
+    rdfs:range xsd:gYear ;
+    rdfs:label "release year"@en ;
+    rdfs:label "Erscheinungsjahr"@de ;
+    rdfs:comment "The year in which the film was released."@en .
+
+  :budget
+    rdf:type owl:DatatypeProperty ;
+    rdfs:domain :Film ;
+    rdfs:range xsd:decimal ;
+    rdfs:label "budget"@en ;
+    rdfs:label "Budget"@de ;
+    rdfs:comment "Production budget in USD."@en .
+
+  :runtime
+    rdf:type owl:DatatypeProperty ;
+    rdfs:domain :Film ;
+    rdfs:range xsd:positiveInteger ;
+    rdfs:label "runtime (minutes)"@en ;
+    rdfs:label "Laufzeit (Minuten)"@de .
+
+  :imdbRating
+    rdf:type owl:DatatypeProperty ;
+    rdfs:domain :Film ;
+    rdfs:range xsd:decimal ;
+    rdfs:label "IMDb rating"@en ;
+    rdfs:label "IMDb-Bewertung"@de ;
+    rdfs:comment "Rating on the Internet Movie Database (0.0–10.0)."@en .
+
+  :birthDate
+    rdf:type owl:DatatypeProperty ;
+    rdfs:domain :Person ;
+    rdfs:range xsd:date ;
+    rdfs:label "birth date"@en ;
+    rdfs:label "Geburtsdatum"@de .
+
+  :nationality
+    rdf:type owl:DatatypeProperty ;
+    rdfs:domain :Person ;
+    rdfs:range xsd:string ;
+    rdfs:label "nationality"@en ;
+    rdfs:label "Nationalität"@de .
+
+  :foundedYear
+    rdf:type owl:DatatypeProperty ;
+    rdfs:domain :Studio ;
+    rdfs:range xsd:gYear ;
+    rdfs:label "founded year"@en ;
+    rdfs:label "Gründungsjahr"@de .
+
+  :directedBy
+    rdf:type owl:ObjectProperty ;
+    rdfs:domain :Film ;
+    rdfs:range :Director ;
+    rdfs:label "directed by"@en ;
+    rdfs:label "Regie geführt von"@de .
+
+  :starredIn
+    rdf:type owl:ObjectProperty ;
+    rdfs:domain :Actor ;
+    rdfs:range :Film ;
+    rdfs:label "starred in"@en ;
+    rdfs:label "spielte in"@de .
+
+  :producedBy
+    rdf:type owl:ObjectProperty ;
+    rdfs:domain :Film ;
+    rdfs:range :Studio ;
+    rdfs:label "produced by"@en ;
+    rdfs:label "produziert von"@de .
+
+  :hasGenre
+    rdf:type owl:ObjectProperty ;
+    rdfs:domain :Film ;
+    rdfs:range :Genre ;
+    rdfs:label "has genre"@en ;
+    rdfs:label "hat Genre"@de .
+
+  :awardedTo
+    rdf:type owl:ObjectProperty ;
+    rdfs:domain :Award ;
+    rdfs:range :Film ;
+    rdfs:label "awarded to"@en ;
+    rdfs:label "verliehen an"@de .
+
+  :influencedBy
+    rdf:type owl:ObjectProperty ;
+    rdfs:domain :Director ;
+    rdfs:range :Director ;
+    rdfs:label "influenced by"@en ;
+    rdfs:label "beeinflusst von"@de .
+
+  :knows
+    rdf:type owl:ObjectProperty, owl:SymmetricProperty ;
+    rdfs:subPropertyOf foaf:knows ;
+    rdfs:domain :Person ;
+    rdfs:range :Person ;
+    rdfs:label "knows"@en ;
+    rdfs:label "kennt"@de .
+}
+
+# ── Named graph: Studios & Genres ─────────────────────────────────────────────
+:studios {
+  :Warner
+    rdf:type :Studio ;
+    rdfs:label "Warner Bros."@en ;
+    rdfs:label "Warner Bros."@de ;
+    rdfs:label "Warner Bros."@fr ;
+    :foundedYear "1923"^^xsd:gYear ;
+    dct:description "American film studio and entertainment company."@en ;
+    dct:description "Amerikanisches Filmstudio und Unterhaltungsunternehmen."@de .
+
+  :Universal
+    rdf:type :Studio ;
+    rdfs:label "Universal Pictures"@en ;
+    rdfs:label "Universal Pictures"@de ;
+    rdfs:label "Universal Pictures"@fr ;
+    :foundedYear "1912"^^xsd:gYear ;
+    dct:description "One of the oldest American motion picture studios."@en .
+
+  :Miramax
+    rdf:type :Studio ;
+    rdfs:label "Miramax"@en ;
+    rdfs:label "Miramax"@de ;
+    :foundedYear "1979"^^xsd:gYear ;
+    dct:description "American film studio founded by Bob and Harvey Weinstein."@en .
+
+  :NewLine
+    rdf:type :Studio ;
+    rdfs:label "New Line Cinema"@en ;
+    rdfs:label "New Line Cinema"@de ;
+    :foundedYear "1967"^^xsd:gYear ;
+    dct:description "American film studio, a subsidiary of Warner Bros."@en .
+
+  :Pixar
+    rdf:type :Studio ;
+    rdfs:label "Pixar Animation Studios"@en ;
+    rdfs:label "Pixar Animation Studios"@de ;
+    rdfs:label "Pixar"@fr ;
+    :foundedYear "1986"^^xsd:gYear ;
+    dct:description "American computer animation studio subsidiary of Disney."@en .
+
+  :GenreDrama
+    rdf:type :Genre ;
+    rdfs:label "Drama"@en ;
+    rdfs:label "Drama"@de ;
+    rdfs:label "Drame"@fr ;
+    skos:definition "A genre exploring emotional themes and character development."@en .
+
+  :GenreScienceFiction
+    rdf:type :Genre ;
+    rdfs:label "Science Fiction"@en ;
+    rdfs:label "Science-Fiction"@de ;
+    rdfs:label "Science-fiction"@fr ;
+    skos:definition "A speculative genre exploring futuristic or scientific themes."@en .
+
+  :GenreThrillerSuspense
+    rdf:type :Genre ;
+    rdfs:label "Thriller"@en ;
+    rdfs:label "Thriller"@de ;
+    rdfs:label "Thriller"@fr ;
+    skos:definition "A genre designed to elicit excitement and suspense."@en .
+
+  :GenreAnimation
+    rdf:type :Genre ;
+    rdfs:label "Animation"@en ;
+    rdfs:label "Animation"@de ;
+    rdfs:label "Animation"@fr ;
+    skos:definition "Films created using animation techniques."@en .
+
+  :OscarBestPicture
+    rdf:type :Award ;
+    rdfs:label "Academy Award for Best Picture"@en ;
+    rdfs:label "Oscar für den besten Film"@de ;
+    rdfs:label "Oscar du meilleur film"@fr ;
+    dct:description "The most prestigious award at the Academy Awards."@en .
+
+  :OscarBestDirector
+    rdf:type :Award ;
+    rdfs:label "Academy Award for Best Director"@en ;
+    rdfs:label "Oscar für den besten Regisseur"@de ;
+    rdfs:label "Oscar du meilleur réalisateur"@fr ;
+    dct:description "Awarded to the best director at the Academy Awards."@en .
+
+  :GoldenLion
+    rdf:type :Award ;
+    rdfs:label "Golden Lion"@en ;
+    rdfs:label "Goldener Löwe"@de ;
+    rdfs:label "Lion d'or"@fr ;
+    dct:description "The highest prize at the Venice Film Festival."@en .
+
+  :PalmeDOr
+    rdf:type :Award ;
+    rdfs:label "Palme d'Or"@en ;
+    rdfs:label "Goldene Palme"@de ;
+    rdfs:label "Palme d'or"@fr ;
+    dct:description "The highest prize at the Cannes Film Festival."@en .
+}
+
+# ── Named graph: Directors ────────────────────────────────────────────────────
+:directors {
+  :StanleyKubrick
+    rdf:type :Director ;
+    rdfs:label "Stanley Kubrick"@en ;
+    rdfs:label "Stanley Kubrick"@de ;
+    rdfs:label "Stanley Kubrick"@fr ;
+    foaf:name "Stanley Kubrick" ;
+    :birthDate "1928-07-26"^^xsd:date ;
+    :nationality "American" ;
+    dct:description "American film director known for 2001: A Space Odyssey and The Shining."@en ;
+    dct:description "Amerikanischer Regisseur, bekannt für 2001: Odyssee im Weltraum."@de .
+
+  :ChristopherNolan
+    rdf:type :Director ;
+    rdfs:label "Christopher Nolan"@en ;
+    rdfs:label "Christopher Nolan"@de ;
+    rdfs:label "Christopher Nolan"@fr ;
+    foaf:name "Christopher Nolan" ;
+    :birthDate "1970-07-30"^^xsd:date ;
+    :nationality "British-American" ;
+    dct:description "British-American filmmaker known for complex narratives."@en ;
+    dct:description "Britisch-amerikanischer Filmemacher für komplexe Erzählungen."@de .
+
+  :QuentinTarantino
+    rdf:type :Director ;
+    rdfs:label "Quentin Tarantino"@en ;
+    rdfs:label "Quentin Tarantino"@de ;
+    rdfs:label "Quentin Tarantino"@fr ;
+    foaf:name "Quentin Tarantino" ;
+    :birthDate "1963-03-27"^^xsd:date ;
+    :nationality "American" ;
+    dct:description "American film director known for non-linear storylines."@en .
+
+  :StevenSpielberg
+    rdf:type :Director ;
+    rdfs:label "Steven Spielberg"@en ;
+    rdfs:label "Steven Spielberg"@de ;
+    rdfs:label "Steven Spielberg"@fr ;
+    foaf:name "Steven Spielberg" ;
+    :birthDate "1946-12-18"^^xsd:date ;
+    :nationality "American" ;
+    dct:description "American film director, producer, and screenwriter."@en ;
+    dct:description "Amerikanischer Regisseur, Produzent und Drehbuchautor."@de .
+
+  :AkiraKurosawa
+    rdf:type :Director ;
+    rdfs:label "Akira Kurosawa"@en ;
+    rdfs:label "Akira Kurosawa"@de ;
+    rdfs:label "Akira Kurosawa"@fr ;
+    foaf:name "Akira Kurosawa" ;
+    :birthDate "1910-03-23"^^xsd:date ;
+    :nationality "Japanese" ;
+    dct:description "Japanese filmmaker widely regarded as one of the most important directors."@en ;
+    dct:description "Japanischer Filmemacher, einer der bedeutendsten Regisseure."@de .
+
+  :JaneParkHong
+    rdf:type :Director ;
+    rdfs:label "Jane Park-Hong"@en ;
+    rdfs:label "Jane Park-Hong"@de ;
+    foaf:name "Jane Park-Hong" ;
+    :birthDate "1982-09-14"^^xsd:date ;
+    :nationality "Korean-American" ;
+    dct:description "Contemporary director known for socially engaged narratives."@en .
+
+  :ChristopherNolan :influencedBy :StanleyKubrick .
+  :QuentinTarantino :influencedBy :AkiraKurosawa .
+  :ChristopherNolan :knows :QuentinTarantino .
+  :StevenSpielberg :knows :StanleyKubrick .
+}
+
+# ── Named graph: Actors ───────────────────────────────────────────────────────
+:actors {
+  :MerylStreep
+    rdf:type :Actor ;
+    rdfs:label "Meryl Streep"@en ;
+    rdfs:label "Meryl Streep"@de ;
+    rdfs:label "Meryl Streep"@fr ;
+    foaf:name "Meryl Streep" ;
+    :birthDate "1949-06-22"^^xsd:date ;
+    :nationality "American" ;
+    dct:description "American actress, widely regarded as one of the greatest of all time."@en ;
+    dct:description "Amerikanische Schauspielerin, gilt als eine der größten aller Zeiten."@de .
+
+  :CateBlanchett
+    rdf:type :Actor ;
+    rdfs:label "Cate Blanchett"@en ;
+    rdfs:label "Cate Blanchett"@de ;
+    rdfs:label "Cate Blanchett"@fr ;
+    foaf:name "Catherine Élise Blanchett" ;
+    :birthDate "1969-05-14"^^xsd:date ;
+    :nationality "Australian" ;
+    dct:description "Australian actress and theatre director."@en .
+
+  :DenzelWashington
+    rdf:type :Actor ;
+    rdfs:label "Denzel Washington"@en ;
+    rdfs:label "Denzel Washington"@de ;
+    rdfs:label "Denzel Washington"@fr ;
+    foaf:name "Denzel Hayes Washington Jr." ;
+    :birthDate "1954-12-28"^^xsd:date ;
+    :nationality "American" ;
+    dct:description "American actor, director, and producer."@en ;
+    dct:description "Amerikanischer Schauspieler, Regisseur und Produzent."@de .
+
+  :KiranSingh
+    rdf:type :Actor ;
+    rdfs:label "Kiran Singh"@en ;
+    rdfs:label "Kiran Singh"@de ;
+    foaf:name "Kiran Singh" ;
+    :birthDate "1990-02-07"^^xsd:date ;
+    :nationality "British-Indian" ;
+    dct:description "British-Indian actor known for independent cinema."@en .
+
+  :LeilaOmrani
+    rdf:type :Actor ;
+    rdfs:label "Leila Omrani"@en ;
+    rdfs:label "Leila Omrani"@fr ;
+    foaf:name "Leila Omrani" ;
+    :birthDate "1985-11-19"^^xsd:date ;
+    :nationality "French-Moroccan" ;
+    dct:description "Actrice franco-marocaine reconnue pour son jeu dramatique."@fr ;
+    dct:description "French-Moroccan actress known for dramatic roles."@en .
+}
+
+# ── Named graph: Films ────────────────────────────────────────────────────────
+:films {
+  :FilmInception
+    rdf:type :FeatureFilm ;
+    rdfs:label "Inception"@en ;
+    rdfs:label "Inception"@de ;
+    rdfs:label "Inception"@fr ;
+    dc:title "Inception" ;
+    :releaseYear "2010"^^xsd:gYear ;
+    :budget "160000000.00"^^xsd:decimal ;
+    :runtime "148"^^xsd:positiveInteger ;
+    :imdbRating "8.8"^^xsd:decimal ;
+    :directedBy :ChristopherNolan ;
+    :producedBy :Warner ;
+    :hasGenre :GenreScienceFiction ;
+    dct:description "A thief who steals corporate secrets through dream-sharing technology."@en ;
+    dct:description "Ein Dieb stiehlt Unternehmensgeheimnisse durch Traumtechnologie."@de .
+
+  :FilmGoodwillHunting
+    rdf:type :FeatureFilm ;
+    rdfs:label "Good Will Hunting"@en ;
+    rdfs:label "Good Will Hunting"@de ;
+    rdfs:label "Will Hunting"@fr ;
+    dc:title "Good Will Hunting" ;
+    :releaseYear "1997"^^xsd:gYear ;
+    :budget "10000000.00"^^xsd:decimal ;
+    :runtime "126"^^xsd:positiveInteger ;
+    :imdbRating "8.3"^^xsd:decimal ;
+    :directedBy :QuentinTarantino ;
+    :producedBy :Miramax ;
+    :hasGenre :GenreDrama ;
+    dct:description "A troubled janitor with remarkable mathematical genius."@en .
+
+  :FilmShindlersList
+    rdf:type :FeatureFilm ;
+    rdfs:label "Schindler's List"@en ;
+    rdfs:label "Schindlers Liste"@de ;
+    rdfs:label "La Liste de Schindler"@fr ;
+    dc:title "Schindler's List" ;
+    :releaseYear "1993"^^xsd:gYear ;
+    :budget "22000000.00"^^xsd:decimal ;
+    :runtime "195"^^xsd:positiveInteger ;
+    :imdbRating "9.0"^^xsd:decimal ;
+    :directedBy :StevenSpielberg ;
+    :producedBy :Universal ;
+    :hasGenre :GenreDrama ;
+    dct:description "The story of Oskar Schindler who saved over a thousand Jewish refugees."@en ;
+    dct:description "Die Geschichte von Oskar Schindler, der über tausend jüdische Flüchtlinge rettete."@de .
+
+  :FilmRashomon
+    rdf:type :FeatureFilm ;
+    rdfs:label "Rashomon"@en ;
+    rdfs:label "Rashomon"@de ;
+    rdfs:label "Rashōmon"@fr ;
+    dc:title "羅生門" ;
+    :releaseYear "1950"^^xsd:gYear ;
+    :runtime "88"^^xsd:positiveInteger ;
+    :imdbRating "8.2"^^xsd:decimal ;
+    :directedBy :AkiraKurosawa ;
+    :hasGenre :GenreDrama ;
+    dct:description "A samurai's death is described by four witnesses who all tell different stories."@en ;
+    dct:description "Der Tod eines Samurai wird von vier Zeugen unterschiedlich beschrieben."@de .
+
+  :FilmTempest
+    rdf:type :FeatureFilm ;
+    rdfs:label "The Tempest"@en ;
+    rdfs:label "Der Sturm"@de ;
+    dc:title "The Tempest" ;
+    :releaseYear "2023"^^xsd:gYear ;
+    :budget "8000000.00"^^xsd:decimal ;
+    :runtime "112"^^xsd:positiveInteger ;
+    :imdbRating "7.4"^^xsd:decimal ;
+    :directedBy :JaneParkHong ;
+    :producedBy :NewLine ;
+    :hasGenre :GenreDrama ;
+    dct:description "A contemporary drama about displacement and identity."@en .
+
+  :FilmUnderSkies
+    rdf:type :Documentary ;
+    rdfs:label "Under African Skies"@en ;
+    rdfs:label "Unter afrikanischem Himmel"@de ;
+    rdfs:label "Sous les cieux africains"@fr ;
+    dc:title "Under African Skies" ;
+    :releaseYear "2012"^^xsd:gYear ;
+    :runtime "93"^^xsd:positiveInteger ;
+    :imdbRating "7.9"^^xsd:decimal ;
+    :directedBy :JaneParkHong ;
+    :hasGenre :GenreDrama ;
+    dct:description "A documentary exploring cultural exchange through music."@en .
+}
+
+# ── Named graph: Awards & Roles ───────────────────────────────────────────────
+:awards {
+  :OscarBestPicture :awardedTo :FilmShindlersList .
+  :OscarBestDirector :awardedTo :FilmShindlersList .
+  :GoldenLion :awardedTo :FilmRashomon .
+  :OscarBestPicture :awardedTo :FilmGoodwillHunting .
+
+  :MerylStreep   :starredIn :FilmGoodwillHunting .
+  :MerylStreep   :starredIn :FilmShindlersList .
+  :CateBlanchett :starredIn :FilmInception .
+  :DenzelWashington :starredIn :FilmShindlersList .
+  :KiranSingh    :starredIn :FilmTempest .
+  :LeilaOmrani   :starredIn :FilmTempest .
+  :LeilaOmrani   :starredIn :FilmUnderSkies .
+
+  :MerylStreep   :knows :CateBlanchett .
+  :DenzelWashington :knows :MerylStreep .
+  :KiranSingh    :knows :LeilaOmrani .
+}

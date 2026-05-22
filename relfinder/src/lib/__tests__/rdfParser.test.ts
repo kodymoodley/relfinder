@@ -9,8 +9,17 @@
  * No network or browser APIs needed — N3.js runs fine in Node/jsdom.
  */
 
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+import type { Literal as RdfLiteral } from 'n3'
 import { describe, it, expect } from 'vitest'
 import { detectFormat, parseRdfContent, fileToStore, storeSize } from '../rdf/parser'
+
+const FIXTURES = resolve(process.cwd(), 'tests/fixtures')
+
+function loadFixture(name: string): string {
+  return readFileSync(resolve(FIXTURES, name), 'utf-8')
+}
 
 // ── detectFormat ──────────────────────────────────────────────────────────────
 
@@ -107,9 +116,7 @@ describe('parseRdfContent', () => {
 
     it('both subjects are present in the parsed store', async () => {
       const store = await parseRdfContent(ntriples, 'application/n-triples')
-      const subjects = store
-        .getQuads(null, null, null, null)
-        .map((q) => q.subject.value)
+      const subjects = store.getQuads(null, null, null, null).map((q) => q.subject.value)
       expect(subjects).toContain('http://example.org/Alice')
       expect(subjects).toContain('http://example.org/Bob')
     })
@@ -153,9 +160,7 @@ describe('parseRdfContent', () => {
 
     it('triples from different named graphs are both present', async () => {
       const store = await parseRdfContent(trig, 'application/trig')
-      const subjects = store
-        .getQuads(null, null, null, null)
-        .map((q) => q.subject.value)
+      const subjects = store.getQuads(null, null, null, null).map((q) => q.subject.value)
       expect(subjects).toContain('http://example.org/Alice')
       expect(subjects).toContain('http://example.org/Bob')
     })
@@ -204,13 +209,15 @@ describe('fileToStore', () => {
   })
 
   it('parses a .nt file', async () => {
-    const nt = '<http://example.org/X> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/Thing> .'
+    const nt =
+      '<http://example.org/X> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/Thing> .'
     const store = await fileToStore(makeFile('data.nt', nt))
     expect(storeSize(store)).toBe(1)
   })
 
   it('parses a .nq file', async () => {
-    const nq = '<http://example.org/X> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/Thing> <http://example.org/g> .'
+    const nq =
+      '<http://example.org/X> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/Thing> <http://example.org/g> .'
     const store = await fileToStore(makeFile('data.nq', nq))
     expect(storeSize(store)).toBe(1)
   })
@@ -253,5 +260,214 @@ describe('storeSize', () => {
     `
     const store = await parseRdfContent(turtle, 'text/turtle')
     expect(storeSize(store)).toBe(3)
+  })
+})
+
+// ── Rich fixture files ────────────────────────────────────────────────────────
+
+const RDFS_LABEL = 'http://www.w3.org/2000/01/rdf-schema#label'
+
+describe('rich fixture files', () => {
+  describe('.ttl — Turtle (academic knowledge graph)', () => {
+    const content = loadFixture('rich-graph.ttl')
+
+    it('parses without error and returns 450+ triples', async () => {
+      const store = await parseRdfContent(content, 'text/turtle')
+      expect(storeSize(store)).toBeGreaterThanOrEqual(450)
+    })
+
+    it('contains multilingual rdfs:labels (en, de, fr)', async () => {
+      const store = await parseRdfContent(content, 'text/turtle')
+      const quads = store.getQuads(null, RDFS_LABEL, null, null)
+      const langs = new Set(quads.map((q) => (q.object as RdfLiteral).language).filter(Boolean))
+      expect(langs.has('en')).toBe(true)
+      expect(langs.has('de')).toBe(true)
+      expect(langs.has('fr')).toBe(true)
+    })
+
+    it('contains typed datatype literals (xsd:date, xsd:gYear, xsd:nonNegativeInteger)', async () => {
+      const store = await parseRdfContent(content, 'text/turtle')
+      const datatypes = new Set(
+        store
+          .getQuads(null, null, null, null)
+          .filter((q) => q.object.termType === 'Literal')
+          .map((q) => (q.object as RdfLiteral).datatype.value),
+      )
+      expect(datatypes.has('http://www.w3.org/2001/XMLSchema#date')).toBe(true)
+      expect(datatypes.has('http://www.w3.org/2001/XMLSchema#gYear')).toBe(true)
+      expect(datatypes.has('http://www.w3.org/2001/XMLSchema#nonNegativeInteger')).toBe(true)
+    })
+
+    it('contains blank nodes (used for postal addresses)', async () => {
+      const store = await parseRdfContent(content, 'text/turtle')
+      const hasBlankNode = store
+        .getQuads(null, null, null, null)
+        .some((q) => q.subject.termType === 'BlankNode')
+      expect(hasBlankNode).toBe(true)
+    })
+
+    it('contains the expected researcher IRI as a subject', async () => {
+      const store = await parseRdfContent(content, 'text/turtle')
+      const subjects = new Set(store.getQuads(null, null, null, null).map((q) => q.subject.value))
+      expect(subjects.has('http://example.org/kg/AliceSmith')).toBe(true)
+    })
+  })
+
+  describe('.n3 — N3 notation (software ecosystem)', () => {
+    const content = loadFixture('rich-graph.n3')
+
+    it('parses without error and returns 350+ triples', async () => {
+      const store = await parseRdfContent(content, 'text/turtle')
+      expect(storeSize(store)).toBeGreaterThanOrEqual(350)
+    })
+
+    it('contains multilingual rdfs:labels (en, de, fr)', async () => {
+      const store = await parseRdfContent(content, 'text/turtle')
+      const quads = store.getQuads(null, RDFS_LABEL, null, null)
+      const langs = new Set(quads.map((q) => (q.object as RdfLiteral).language).filter(Boolean))
+      expect(langs.has('en')).toBe(true)
+      expect(langs.has('de')).toBe(true)
+      expect(langs.has('fr')).toBe(true)
+    })
+
+    it('contains gYear datatype literals (for founding/release years)', async () => {
+      const store = await parseRdfContent(content, 'text/turtle')
+      const hasGYear = store
+        .getQuads(null, null, null, null)
+        .some(
+          (q) =>
+            q.object.termType === 'Literal' &&
+            (q.object as RdfLiteral).datatype.value === 'http://www.w3.org/2001/XMLSchema#gYear',
+        )
+      expect(hasGYear).toBe(true)
+    })
+
+    it('contains the VSCode project IRI as a subject', async () => {
+      const store = await parseRdfContent(content, 'text/turtle')
+      const subjects = new Set(store.getQuads(null, null, null, null).map((q) => q.subject.value))
+      expect(subjects.has('http://example.org/sw/VSCode')).toBe(true)
+    })
+  })
+
+  describe('.nt — N-Triples (world literature)', () => {
+    const content = loadFixture('rich-graph.nt')
+
+    it('parses without error and returns 300+ triples', async () => {
+      const store = await parseRdfContent(content, 'application/n-triples')
+      expect(storeSize(store)).toBeGreaterThanOrEqual(300)
+    })
+
+    it('contains multilingual rdfs:labels (en, de, fr)', async () => {
+      const store = await parseRdfContent(content, 'application/n-triples')
+      const quads = store.getQuads(null, RDFS_LABEL, null, null)
+      const langs = new Set(quads.map((q) => (q.object as RdfLiteral).language).filter(Boolean))
+      expect(langs.has('en')).toBe(true)
+      expect(langs.has('de')).toBe(true)
+      expect(langs.has('fr')).toBe(true)
+    })
+
+    it('contains datatype literals (xsd:positiveInteger, xsd:gYear)', async () => {
+      const store = await parseRdfContent(content, 'application/n-triples')
+      const datatypes = new Set(
+        store
+          .getQuads(null, null, null, null)
+          .filter((q) => q.object.termType === 'Literal')
+          .map((q) => (q.object as RdfLiteral).datatype.value),
+      )
+      expect(datatypes.has('http://www.w3.org/2001/XMLSchema#positiveInteger')).toBe(true)
+      expect(datatypes.has('http://www.w3.org/2001/XMLSchema#gYear')).toBe(true)
+    })
+
+    it('contains the expected book IRI as a subject', async () => {
+      const store = await parseRdfContent(content, 'application/n-triples')
+      const subjects = new Set(store.getQuads(null, null, null, null).map((q) => q.subject.value))
+      expect(subjects.has('http://example.org/lib/Book100YearsSolitude')).toBe(true)
+    })
+  })
+
+  describe('.nq — N-Quads (music, multiple named graphs)', () => {
+    const content = loadFixture('rich-graph.nq')
+
+    it('parses without error and returns 300+ quads', async () => {
+      const store = await parseRdfContent(content, 'application/n-quads')
+      expect(storeSize(store)).toBeGreaterThanOrEqual(300)
+    })
+
+    it('contains multilingual rdfs:labels (en, de, fr)', async () => {
+      const store = await parseRdfContent(content, 'application/n-quads')
+      const quads = store.getQuads(null, RDFS_LABEL, null, null)
+      const langs = new Set(quads.map((q) => (q.object as RdfLiteral).language).filter(Boolean))
+      expect(langs.has('en')).toBe(true)
+      expect(langs.has('de')).toBe(true)
+      expect(langs.has('fr')).toBe(true)
+    })
+
+    it('stores quads across multiple named graphs', async () => {
+      const store = await parseRdfContent(content, 'application/n-quads')
+      const graphs = new Set(
+        store
+          .getQuads(null, null, null, null)
+          .map((q) => q.graph.value)
+          .filter(Boolean),
+      )
+      expect(graphs.has('http://example.org/nq/ontology')).toBe(true)
+      expect(graphs.has('http://example.org/nq/artists')).toBe(true)
+      expect(graphs.has('http://example.org/nq/albums')).toBe(true)
+    })
+
+    it('contains the Beatles IRI as a subject', async () => {
+      const store = await parseRdfContent(content, 'application/n-quads')
+      const subjects = new Set(store.getQuads(null, null, null, null).map((q) => q.subject.value))
+      expect(subjects.has('http://example.org/music/BeatlesArtist')).toBe(true)
+    })
+  })
+
+  describe('.trig — TriG (cinema, multiple named graphs)', () => {
+    const content = loadFixture('rich-graph.trig')
+
+    it('parses without error and returns 300+ quads', async () => {
+      const store = await parseRdfContent(content, 'application/trig')
+      expect(storeSize(store)).toBeGreaterThanOrEqual(300)
+    })
+
+    it('contains multilingual rdfs:labels (en, de, fr)', async () => {
+      const store = await parseRdfContent(content, 'application/trig')
+      const quads = store.getQuads(null, RDFS_LABEL, null, null)
+      const langs = new Set(quads.map((q) => (q.object as RdfLiteral).language).filter(Boolean))
+      expect(langs.has('en')).toBe(true)
+      expect(langs.has('de')).toBe(true)
+      expect(langs.has('fr')).toBe(true)
+    })
+
+    it('stores quads across multiple named graphs', async () => {
+      const store = await parseRdfContent(content, 'application/trig')
+      const graphs = new Set(
+        store
+          .getQuads(null, null, null, null)
+          .map((q) => q.graph.value)
+          .filter(Boolean),
+      )
+      expect(graphs.has('http://example.org/film/schema')).toBe(true)
+      expect(graphs.has('http://example.org/film/directors')).toBe(true)
+      expect(graphs.has('http://example.org/film/films')).toBe(true)
+    })
+
+    it('contains typed literals (xsd:date, xsd:decimal)', async () => {
+      const store = await parseRdfContent(content, 'application/trig')
+      const datatypes = new Set(
+        store
+          .getQuads(null, null, null, null)
+          .filter((q) => q.object.termType === 'Literal')
+          .map((q) => (q.object as RdfLiteral).datatype.value),
+      )
+      expect(datatypes.has('http://www.w3.org/2001/XMLSchema#date')).toBe(true)
+      expect(datatypes.has('http://www.w3.org/2001/XMLSchema#decimal')).toBe(true)
+    })
+
+    it('contains the Inception film IRI as a subject', async () => {
+      const store = await parseRdfContent(content, 'application/trig')
+      const subjects = new Set(store.getQuads(null, null, null, null).map((q) => q.subject.value))
+      expect(subjects.has('http://example.org/film/FilmInception')).toBe(true)
+    })
   })
 })

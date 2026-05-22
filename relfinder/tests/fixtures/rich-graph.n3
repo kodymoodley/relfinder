@@ -1,0 +1,502 @@
+@prefix :       <http://example.org/sw/> .
+@prefix rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+@prefix owl:    <http://www.w3.org/2002/07/owl#> .
+@prefix foaf:   <http://xmlns.com/foaf/0.1/> .
+@prefix dc:     <http://purl.org/dc/elements/1.1/> .
+@prefix dct:    <http://purl.org/dc/terms/> .
+@prefix skos:   <http://www.w3.org/2004/02/skos/core#> .
+@prefix doap:   <http://usefulinc.com/ns/doap#> .
+@prefix schema: <http://schema.org/> .
+
+# ── Ontology header ───────────────────────────────────────────────────────────
+<http://example.org/sw/>
+  rdf:type owl:Ontology ;
+  dc:title "Open-Source Software Ecosystem"@en ;
+  dc:title "Open-Source Software-Ökosystem"@de ;
+  dc:title "Écosystème de logiciels libres"@fr ;
+  dct:description "RDF dataset describing open-source projects, contributors, and organisations."@en ;
+  owl:versionInfo "2.0.0" .
+
+# ── Classes ───────────────────────────────────────────────────────────────────
+:SoftwareProject
+  rdf:type owl:Class ;
+  rdfs:label "Software Project"@en ;
+  rdfs:label "Softwareprojekt"@de ;
+  rdfs:label "Projet logiciel"@fr ;
+  rdfs:comment "An organised effort to produce or maintain software."@en ;
+  rdfs:comment "Ein organisiertes Vorhaben zur Herstellung oder Pflege von Software."@de .
+
+:OpenSourceProject
+  rdf:type owl:Class ;
+  rdfs:subClassOf :SoftwareProject ;
+  rdfs:label "Open Source Project"@en ;
+  rdfs:label "Open-Source-Projekt"@de ;
+  rdfs:label "Projet open source"@fr ;
+  rdfs:comment "A software project with publicly available source code."@en ;
+  rdfs:comment "Ein Projekt mit öffentlich zugänglichem Quellcode."@de .
+
+:Library
+  rdf:type owl:Class ;
+  rdfs:subClassOf :OpenSourceProject ;
+  rdfs:label "Software Library"@en ;
+  rdfs:label "Softwarebibliothek"@de ;
+  rdfs:label "Bibliothèque logicielle"@fr ;
+  rdfs:comment "Reusable code packaged for use in other software."@en .
+
+:Framework
+  rdf:type owl:Class ;
+  rdfs:subClassOf :OpenSourceProject ;
+  rdfs:label "Software Framework"@en ;
+  rdfs:label "Software-Framework"@de ;
+  rdfs:label "Cadre logiciel"@fr ;
+  rdfs:comment "A reusable software environment providing generic functionality."@en .
+
+:Developer
+  rdf:type owl:Class ;
+  rdfs:subClassOf foaf:Person ;
+  rdfs:label "Software Developer"@en ;
+  rdfs:label "Softwareentwickler"@de ;
+  rdfs:label "Développeur logiciel"@fr ;
+  rdfs:comment "A person who writes, tests, or maintains software."@en .
+
+:Organisation
+  rdf:type owl:Class ;
+  rdfs:label "Organisation"@en ;
+  rdfs:label "Organisation"@de ;
+  rdfs:label "Organisation"@fr ;
+  rdfs:comment "A group of people with a shared purpose."@en .
+
+:Company
+  rdf:type owl:Class ;
+  rdfs:subClassOf :Organisation ;
+  rdfs:label "Company"@en ;
+  rdfs:label "Unternehmen"@de ;
+  rdfs:label "Entreprise"@fr ;
+  rdfs:comment "A for-profit commercial enterprise."@en .
+
+:Foundation
+  rdf:type owl:Class ;
+  rdfs:subClassOf :Organisation ;
+  rdfs:label "Foundation"@en ;
+  rdfs:label "Stiftung"@de ;
+  rdfs:label "Fondation"@fr ;
+  rdfs:comment "A non-profit organisation supporting open-source communities."@en .
+
+:ProgrammingLanguage
+  rdf:type owl:Class ;
+  rdfs:label "Programming Language"@en ;
+  rdfs:label "Programmiersprache"@de ;
+  rdfs:label "Langage de programmation"@fr ;
+  rdfs:comment "A formal language used to instruct computers."@en .
+
+:License
+  rdf:type owl:Class ;
+  rdfs:label "Software License"@en ;
+  rdfs:label "Softwarelizenz"@de ;
+  rdfs:label "Licence logicielle"@fr ;
+  rdfs:comment "A legal instrument governing the use of software."@en .
+
+# ── Data properties ───────────────────────────────────────────────────────────
+:githubStars
+  rdf:type owl:DatatypeProperty ;
+  rdfs:domain :OpenSourceProject ;
+  rdfs:range xsd:nonNegativeInteger ;
+  rdfs:label "GitHub stars"@en ;
+  rdfs:label "GitHub-Sterne"@de ;
+  rdfs:comment "Number of GitHub stars at time of recording."@en .
+
+:firstRelease
+  rdf:type owl:DatatypeProperty ;
+  rdfs:domain :SoftwareProject ;
+  rdfs:range xsd:gYear ;
+  rdfs:label "first release year"@en ;
+  rdfs:label "erstes Erscheinungsjahr"@de .
+
+:latestVersion
+  rdf:type owl:DatatypeProperty ;
+  rdfs:domain :SoftwareProject ;
+  rdfs:range xsd:string ;
+  rdfs:label "latest version"@en ;
+  rdfs:label "neueste Version"@de .
+
+:homepage
+  rdf:type owl:DatatypeProperty ;
+  rdfs:domain :SoftwareProject ;
+  rdfs:range xsd:anyURI ;
+  rdfs:label "homepage"@en ;
+  rdfs:label "Webseite"@de .
+
+:commitCount
+  rdf:type owl:DatatypeProperty ;
+  rdfs:domain :OpenSourceProject ;
+  rdfs:range xsd:nonNegativeInteger ;
+  rdfs:label "commit count"@en ;
+  rdfs:label "Commit-Anzahl"@de .
+
+:contributorCount
+  rdf:type owl:DatatypeProperty ;
+  rdfs:domain :OpenSourceProject ;
+  rdfs:range xsd:nonNegativeInteger ;
+  rdfs:label "contributor count"@en ;
+  rdfs:label "Beitragszahl"@de .
+
+:email
+  rdf:type owl:DatatypeProperty ;
+  rdfs:domain :Developer ;
+  rdfs:range xsd:string ;
+  rdfs:label "email"@en ;
+  rdfs:label "E-Mail"@de .
+
+:githubHandle
+  rdf:type owl:DatatypeProperty ;
+  rdfs:domain :Developer ;
+  rdfs:range xsd:string ;
+  rdfs:label "GitHub handle"@en ;
+  rdfs:label "GitHub-Benutzername"@de .
+
+:foundedYear
+  rdf:type owl:DatatypeProperty ;
+  rdfs:domain :Organisation ;
+  rdfs:range xsd:gYear ;
+  rdfs:label "founded year"@en ;
+  rdfs:label "Gründungsjahr"@de .
+
+# ── Object properties ─────────────────────────────────────────────────────────
+:maintainedBy
+  rdf:type owl:ObjectProperty ;
+  rdfs:domain :OpenSourceProject ;
+  rdfs:range :Developer ;
+  rdfs:label "maintained by"@en ;
+  rdfs:label "betreut von"@de .
+
+:createdBy
+  rdf:type owl:ObjectProperty ;
+  rdfs:domain :SoftwareProject ;
+  rdfs:range :Developer ;
+  rdfs:label "created by"@en ;
+  rdfs:label "erstellt von"@de .
+
+:contributesTo
+  rdf:type owl:ObjectProperty ;
+  rdfs:domain :Developer ;
+  rdfs:range :OpenSourceProject ;
+  rdfs:label "contributes to"@en ;
+  rdfs:label "trägt bei zu"@de .
+
+:employedBy
+  rdf:type owl:ObjectProperty ;
+  rdfs:domain :Developer ;
+  rdfs:range :Organisation ;
+  rdfs:label "employed by"@en ;
+  rdfs:label "beschäftigt bei"@de .
+
+:writtenIn
+  rdf:type owl:ObjectProperty ;
+  rdfs:domain :SoftwareProject ;
+  rdfs:range :ProgrammingLanguage ;
+  rdfs:label "written in"@en ;
+  rdfs:label "geschrieben in"@de .
+
+:licensedUnder
+  rdf:type owl:ObjectProperty ;
+  rdfs:domain :SoftwareProject ;
+  rdfs:range :License ;
+  rdfs:label "licensed under"@en ;
+  rdfs:label "lizenziert unter"@de .
+
+:dependsOn
+  rdf:type owl:ObjectProperty ;
+  rdfs:domain :SoftwareProject ;
+  rdfs:range :SoftwareProject ;
+  rdfs:label "depends on"@en ;
+  rdfs:label "hängt ab von"@de .
+
+:sponsoredBy
+  rdf:type owl:ObjectProperty ;
+  rdfs:domain :OpenSourceProject ;
+  rdfs:range :Organisation ;
+  rdfs:label "sponsored by"@en ;
+  rdfs:label "gesponsert von"@de .
+
+:knows
+  rdf:type owl:ObjectProperty, owl:SymmetricProperty ;
+  rdfs:subPropertyOf foaf:knows ;
+  rdfs:domain :Developer ;
+  rdfs:range :Developer ;
+  rdfs:label "knows"@en ;
+  rdfs:label "kennt"@de .
+
+# ── Programming languages ─────────────────────────────────────────────────────
+:TypeScript
+  rdf:type :ProgrammingLanguage ;
+  rdfs:label "TypeScript"@en ;
+  rdfs:label "TypeScript"@de ;
+  dct:description "Typed superset of JavaScript by Microsoft."@en ;
+  dct:description "Typisiertes Superset von JavaScript von Microsoft."@de .
+
+:Rust
+  rdf:type :ProgrammingLanguage ;
+  rdfs:label "Rust"@en ;
+  rdfs:label "Rust"@de ;
+  dct:description "Systems programming language focused on safety and performance."@en ;
+  dct:description "Systemprogrammiersprache für Sicherheit und Leistung."@de .
+
+:Python
+  rdf:type :ProgrammingLanguage ;
+  rdfs:label "Python"@en ;
+  rdfs:label "Python"@de ;
+  dct:description "High-level interpreted programming language."@en ;
+  dct:description "Interpretierte Hochsprache mit klarer Syntax."@de .
+
+:Go
+  rdf:type :ProgrammingLanguage ;
+  rdfs:label "Go"@en ;
+  rdfs:label "Go"@de ;
+  rdfs:label "Go"@fr ;
+  dct:description "Statically typed compiled language by Google."@en .
+
+# ── Licenses ──────────────────────────────────────────────────────────────────
+:MIT_License
+  rdf:type :License ;
+  rdfs:label "MIT License"@en ;
+  rdfs:label "MIT-Lizenz"@de ;
+  rdfs:label "Licence MIT"@fr ;
+  dct:description "Permissive free software license."@en .
+
+:Apache2
+  rdf:type :License ;
+  rdfs:label "Apache License 2.0"@en ;
+  rdfs:label "Apache-Lizenz 2.0"@de ;
+  rdfs:label "Licence Apache 2.0"@fr ;
+  dct:description "Permissive license with patent grant."@en .
+
+:MPL2
+  rdf:type :License ;
+  rdfs:label "Mozilla Public License 2.0"@en ;
+  rdfs:label "Mozilla Public License 2.0"@de ;
+  dct:description "Weak copyleft free software license."@en .
+
+# ── Organisations ─────────────────────────────────────────────────────────────
+:Microsoft
+  rdf:type :Company ;
+  rdfs:label "Microsoft"@en ;
+  rdfs:label "Microsoft"@de ;
+  rdfs:label "Microsoft"@fr ;
+  :foundedYear "1975"^^xsd:gYear ;
+  dct:description "Multinational technology corporation."@en ;
+  dct:description "Multinationales Technologieunternehmen."@de .
+
+:Google
+  rdf:type :Company ;
+  rdfs:label "Google"@en ;
+  rdfs:label "Google"@de ;
+  rdfs:label "Google"@fr ;
+  :foundedYear "1998"^^xsd:gYear ;
+  dct:description "Search engine and cloud computing company."@en .
+
+:Mozilla
+  rdf:type :Foundation ;
+  rdfs:label "Mozilla Foundation"@en ;
+  rdfs:label "Mozilla-Stiftung"@de ;
+  rdfs:label "Fondation Mozilla"@fr ;
+  :foundedYear "2003"^^xsd:gYear ;
+  dct:description "Non-profit promoting open internet standards."@en .
+
+:ApacheSF
+  rdf:type :Foundation ;
+  rdfs:label "Apache Software Foundation"@en ;
+  rdfs:label "Apache Software Foundation"@de ;
+  :foundedYear "1999"^^xsd:gYear ;
+  dct:description "Non-profit supporting open-source Apache projects."@en .
+
+# ── Developers ────────────────────────────────────────────────────────────────
+:LinusT
+  rdf:type :Developer ;
+  rdfs:label "Linus Torvalds"@en ;
+  foaf:name "Linus Torvalds" ;
+  :email "torvalds@linux-foundation.org" ;
+  :githubHandle "torvalds" ;
+  dct:description "Creator of the Linux kernel and Git."@en ;
+  dct:description "Schöpfer des Linux-Kernels und von Git."@de .
+
+:RyanD
+  rdf:type :Developer ;
+  rdfs:label "Ryan Dahl"@en ;
+  foaf:name "Ryan Dahl" ;
+  :githubHandle "ry" ;
+  dct:description "Creator of Node.js and Deno."@en .
+
+:GuidoVR
+  rdf:type :Developer ;
+  rdfs:label "Guido van Rossum"@en ;
+  rdfs:label "Guido van Rossum"@fr ;
+  foaf:name "Guido van Rossum" ;
+  :githubHandle "gvanrossum" ;
+  :employedBy :Microsoft ;
+  dct:description "Creator of the Python programming language."@en ;
+  dct:description "Créateur du langage de programmation Python."@fr .
+
+:AndersH
+  rdf:type :Developer ;
+  rdfs:label "Anders Hejlsberg"@en ;
+  rdfs:label "Anders Hejlsberg"@de ;
+  foaf:name "Anders Hejlsberg" ;
+  :githubHandle "ahejlsberg" ;
+  :employedBy :Microsoft ;
+  dct:description "Creator of TypeScript and lead designer of C#."@en ;
+  dct:description "Schöpfer von TypeScript und leitender Designer von C#."@de .
+
+:MatiasPD
+  rdf:type :Developer ;
+  rdfs:label "Matías Pizarro-Durant"@en ;
+  foaf:name "Matías Pizarro-Durant" ;
+  :githubHandle "matiasp" ;
+  dct:description "Open-source developer and framework contributor."@en .
+
+:SarahKB
+  rdf:type :Developer ;
+  rdfs:label "Sarah Kim-Brunner"@en ;
+  rdfs:label "Sarah Kim-Brunner"@de ;
+  foaf:name "Sarah Kim-Brunner" ;
+  :githubHandle "skimbrunner" ;
+  :employedBy :Google ;
+  dct:description "Systems engineer working on cloud-native tooling."@en .
+
+:TamaraN
+  rdf:type :Developer ;
+  rdfs:label "Tamara Novak"@en ;
+  rdfs:label "Tamara Novak"@fr ;
+  foaf:name "Tamara Novak" ;
+  :githubHandle "tnovak" ;
+  dct:description "Développeuse spécialisée dans les outils de développement."@fr ;
+  dct:description "Developer tooling specialist."@en .
+
+:YusufA
+  rdf:type :Developer ;
+  rdfs:label "Yusuf Adeyemi"@en ;
+  foaf:name "Yusuf Adeyemi" ;
+  :githubHandle "yadeyemi" ;
+  :employedBy :Mozilla ;
+  dct:description "Web platform engineer and open-source maintainer."@en .
+
+# ── Software projects ─────────────────────────────────────────────────────────
+:VSCode
+  rdf:type :Framework ;
+  rdfs:label "Visual Studio Code"@en ;
+  rdfs:label "Visual Studio Code"@de ;
+  rdfs:label "Visual Studio Code"@fr ;
+  dc:title "Visual Studio Code" ;
+  :firstRelease "2015"^^xsd:gYear ;
+  :latestVersion "1.89.0" ;
+  :githubStars "160000"^^xsd:nonNegativeInteger ;
+  :contributorCount "1800"^^xsd:nonNegativeInteger ;
+  :writtenIn :TypeScript ;
+  :licensedUnder :MIT_License ;
+  :sponsoredBy :Microsoft ;
+  :createdBy :AndersH ;
+  dct:description "Free source-code editor with IntelliSense and debugging support."@en ;
+  dct:description "Kostenloser Quellcode-Editor mit IntelliSense."@de .
+
+:TypeScriptProject
+  rdf:type :Library ;
+  rdfs:label "TypeScript Compiler"@en ;
+  rdfs:label "TypeScript-Compiler"@de ;
+  dc:title "TypeScript" ;
+  :firstRelease "2012"^^xsd:gYear ;
+  :latestVersion "5.4.0" ;
+  :githubStars "98000"^^xsd:nonNegativeInteger ;
+  :writtenIn :TypeScript ;
+  :licensedUnder :Apache2 ;
+  :sponsoredBy :Microsoft ;
+  :createdBy :AndersH ;
+  dct:description "Typed superset of JavaScript that compiles to plain JavaScript."@en ;
+  dct:description "Typisiertes Superset von JavaScript."@de .
+
+:Deno
+  rdf:type :Framework ;
+  rdfs:label "Deno"@en ;
+  rdfs:label "Deno"@de ;
+  rdfs:label "Deno"@fr ;
+  dc:title "Deno" ;
+  :firstRelease "2018"^^xsd:gYear ;
+  :latestVersion "1.43.0" ;
+  :githubStars "93000"^^xsd:nonNegativeInteger ;
+  :writtenIn :Rust ;
+  :licensedUnder :MIT_License ;
+  :createdBy :RyanD ;
+  dct:description "A secure runtime for JavaScript and TypeScript built on V8."@en ;
+  dct:description "Eine sichere Laufzeitumgebung für JavaScript und TypeScript."@de .
+
+:CPython
+  rdf:type :Framework ;
+  rdfs:label "CPython"@en ;
+  rdfs:label "CPython"@de ;
+  dc:title "CPython" ;
+  :firstRelease "1991"^^xsd:gYear ;
+  :latestVersion "3.12.3" ;
+  :githubStars "60000"^^xsd:nonNegativeInteger ;
+  :writtenIn :Python ;
+  :licensedUnder :Apache2 ;
+  :createdBy :GuidoVR ;
+  dct:description "Reference implementation of the Python programming language."@en ;
+  dct:description "Referenzimplementierung der Programmiersprache Python."@de .
+
+:Ripgrep
+  rdf:type :Library ;
+  rdfs:label "ripgrep"@en ;
+  rdfs:label "ripgrep"@de ;
+  dc:title "ripgrep" ;
+  :firstRelease "2016"^^xsd:gYear ;
+  :latestVersion "14.1.0" ;
+  :githubStars "44000"^^xsd:nonNegativeInteger ;
+  :writtenIn :Rust ;
+  :licensedUnder :MIT_License ;
+  dct:description "Fast line-oriented search tool using regex."@en .
+
+:Firefox
+  rdf:type :Framework ;
+  rdfs:label "Firefox"@en ;
+  rdfs:label "Firefox"@de ;
+  rdfs:label "Firefox"@fr ;
+  dc:title "Firefox" ;
+  :firstRelease "2002"^^xsd:gYear ;
+  :latestVersion "125.0" ;
+  :githubStars "12000"^^xsd:nonNegativeInteger ;
+  :writtenIn :Rust ;
+  :licensedUnder :MPL2 ;
+  :sponsoredBy :Mozilla ;
+  :maintainedBy :YusufA ;
+  dct:description "Free and open-source web browser by Mozilla."@en ;
+  dct:description "Kostenloser Open-Source-Webbrowser von Mozilla."@de ;
+  dct:description "Navigateur web libre et gratuit par Mozilla."@fr .
+
+# ── Dependency links ──────────────────────────────────────────────────────────
+:VSCode        :dependsOn :TypeScriptProject .
+:Deno          :dependsOn :TypeScriptProject .
+:Firefox       :dependsOn :Ripgrep .
+
+# ── Contribution links ────────────────────────────────────────────────────────
+:AndersH  :contributesTo :VSCode .
+:AndersH  :contributesTo :TypeScriptProject .
+:RyanD    :contributesTo :Deno .
+:GuidoVR  :contributesTo :CPython .
+:MatiasPD :contributesTo :VSCode .
+:MatiasPD :contributesTo :TypeScriptProject .
+:SarahKB  :contributesTo :CPython .
+:TamaraN  :contributesTo :Deno .
+:YusufA   :contributesTo :Firefox .
+
+# ── Maintainer links ──────────────────────────────────────────────────────────
+:TypeScriptProject :maintainedBy :AndersH .
+:Deno              :maintainedBy :RyanD .
+:CPython           :maintainedBy :GuidoVR .
+
+# ── Knows links ───────────────────────────────────────────────────────────────
+:AndersH  :knows :GuidoVR .
+:GuidoVR  :knows :RyanD .
+:RyanD    :knows :TamaraN .
+:SarahKB  :knows :MatiasPD .
+:YusufA   :knows :SarahKB .
+:MatiasPD :knows :TamaraN .

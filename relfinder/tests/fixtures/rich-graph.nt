@@ -1,0 +1,448 @@
+<http://example.org/lib/> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Ontology> .
+<http://example.org/lib/> <http://purl.org/dc/elements/1.1/title> "World Literature Knowledge Base"@en .
+<http://example.org/lib/> <http://purl.org/dc/elements/1.1/title> "Weltliteratur-Wissensbasis"@de .
+<http://example.org/lib/> <http://purl.org/dc/elements/1.1/title> "Base de connaissances littérature mondiale"@fr .
+<http://example.org/lib/> <http://purl.org/dc/terms/description> "An RDF dataset about books, authors, publishers, and literary awards."@en .
+<http://example.org/lib/> <http://www.w3.org/2002/07/owl#versionInfo> "1.0.0" .
+
+<http://example.org/lib/Book> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
+<http://example.org/lib/Book> <http://www.w3.org/2000/01/rdf-schema#label> "Book"@en .
+<http://example.org/lib/Book> <http://www.w3.org/2000/01/rdf-schema#label> "Buch"@de .
+<http://example.org/lib/Book> <http://www.w3.org/2000/01/rdf-schema#label> "Livre"@fr .
+<http://example.org/lib/Book> <http://www.w3.org/2000/01/rdf-schema#comment> "A written or printed work."@en .
+<http://example.org/lib/Book> <http://www.w3.org/2000/01/rdf-schema#comment> "Ein geschriebenes oder gedrucktes Werk."@de .
+
+<http://example.org/lib/Novel> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
+<http://example.org/lib/Novel> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://example.org/lib/Book> .
+<http://example.org/lib/Novel> <http://www.w3.org/2000/01/rdf-schema#label> "Novel"@en .
+<http://example.org/lib/Novel> <http://www.w3.org/2000/01/rdf-schema#label> "Roman"@de .
+<http://example.org/lib/Novel> <http://www.w3.org/2000/01/rdf-schema#label> "Roman"@fr .
+<http://example.org/lib/Novel> <http://www.w3.org/2000/01/rdf-schema#comment> "A long fictional narrative in prose."@en .
+
+<http://example.org/lib/NonFiction> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
+<http://example.org/lib/NonFiction> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://example.org/lib/Book> .
+<http://example.org/lib/NonFiction> <http://www.w3.org/2000/01/rdf-schema#label> "Non-Fiction"@en .
+<http://example.org/lib/NonFiction> <http://www.w3.org/2000/01/rdf-schema#label> "Sachbuch"@de .
+<http://example.org/lib/NonFiction> <http://www.w3.org/2000/01/rdf-schema#label> "Non-fiction"@fr .
+<http://example.org/lib/NonFiction> <http://www.w3.org/2000/01/rdf-schema#comment> "Prose based on fact rather than fiction."@en .
+
+<http://example.org/lib/ShortStoryCollection> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
+<http://example.org/lib/ShortStoryCollection> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://example.org/lib/Book> .
+<http://example.org/lib/ShortStoryCollection> <http://www.w3.org/2000/01/rdf-schema#label> "Short Story Collection"@en .
+<http://example.org/lib/ShortStoryCollection> <http://www.w3.org/2000/01/rdf-schema#label> "Kurzgeschichtensammlung"@de .
+<http://example.org/lib/ShortStoryCollection> <http://www.w3.org/2000/01/rdf-schema#label> "Recueil de nouvelles"@fr .
+<http://example.org/lib/ShortStoryCollection> <http://www.w3.org/2000/01/rdf-schema#comment> "A book collecting multiple short stories."@en .
+
+<http://example.org/lib/Author> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
+<http://example.org/lib/Author> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://xmlns.com/foaf/0.1/Person> .
+<http://example.org/lib/Author> <http://www.w3.org/2000/01/rdf-schema#label> "Author"@en .
+<http://example.org/lib/Author> <http://www.w3.org/2000/01/rdf-schema#label> "Autor"@de .
+<http://example.org/lib/Author> <http://www.w3.org/2000/01/rdf-schema#label> "Auteur"@fr .
+<http://example.org/lib/Author> <http://www.w3.org/2000/01/rdf-schema#comment> "A person who writes books or other literary works."@en .
+
+<http://example.org/lib/Publisher> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
+<http://example.org/lib/Publisher> <http://www.w3.org/2000/01/rdf-schema#label> "Publisher"@en .
+<http://example.org/lib/Publisher> <http://www.w3.org/2000/01/rdf-schema#label> "Verlag"@de .
+<http://example.org/lib/Publisher> <http://www.w3.org/2000/01/rdf-schema#label> "Éditeur"@fr .
+<http://example.org/lib/Publisher> <http://www.w3.org/2000/01/rdf-schema#comment> "An organisation that prepares and issues books."@en .
+
+<http://example.org/lib/Genre> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
+<http://example.org/lib/Genre> <http://www.w3.org/2000/01/rdf-schema#label> "Genre"@en .
+<http://example.org/lib/Genre> <http://www.w3.org/2000/01/rdf-schema#label> "Genre"@de .
+<http://example.org/lib/Genre> <http://www.w3.org/2000/01/rdf-schema#label> "Genre"@fr .
+<http://example.org/lib/Genre> <http://www.w3.org/2000/01/rdf-schema#comment> "A category of literary composition."@en .
+
+<http://example.org/lib/Award> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
+<http://example.org/lib/Award> <http://www.w3.org/2000/01/rdf-schema#label> "Literary Award"@en .
+<http://example.org/lib/Award> <http://www.w3.org/2000/01/rdf-schema#label> "Literaturpreis"@de .
+<http://example.org/lib/Award> <http://www.w3.org/2000/01/rdf-schema#label> "Prix littéraire"@fr .
+<http://example.org/lib/Award> <http://www.w3.org/2000/01/rdf-schema#comment> "Recognition given for outstanding literary achievement."@en .
+
+<http://example.org/lib/title> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#DatatypeProperty> .
+<http://example.org/lib/title> <http://www.w3.org/2000/01/rdf-schema#domain> <http://example.org/lib/Book> .
+<http://example.org/lib/title> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2001/XMLSchema#string> .
+<http://example.org/lib/title> <http://www.w3.org/2000/01/rdf-schema#label> "title"@en .
+<http://example.org/lib/title> <http://www.w3.org/2000/01/rdf-schema#label> "Titel"@de .
+
+<http://example.org/lib/isbn> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#DatatypeProperty> .
+<http://example.org/lib/isbn> <http://www.w3.org/2000/01/rdf-schema#domain> <http://example.org/lib/Book> .
+<http://example.org/lib/isbn> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2001/XMLSchema#string> .
+<http://example.org/lib/isbn> <http://www.w3.org/2000/01/rdf-schema#label> "ISBN"@en .
+<http://example.org/lib/isbn> <http://www.w3.org/2000/01/rdf-schema#comment> "International Standard Book Number."@en .
+
+<http://example.org/lib/publicationYear> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#DatatypeProperty> .
+<http://example.org/lib/publicationYear> <http://www.w3.org/2000/01/rdf-schema#domain> <http://example.org/lib/Book> .
+<http://example.org/lib/publicationYear> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2001/XMLSchema#gYear> .
+<http://example.org/lib/publicationYear> <http://www.w3.org/2000/01/rdf-schema#label> "publication year"@en .
+<http://example.org/lib/publicationYear> <http://www.w3.org/2000/01/rdf-schema#label> "Erscheinungsjahr"@de .
+
+<http://example.org/lib/language> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#DatatypeProperty> .
+<http://example.org/lib/language> <http://www.w3.org/2000/01/rdf-schema#domain> <http://example.org/lib/Book> .
+<http://example.org/lib/language> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2001/XMLSchema#language> .
+<http://example.org/lib/language> <http://www.w3.org/2000/01/rdf-schema#label> "language"@en .
+<http://example.org/lib/language> <http://www.w3.org/2000/01/rdf-schema#label> "Sprache"@de .
+
+<http://example.org/lib/pageCount> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#DatatypeProperty> .
+<http://example.org/lib/pageCount> <http://www.w3.org/2000/01/rdf-schema#domain> <http://example.org/lib/Book> .
+<http://example.org/lib/pageCount> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2001/XMLSchema#positiveInteger> .
+<http://example.org/lib/pageCount> <http://www.w3.org/2000/01/rdf-schema#label> "page count"@en .
+<http://example.org/lib/pageCount> <http://www.w3.org/2000/01/rdf-schema#label> "Seitenanzahl"@de .
+
+<http://example.org/lib/birthYear> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#DatatypeProperty> .
+<http://example.org/lib/birthYear> <http://www.w3.org/2000/01/rdf-schema#domain> <http://example.org/lib/Author> .
+<http://example.org/lib/birthYear> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2001/XMLSchema#gYear> .
+<http://example.org/lib/birthYear> <http://www.w3.org/2000/01/rdf-schema#label> "birth year"@en .
+<http://example.org/lib/birthYear> <http://www.w3.org/2000/01/rdf-schema#label> "Geburtsjahr"@de .
+
+<http://example.org/lib/nationality> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#DatatypeProperty> .
+<http://example.org/lib/nationality> <http://www.w3.org/2000/01/rdf-schema#domain> <http://example.org/lib/Author> .
+<http://example.org/lib/nationality> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2001/XMLSchema#string> .
+<http://example.org/lib/nationality> <http://www.w3.org/2000/01/rdf-schema#label> "nationality"@en .
+<http://example.org/lib/nationality> <http://www.w3.org/2000/01/rdf-schema#label> "Nationalität"@de .
+
+<http://example.org/lib/foundedYear> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#DatatypeProperty> .
+<http://example.org/lib/foundedYear> <http://www.w3.org/2000/01/rdf-schema#domain> <http://example.org/lib/Publisher> .
+<http://example.org/lib/foundedYear> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2001/XMLSchema#gYear> .
+<http://example.org/lib/foundedYear> <http://www.w3.org/2000/01/rdf-schema#label> "founded year"@en .
+<http://example.org/lib/foundedYear> <http://www.w3.org/2000/01/rdf-schema#label> "Gründungsjahr"@de .
+
+<http://example.org/lib/writtenBy> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#ObjectProperty> .
+<http://example.org/lib/writtenBy> <http://www.w3.org/2000/01/rdf-schema#domain> <http://example.org/lib/Book> .
+<http://example.org/lib/writtenBy> <http://www.w3.org/2000/01/rdf-schema#range> <http://example.org/lib/Author> .
+<http://example.org/lib/writtenBy> <http://www.w3.org/2000/01/rdf-schema#label> "written by"@en .
+<http://example.org/lib/writtenBy> <http://www.w3.org/2000/01/rdf-schema#label> "geschrieben von"@de .
+
+<http://example.org/lib/publishedBy> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#ObjectProperty> .
+<http://example.org/lib/publishedBy> <http://www.w3.org/2000/01/rdf-schema#domain> <http://example.org/lib/Book> .
+<http://example.org/lib/publishedBy> <http://www.w3.org/2000/01/rdf-schema#range> <http://example.org/lib/Publisher> .
+<http://example.org/lib/publishedBy> <http://www.w3.org/2000/01/rdf-schema#label> "published by"@en .
+<http://example.org/lib/publishedBy> <http://www.w3.org/2000/01/rdf-schema#label> "veröffentlicht von"@de .
+
+<http://example.org/lib/hasGenre> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#ObjectProperty> .
+<http://example.org/lib/hasGenre> <http://www.w3.org/2000/01/rdf-schema#domain> <http://example.org/lib/Book> .
+<http://example.org/lib/hasGenre> <http://www.w3.org/2000/01/rdf-schema#range> <http://example.org/lib/Genre> .
+<http://example.org/lib/hasGenre> <http://www.w3.org/2000/01/rdf-schema#label> "has genre"@en .
+<http://example.org/lib/hasGenre> <http://www.w3.org/2000/01/rdf-schema#label> "hat Genre"@de .
+
+<http://example.org/lib/influencedBy> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#ObjectProperty> .
+<http://example.org/lib/influencedBy> <http://www.w3.org/2000/01/rdf-schema#domain> <http://example.org/lib/Author> .
+<http://example.org/lib/influencedBy> <http://www.w3.org/2000/01/rdf-schema#range> <http://example.org/lib/Author> .
+<http://example.org/lib/influencedBy> <http://www.w3.org/2000/01/rdf-schema#label> "influenced by"@en .
+<http://example.org/lib/influencedBy> <http://www.w3.org/2000/01/rdf-schema#label> "beeinflusst von"@de .
+
+<http://example.org/lib/awardedTo> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#ObjectProperty> .
+<http://example.org/lib/awardedTo> <http://www.w3.org/2000/01/rdf-schema#domain> <http://example.org/lib/Award> .
+<http://example.org/lib/awardedTo> <http://www.w3.org/2000/01/rdf-schema#range> <http://example.org/lib/Book> .
+<http://example.org/lib/awardedTo> <http://www.w3.org/2000/01/rdf-schema#label> "awarded to"@en .
+<http://example.org/lib/awardedTo> <http://www.w3.org/2000/01/rdf-schema#label> "verliehen an"@de .
+
+<http://example.org/lib/translationOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#ObjectProperty> .
+<http://example.org/lib/translationOf> <http://www.w3.org/2000/01/rdf-schema#domain> <http://example.org/lib/Book> .
+<http://example.org/lib/translationOf> <http://www.w3.org/2000/01/rdf-schema#range> <http://example.org/lib/Book> .
+<http://example.org/lib/translationOf> <http://www.w3.org/2000/01/rdf-schema#label> "translation of"@en .
+<http://example.org/lib/translationOf> <http://www.w3.org/2000/01/rdf-schema#label> "Übersetzung von"@de .
+
+<http://example.org/lib/SciFi> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/lib/Genre> .
+<http://example.org/lib/SciFi> <http://www.w3.org/2000/01/rdf-schema#label> "Science Fiction"@en .
+<http://example.org/lib/SciFi> <http://www.w3.org/2000/01/rdf-schema#label> "Science-Fiction"@de .
+<http://example.org/lib/SciFi> <http://www.w3.org/2000/01/rdf-schema#label> "Science-fiction"@fr .
+<http://example.org/lib/SciFi> <http://www.w3.org/2004/02/skos/core#definition> "Speculative fiction based on imagined future science and technology."@en .
+
+<http://example.org/lib/MagicRealism> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/lib/Genre> .
+<http://example.org/lib/MagicRealism> <http://www.w3.org/2000/01/rdf-schema#label> "Magic Realism"@en .
+<http://example.org/lib/MagicRealism> <http://www.w3.org/2000/01/rdf-schema#label> "Magischer Realismus"@de .
+<http://example.org/lib/MagicRealism> <http://www.w3.org/2000/01/rdf-schema#label> "Réalisme magique"@fr .
+<http://example.org/lib/MagicRealism> <http://www.w3.org/2004/02/skos/core#definition> "Realistic fiction with magical elements embedded in an otherwise real world."@en .
+
+<http://example.org/lib/HistoricalFiction> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/lib/Genre> .
+<http://example.org/lib/HistoricalFiction> <http://www.w3.org/2000/01/rdf-schema#label> "Historical Fiction"@en .
+<http://example.org/lib/HistoricalFiction> <http://www.w3.org/2000/01/rdf-schema#label> "Historischer Roman"@de .
+<http://example.org/lib/HistoricalFiction> <http://www.w3.org/2000/01/rdf-schema#label> "Roman historique"@fr .
+<http://example.org/lib/HistoricalFiction> <http://www.w3.org/2004/02/skos/core#definition> "Novels set in the past with historical context."@en .
+
+<http://example.org/lib/ManBooker> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/lib/Award> .
+<http://example.org/lib/ManBooker> <http://www.w3.org/2000/01/rdf-schema#label> "Man Booker Prize"@en .
+<http://example.org/lib/ManBooker> <http://www.w3.org/2000/01/rdf-schema#label> "Man-Booker-Preis"@de .
+<http://example.org/lib/ManBooker> <http://www.w3.org/2000/01/rdf-schema#label> "Prix Booker"@fr .
+<http://example.org/lib/ManBooker> <http://purl.org/dc/terms/description> "Annual literary award for the best English-language novel."@en .
+
+<http://example.org/lib/NobelLiterature> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/lib/Award> .
+<http://example.org/lib/NobelLiterature> <http://www.w3.org/2000/01/rdf-schema#label> "Nobel Prize in Literature"@en .
+<http://example.org/lib/NobelLiterature> <http://www.w3.org/2000/01/rdf-schema#label> "Nobelpreis für Literatur"@de .
+<http://example.org/lib/NobelLiterature> <http://www.w3.org/2000/01/rdf-schema#label> "Prix Nobel de littérature"@fr .
+<http://example.org/lib/NobelLiterature> <http://purl.org/dc/terms/description> "The highest literary honour awarded by the Swedish Academy."@en .
+
+<http://example.org/lib/PenguinBooks> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/lib/Publisher> .
+<http://example.org/lib/PenguinBooks> <http://www.w3.org/2000/01/rdf-schema#label> "Penguin Books"@en .
+<http://example.org/lib/PenguinBooks> <http://www.w3.org/2000/01/rdf-schema#label> "Penguin Books"@de .
+<http://example.org/lib/PenguinBooks> <http://www.w3.org/2000/01/rdf-schema#label> "Penguin Books"@fr .
+<http://example.org/lib/PenguinBooks> <http://example.org/lib/foundedYear> "1935"^^<http://www.w3.org/2001/XMLSchema#gYear> .
+<http://example.org/lib/PenguinBooks> <http://purl.org/dc/terms/description> "Major British publishing house, imprint of Penguin Random House."@en .
+
+<http://example.org/lib/Suhrkamp> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/lib/Publisher> .
+<http://example.org/lib/Suhrkamp> <http://www.w3.org/2000/01/rdf-schema#label> "Suhrkamp Verlag"@en .
+<http://example.org/lib/Suhrkamp> <http://www.w3.org/2000/01/rdf-schema#label> "Suhrkamp Verlag"@de .
+<http://example.org/lib/Suhrkamp> <http://example.org/lib/foundedYear> "1950"^^<http://www.w3.org/2001/XMLSchema#gYear> .
+<http://example.org/lib/Suhrkamp> <http://purl.org/dc/terms/description> "Renommierter deutschsprachiger Verlag."@de .
+
+<http://example.org/lib/Gallimard> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/lib/Publisher> .
+<http://example.org/lib/Gallimard> <http://www.w3.org/2000/01/rdf-schema#label> "Gallimard"@en .
+<http://example.org/lib/Gallimard> <http://www.w3.org/2000/01/rdf-schema#label> "Gallimard"@fr .
+<http://example.org/lib/Gallimard> <http://example.org/lib/foundedYear> "1911"^^<http://www.w3.org/2001/XMLSchema#gYear> .
+<http://example.org/lib/Gallimard> <http://purl.org/dc/terms/description> "Une des plus importantes maisons d'édition françaises."@fr .
+
+<http://example.org/lib/Knopf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/lib/Publisher> .
+<http://example.org/lib/Knopf> <http://www.w3.org/2000/01/rdf-schema#label> "Alfred A. Knopf"@en .
+<http://example.org/lib/Knopf> <http://www.w3.org/2000/01/rdf-schema#label> "Alfred A. Knopf"@de .
+<http://example.org/lib/Knopf> <http://example.org/lib/foundedYear> "1915"^^<http://www.w3.org/2001/XMLSchema#gYear> .
+<http://example.org/lib/Knopf> <http://purl.org/dc/terms/description> "American publishing house known for literary fiction."@en .
+
+<http://example.org/lib/AuthorGarciaMarquez> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/lib/Author> .
+<http://example.org/lib/AuthorGarciaMarquez> <http://www.w3.org/2000/01/rdf-schema#label> "Gabriel García Márquez"@en .
+<http://example.org/lib/AuthorGarciaMarquez> <http://www.w3.org/2000/01/rdf-schema#label> "Gabriel García Márquez"@de .
+<http://example.org/lib/AuthorGarciaMarquez> <http://www.w3.org/2000/01/rdf-schema#label> "Gabriel García Márquez"@fr .
+<http://example.org/lib/AuthorGarciaMarquez> <http://xmlns.com/foaf/0.1/name> "Gabriel García Márquez" .
+<http://example.org/lib/AuthorGarciaMarquez> <http://example.org/lib/birthYear> "1927"^^<http://www.w3.org/2001/XMLSchema#gYear> .
+<http://example.org/lib/AuthorGarciaMarquez> <http://example.org/lib/nationality> "Colombian" .
+<http://example.org/lib/AuthorGarciaMarquez> <http://purl.org/dc/terms/description> "Colombian novelist, Nobel laureate, known for magic realism."@en .
+<http://example.org/lib/AuthorGarciaMarquez> <http://purl.org/dc/terms/description> "Kolumbianischer Schriftsteller, Nobelpreisträger, bekannt für magischen Realismus."@de .
+
+<http://example.org/lib/AuthorOrwell> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/lib/Author> .
+<http://example.org/lib/AuthorOrwell> <http://www.w3.org/2000/01/rdf-schema#label> "George Orwell"@en .
+<http://example.org/lib/AuthorOrwell> <http://www.w3.org/2000/01/rdf-schema#label> "George Orwell"@de .
+<http://example.org/lib/AuthorOrwell> <http://xmlns.com/foaf/0.1/name> "Eric Arthur Blair" .
+<http://example.org/lib/AuthorOrwell> <http://example.org/lib/birthYear> "1903"^^<http://www.w3.org/2001/XMLSchema#gYear> .
+<http://example.org/lib/AuthorOrwell> <http://example.org/lib/nationality> "British" .
+<http://example.org/lib/AuthorOrwell> <http://purl.org/dc/terms/description> "English novelist known for dystopian fiction."@en .
+
+<http://example.org/lib/AuthorHesse> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/lib/Author> .
+<http://example.org/lib/AuthorHesse> <http://www.w3.org/2000/01/rdf-schema#label> "Hermann Hesse"@en .
+<http://example.org/lib/AuthorHesse> <http://www.w3.org/2000/01/rdf-schema#label> "Hermann Hesse"@de .
+<http://example.org/lib/AuthorHesse> <http://xmlns.com/foaf/0.1/name> "Hermann Karl Hesse" .
+<http://example.org/lib/AuthorHesse> <http://example.org/lib/birthYear> "1877"^^<http://www.w3.org/2001/XMLSchema#gYear> .
+<http://example.org/lib/AuthorHesse> <http://example.org/lib/nationality> "German-Swiss" .
+<http://example.org/lib/AuthorHesse> <http://purl.org/dc/terms/description> "Deutsch-schweizerischer Schriftsteller, Nobelpreisträger 1946."@de .
+<http://example.org/lib/AuthorHesse> <http://purl.org/dc/terms/description> "German-Swiss novelist and Nobel laureate in literature 1946."@en .
+
+<http://example.org/lib/AuthorWoolf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/lib/Author> .
+<http://example.org/lib/AuthorWoolf> <http://www.w3.org/2000/01/rdf-schema#label> "Virginia Woolf"@en .
+<http://example.org/lib/AuthorWoolf> <http://www.w3.org/2000/01/rdf-schema#label> "Virginia Woolf"@de .
+<http://example.org/lib/AuthorWoolf> <http://xmlns.com/foaf/0.1/name> "Adeline Virginia Woolf" .
+<http://example.org/lib/AuthorWoolf> <http://example.org/lib/birthYear> "1882"^^<http://www.w3.org/2001/XMLSchema#gYear> .
+<http://example.org/lib/AuthorWoolf> <http://example.org/lib/nationality> "British" .
+<http://example.org/lib/AuthorWoolf> <http://purl.org/dc/terms/description> "Modernist British novelist and essayist."@en .
+
+<http://example.org/lib/AuthorBorges> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/lib/Author> .
+<http://example.org/lib/AuthorBorges> <http://www.w3.org/2000/01/rdf-schema#label> "Jorge Luis Borges"@en .
+<http://example.org/lib/AuthorBorges> <http://www.w3.org/2000/01/rdf-schema#label> "Jorge Luis Borges"@de .
+<http://example.org/lib/AuthorBorges> <http://www.w3.org/2000/01/rdf-schema#label> "Jorge Luis Borges"@fr .
+<http://example.org/lib/AuthorBorges> <http://xmlns.com/foaf/0.1/name> "Jorge Francisco Isidoro Luis Borges Acevedo" .
+<http://example.org/lib/AuthorBorges> <http://example.org/lib/birthYear> "1899"^^<http://www.w3.org/2001/XMLSchema#gYear> .
+<http://example.org/lib/AuthorBorges> <http://example.org/lib/nationality> "Argentine" .
+<http://example.org/lib/AuthorBorges> <http://purl.org/dc/terms/description> "Argentine short-story writer and poet."@en .
+<http://example.org/lib/AuthorBorges> <http://purl.org/dc/terms/description> "Argentinischer Schriftsteller und Dichter."@de .
+
+<http://example.org/lib/AuthorTolstoy> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/lib/Author> .
+<http://example.org/lib/AuthorTolstoy> <http://www.w3.org/2000/01/rdf-schema#label> "Leo Tolstoy"@en .
+<http://example.org/lib/AuthorTolstoy> <http://www.w3.org/2000/01/rdf-schema#label> "Lew Tolstoi"@de .
+<http://example.org/lib/AuthorTolstoy> <http://www.w3.org/2000/01/rdf-schema#label> "Léon Tolstoï"@fr .
+<http://example.org/lib/AuthorTolstoy> <http://xmlns.com/foaf/0.1/name> "Lev Nikolayevich Tolstoy" .
+<http://example.org/lib/AuthorTolstoy> <http://example.org/lib/birthYear> "1828"^^<http://www.w3.org/2001/XMLSchema#gYear> .
+<http://example.org/lib/AuthorTolstoy> <http://example.org/lib/nationality> "Russian" .
+<http://example.org/lib/AuthorTolstoy> <http://purl.org/dc/terms/description> "Russian author regarded as one of the greatest novelists."@en .
+
+<http://example.org/lib/AuthorMorrison> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/lib/Author> .
+<http://example.org/lib/AuthorMorrison> <http://www.w3.org/2000/01/rdf-schema#label> "Toni Morrison"@en .
+<http://example.org/lib/AuthorMorrison> <http://www.w3.org/2000/01/rdf-schema#label> "Toni Morrison"@de .
+<http://example.org/lib/AuthorMorrison> <http://xmlns.com/foaf/0.1/name> "Chloe Anthony Wofford Morrison" .
+<http://example.org/lib/AuthorMorrison> <http://example.org/lib/birthYear> "1931"^^<http://www.w3.org/2001/XMLSchema#gYear> .
+<http://example.org/lib/AuthorMorrison> <http://example.org/lib/nationality> "American" .
+<http://example.org/lib/AuthorMorrison> <http://purl.org/dc/terms/description> "American novelist and Nobel laureate in Literature 1993."@en .
+
+<http://example.org/lib/AuthorKafka> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/lib/Author> .
+<http://example.org/lib/AuthorKafka> <http://www.w3.org/2000/01/rdf-schema#label> "Franz Kafka"@en .
+<http://example.org/lib/AuthorKafka> <http://www.w3.org/2000/01/rdf-schema#label> "Franz Kafka"@de .
+<http://example.org/lib/AuthorKafka> <http://www.w3.org/2000/01/rdf-schema#label> "Franz Kafka"@fr .
+<http://example.org/lib/AuthorKafka> <http://xmlns.com/foaf/0.1/name> "Franz Kafka" .
+<http://example.org/lib/AuthorKafka> <http://example.org/lib/birthYear> "1883"^^<http://www.w3.org/2001/XMLSchema#gYear> .
+<http://example.org/lib/AuthorKafka> <http://example.org/lib/nationality> "Austro-Hungarian" .
+<http://example.org/lib/AuthorKafka> <http://purl.org/dc/terms/description> "German-speaking Bohemian writer of absurdist fiction."@en .
+
+<http://example.org/lib/AuthorProust> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/lib/Author> .
+<http://example.org/lib/AuthorProust> <http://www.w3.org/2000/01/rdf-schema#label> "Marcel Proust"@en .
+<http://example.org/lib/AuthorProust> <http://www.w3.org/2000/01/rdf-schema#label> "Marcel Proust"@de .
+<http://example.org/lib/AuthorProust> <http://www.w3.org/2000/01/rdf-schema#label> "Marcel Proust"@fr .
+<http://example.org/lib/AuthorProust> <http://xmlns.com/foaf/0.1/name> "Valentin Louis Georges Eugène Marcel Proust" .
+<http://example.org/lib/AuthorProust> <http://example.org/lib/birthYear> "1871"^^<http://www.w3.org/2001/XMLSchema#gYear> .
+<http://example.org/lib/AuthorProust> <http://example.org/lib/nationality> "French" .
+<http://example.org/lib/AuthorProust> <http://purl.org/dc/terms/description> "French novelist known for the multi-volume novel In Search of Lost Time."@en .
+
+<http://example.org/lib/AuthorDostoyevsky> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/lib/Author> .
+<http://example.org/lib/AuthorDostoyevsky> <http://www.w3.org/2000/01/rdf-schema#label> "Fyodor Dostoevsky"@en .
+<http://example.org/lib/AuthorDostoyevsky> <http://www.w3.org/2000/01/rdf-schema#label> "Fjodor Dostojewski"@de .
+<http://example.org/lib/AuthorDostoyevsky> <http://www.w3.org/2000/01/rdf-schema#label> "Fiodor Dostoïevski"@fr .
+<http://example.org/lib/AuthorDostoyevsky> <http://xmlns.com/foaf/0.1/name> "Fyodor Mikhailovich Dostoevsky" .
+<http://example.org/lib/AuthorDostoyevsky> <http://example.org/lib/birthYear> "1821"^^<http://www.w3.org/2001/XMLSchema#gYear> .
+<http://example.org/lib/AuthorDostoyevsky> <http://example.org/lib/nationality> "Russian" .
+<http://example.org/lib/AuthorDostoyevsky> <http://purl.org/dc/terms/description> "Russian novelist exploring psychology and morality."@en .
+
+<http://example.org/lib/Book100YearsSolitude> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/lib/Novel> .
+<http://example.org/lib/Book100YearsSolitude> <http://www.w3.org/2000/01/rdf-schema#label> "One Hundred Years of Solitude"@en .
+<http://example.org/lib/Book100YearsSolitude> <http://www.w3.org/2000/01/rdf-schema#label> "Hundert Jahre Einsamkeit"@de .
+<http://example.org/lib/Book100YearsSolitude> <http://www.w3.org/2000/01/rdf-schema#label> "Cent ans de solitude"@fr .
+<http://example.org/lib/Book100YearsSolitude> <http://example.org/lib/title> "One Hundred Years of Solitude" .
+<http://example.org/lib/Book100YearsSolitude> <http://example.org/lib/isbn> "978-0-06-088328-7" .
+<http://example.org/lib/Book100YearsSolitude> <http://example.org/lib/publicationYear> "1967"^^<http://www.w3.org/2001/XMLSchema#gYear> .
+<http://example.org/lib/Book100YearsSolitude> <http://example.org/lib/language> "es" .
+<http://example.org/lib/Book100YearsSolitude> <http://example.org/lib/pageCount> "417"^^<http://www.w3.org/2001/XMLSchema#positiveInteger> .
+<http://example.org/lib/Book100YearsSolitude> <http://purl.org/dc/terms/abstract> "The Buendía family over seven generations in the mythical town of Macondo."@en .
+<http://example.org/lib/Book100YearsSolitude> <http://example.org/lib/writtenBy> <http://example.org/lib/AuthorGarciaMarquez> .
+<http://example.org/lib/Book100YearsSolitude> <http://example.org/lib/publishedBy> <http://example.org/lib/PenguinBooks> .
+<http://example.org/lib/Book100YearsSolitude> <http://example.org/lib/hasGenre> <http://example.org/lib/MagicRealism> .
+
+<http://example.org/lib/Book1984> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/lib/Novel> .
+<http://example.org/lib/Book1984> <http://www.w3.org/2000/01/rdf-schema#label> "Nineteen Eighty-Four"@en .
+<http://example.org/lib/Book1984> <http://www.w3.org/2000/01/rdf-schema#label> "1984"@de .
+<http://example.org/lib/Book1984> <http://www.w3.org/2000/01/rdf-schema#label> "1984"@fr .
+<http://example.org/lib/Book1984> <http://example.org/lib/title> "Nineteen Eighty-Four" .
+<http://example.org/lib/Book1984> <http://example.org/lib/isbn> "978-0-14-028360-8" .
+<http://example.org/lib/Book1984> <http://example.org/lib/publicationYear> "1949"^^<http://www.w3.org/2001/XMLSchema#gYear> .
+<http://example.org/lib/Book1984> <http://example.org/lib/language> "en" .
+<http://example.org/lib/Book1984> <http://example.org/lib/pageCount> "328"^^<http://www.w3.org/2001/XMLSchema#positiveInteger> .
+<http://example.org/lib/Book1984> <http://purl.org/dc/terms/abstract> "A dystopian novel set in a totalitarian society under constant surveillance."@en .
+<http://example.org/lib/Book1984> <http://example.org/lib/writtenBy> <http://example.org/lib/AuthorOrwell> .
+<http://example.org/lib/Book1984> <http://example.org/lib/publishedBy> <http://example.org/lib/PenguinBooks> .
+<http://example.org/lib/Book1984> <http://example.org/lib/hasGenre> <http://example.org/lib/SciFi> .
+
+<http://example.org/lib/BookSiddhartha> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/lib/Novel> .
+<http://example.org/lib/BookSiddhartha> <http://www.w3.org/2000/01/rdf-schema#label> "Siddhartha"@en .
+<http://example.org/lib/BookSiddhartha> <http://www.w3.org/2000/01/rdf-schema#label> "Siddhartha"@de .
+<http://example.org/lib/BookSiddhartha> <http://www.w3.org/2000/01/rdf-schema#label> "Siddhartha"@fr .
+<http://example.org/lib/BookSiddhartha> <http://example.org/lib/title> "Siddhartha" .
+<http://example.org/lib/BookSiddhartha> <http://example.org/lib/isbn> "978-0-553-20884-2" .
+<http://example.org/lib/BookSiddhartha> <http://example.org/lib/publicationYear> "1922"^^<http://www.w3.org/2001/XMLSchema#gYear> .
+<http://example.org/lib/BookSiddhartha> <http://example.org/lib/language> "de" .
+<http://example.org/lib/BookSiddhartha> <http://example.org/lib/pageCount> "152"^^<http://www.w3.org/2001/XMLSchema#positiveInteger> .
+<http://example.org/lib/BookSiddhartha> <http://purl.org/dc/terms/abstract> "Ein Roman über die Suche nach Erleuchtung im alten Indien."@de .
+<http://example.org/lib/BookSiddhartha> <http://purl.org/dc/terms/abstract> "A novel about a spiritual journey in ancient India."@en .
+<http://example.org/lib/BookSiddhartha> <http://example.org/lib/writtenBy> <http://example.org/lib/AuthorHesse> .
+<http://example.org/lib/BookSiddhartha> <http://example.org/lib/publishedBy> <http://example.org/lib/Suhrkamp> .
+
+<http://example.org/lib/BookMrsDalloway> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/lib/Novel> .
+<http://example.org/lib/BookMrsDalloway> <http://www.w3.org/2000/01/rdf-schema#label> "Mrs Dalloway"@en .
+<http://example.org/lib/BookMrsDalloway> <http://www.w3.org/2000/01/rdf-schema#label> "Mrs. Dalloway"@de .
+<http://example.org/lib/BookMrsDalloway> <http://example.org/lib/title> "Mrs Dalloway" .
+<http://example.org/lib/BookMrsDalloway> <http://example.org/lib/isbn> "978-0-19-953669-8" .
+<http://example.org/lib/BookMrsDalloway> <http://example.org/lib/publicationYear> "1925"^^<http://www.w3.org/2001/XMLSchema#gYear> .
+<http://example.org/lib/BookMrsDalloway> <http://example.org/lib/language> "en" .
+<http://example.org/lib/BookMrsDalloway> <http://example.org/lib/pageCount> "194"^^<http://www.w3.org/2001/XMLSchema#positiveInteger> .
+<http://example.org/lib/BookMrsDalloway> <http://purl.org/dc/terms/abstract> "A stream-of-consciousness novel set in post-WWI London."@en .
+<http://example.org/lib/BookMrsDalloway> <http://example.org/lib/writtenBy> <http://example.org/lib/AuthorWoolf> .
+<http://example.org/lib/BookMrsDalloway> <http://example.org/lib/publishedBy> <http://example.org/lib/PenguinBooks> .
+
+<http://example.org/lib/BookLabyrinthes> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/lib/ShortStoryCollection> .
+<http://example.org/lib/BookLabyrinthes> <http://www.w3.org/2000/01/rdf-schema#label> "Labyrinths"@en .
+<http://example.org/lib/BookLabyrinthes> <http://www.w3.org/2000/01/rdf-schema#label> "Labyrinthe"@de .
+<http://example.org/lib/BookLabyrinthes> <http://www.w3.org/2000/01/rdf-schema#label> "Labyrinthes"@fr .
+<http://example.org/lib/BookLabyrinthes> <http://example.org/lib/title> "Labyrinths" .
+<http://example.org/lib/BookLabyrinthes> <http://example.org/lib/isbn> "978-0-8112-0012-4" .
+<http://example.org/lib/BookLabyrinthes> <http://example.org/lib/publicationYear> "1962"^^<http://www.w3.org/2001/XMLSchema#gYear> .
+<http://example.org/lib/BookLabyrinthes> <http://example.org/lib/language> "es" .
+<http://example.org/lib/BookLabyrinthes> <http://example.org/lib/pageCount> "236"^^<http://www.w3.org/2001/XMLSchema#positiveInteger> .
+<http://example.org/lib/BookLabyrinthes> <http://purl.org/dc/terms/abstract> "Selected stories and other writings by Borges."@en .
+<http://example.org/lib/BookLabyrinthes> <http://example.org/lib/writtenBy> <http://example.org/lib/AuthorBorges> .
+<http://example.org/lib/BookLabyrinthes> <http://example.org/lib/publishedBy> <http://example.org/lib/Knopf> .
+
+<http://example.org/lib/BookWarAndPeace> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/lib/Novel> .
+<http://example.org/lib/BookWarAndPeace> <http://www.w3.org/2000/01/rdf-schema#label> "War and Peace"@en .
+<http://example.org/lib/BookWarAndPeace> <http://www.w3.org/2000/01/rdf-schema#label> "Krieg und Frieden"@de .
+<http://example.org/lib/BookWarAndPeace> <http://www.w3.org/2000/01/rdf-schema#label> "Guerre et Paix"@fr .
+<http://example.org/lib/BookWarAndPeace> <http://example.org/lib/title> "War and Peace" .
+<http://example.org/lib/BookWarAndPeace> <http://example.org/lib/isbn> "978-0-19-923276-2" .
+<http://example.org/lib/BookWarAndPeace> <http://example.org/lib/publicationYear> "1869"^^<http://www.w3.org/2001/XMLSchema#gYear> .
+<http://example.org/lib/BookWarAndPeace> <http://example.org/lib/language> "ru" .
+<http://example.org/lib/BookWarAndPeace> <http://example.org/lib/pageCount> "1225"^^<http://www.w3.org/2001/XMLSchema#positiveInteger> .
+<http://example.org/lib/BookWarAndPeace> <http://purl.org/dc/terms/abstract> "An epic novel about Russian society during the Napoleonic era."@en .
+<http://example.org/lib/BookWarAndPeace> <http://example.org/lib/writtenBy> <http://example.org/lib/AuthorTolstoy> .
+<http://example.org/lib/BookWarAndPeace> <http://example.org/lib/publishedBy> <http://example.org/lib/PenguinBooks> .
+<http://example.org/lib/BookWarAndPeace> <http://example.org/lib/hasGenre> <http://example.org/lib/HistoricalFiction> .
+
+<http://example.org/lib/BookBeloved> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/lib/Novel> .
+<http://example.org/lib/BookBeloved> <http://www.w3.org/2000/01/rdf-schema#label> "Beloved"@en .
+<http://example.org/lib/BookBeloved> <http://www.w3.org/2000/01/rdf-schema#label> "Menschenkind"@de .
+<http://example.org/lib/BookBeloved> <http://example.org/lib/title> "Beloved" .
+<http://example.org/lib/BookBeloved> <http://example.org/lib/isbn> "978-1-4000-3341-6" .
+<http://example.org/lib/BookBeloved> <http://example.org/lib/publicationYear> "1987"^^<http://www.w3.org/2001/XMLSchema#gYear> .
+<http://example.org/lib/BookBeloved> <http://example.org/lib/language> "en" .
+<http://example.org/lib/BookBeloved> <http://example.org/lib/pageCount> "324"^^<http://www.w3.org/2001/XMLSchema#positiveInteger> .
+<http://example.org/lib/BookBeloved> <http://purl.org/dc/terms/abstract> "A Pulitzer Prize-winning novel about the aftermath of slavery."@en .
+<http://example.org/lib/BookBeloved> <http://example.org/lib/writtenBy> <http://example.org/lib/AuthorMorrison> .
+<http://example.org/lib/BookBeloved> <http://example.org/lib/publishedBy> <http://example.org/lib/Knopf> .
+
+<http://example.org/lib/BookMetamorphosis> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/lib/Novel> .
+<http://example.org/lib/BookMetamorphosis> <http://www.w3.org/2000/01/rdf-schema#label> "The Metamorphosis"@en .
+<http://example.org/lib/BookMetamorphosis> <http://www.w3.org/2000/01/rdf-schema#label> "Die Verwandlung"@de .
+<http://example.org/lib/BookMetamorphosis> <http://www.w3.org/2000/01/rdf-schema#label> "La Métamorphose"@fr .
+<http://example.org/lib/BookMetamorphosis> <http://example.org/lib/title> "Die Verwandlung" .
+<http://example.org/lib/BookMetamorphosis> <http://example.org/lib/isbn> "978-0-14-181797-5" .
+<http://example.org/lib/BookMetamorphosis> <http://example.org/lib/publicationYear> "1915"^^<http://www.w3.org/2001/XMLSchema#gYear> .
+<http://example.org/lib/BookMetamorphosis> <http://example.org/lib/language> "de" .
+<http://example.org/lib/BookMetamorphosis> <http://example.org/lib/pageCount> "96"^^<http://www.w3.org/2001/XMLSchema#positiveInteger> .
+<http://example.org/lib/BookMetamorphosis> <http://purl.org/dc/terms/abstract> "A salesman wakes up transformed into a giant insect."@en .
+<http://example.org/lib/BookMetamorphosis> <http://purl.org/dc/terms/abstract> "Ein Handlungsreisender erwacht als riesiges Insekt."@de .
+<http://example.org/lib/BookMetamorphosis> <http://example.org/lib/writtenBy> <http://example.org/lib/AuthorKafka> .
+<http://example.org/lib/BookMetamorphosis> <http://example.org/lib/publishedBy> <http://example.org/lib/Suhrkamp> .
+
+<http://example.org/lib/BookCrimePunishment> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/lib/Novel> .
+<http://example.org/lib/BookCrimePunishment> <http://www.w3.org/2000/01/rdf-schema#label> "Crime and Punishment"@en .
+<http://example.org/lib/BookCrimePunishment> <http://www.w3.org/2000/01/rdf-schema#label> "Schuld und Sühne"@de .
+<http://example.org/lib/BookCrimePunishment> <http://www.w3.org/2000/01/rdf-schema#label> "Crime et Châtiment"@fr .
+<http://example.org/lib/BookCrimePunishment> <http://example.org/lib/title> "Crime and Punishment" .
+<http://example.org/lib/BookCrimePunishment> <http://example.org/lib/isbn> "978-0-14-044913-6" .
+<http://example.org/lib/BookCrimePunishment> <http://example.org/lib/publicationYear> "1866"^^<http://www.w3.org/2001/XMLSchema#gYear> .
+<http://example.org/lib/BookCrimePunishment> <http://example.org/lib/language> "ru" .
+<http://example.org/lib/BookCrimePunishment> <http://example.org/lib/pageCount> "671"^^<http://www.w3.org/2001/XMLSchema#positiveInteger> .
+<http://example.org/lib/BookCrimePunishment> <http://purl.org/dc/terms/abstract> "A student commits a murder and grapples with guilt."@en .
+<http://example.org/lib/BookCrimePunishment> <http://example.org/lib/writtenBy> <http://example.org/lib/AuthorDostoyevsky> .
+<http://example.org/lib/BookCrimePunishment> <http://example.org/lib/publishedBy> <http://example.org/lib/PenguinBooks> .
+<http://example.org/lib/BookCrimePunishment> <http://example.org/lib/hasGenre> <http://example.org/lib/HistoricalFiction> .
+
+<http://example.org/lib/BookSwannsWay> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/lib/Novel> .
+<http://example.org/lib/BookSwannsWay> <http://www.w3.org/2000/01/rdf-schema#label> "Swann's Way"@en .
+<http://example.org/lib/BookSwannsWay> <http://www.w3.org/2000/01/rdf-schema#label> "Du côté de chez Swann"@fr .
+<http://example.org/lib/BookSwannsWay> <http://www.w3.org/2000/01/rdf-schema#label> "In Swanns Welt"@de .
+<http://example.org/lib/BookSwannsWay> <http://example.org/lib/title> "Du côté de chez Swann" .
+<http://example.org/lib/BookSwannsWay> <http://example.org/lib/isbn> "978-0-14-118312-6" .
+<http://example.org/lib/BookSwannsWay> <http://example.org/lib/publicationYear> "1913"^^<http://www.w3.org/2001/XMLSchema#gYear> .
+<http://example.org/lib/BookSwannsWay> <http://example.org/lib/language> "fr" .
+<http://example.org/lib/BookSwannsWay> <http://example.org/lib/pageCount> "462"^^<http://www.w3.org/2001/XMLSchema#positiveInteger> .
+<http://example.org/lib/BookSwannsWay> <http://purl.org/dc/terms/abstract> "First volume of In Search of Lost Time, exploring memory and time."@en .
+<http://example.org/lib/BookSwannsWay> <http://example.org/lib/writtenBy> <http://example.org/lib/AuthorProust> .
+<http://example.org/lib/BookSwannsWay> <http://example.org/lib/publishedBy> <http://example.org/lib/Gallimard> .
+
+<http://example.org/lib/NobelLiterature> <http://example.org/lib/awardedTo> <http://example.org/lib/Book100YearsSolitude> .
+<http://example.org/lib/NobelLiterature> <http://example.org/lib/awardedTo> <http://example.org/lib/BookBeloved> .
+<http://example.org/lib/ManBooker> <http://example.org/lib/awardedTo> <http://example.org/lib/BookBeloved> .
+
+<http://example.org/lib/AuthorGarciaMarquez> <http://example.org/lib/influencedBy> <http://example.org/lib/AuthorBorges> .
+<http://example.org/lib/AuthorGarciaMarquez> <http://example.org/lib/influencedBy> <http://example.org/lib/AuthorFaulkner> .
+<http://example.org/lib/AuthorOrwell> <http://example.org/lib/influencedBy> <http://example.org/lib/AuthorHuxley> .
+<http://example.org/lib/AuthorKafka> <http://example.org/lib/influencedBy> <http://example.org/lib/AuthorDostoyevsky> .
+<http://example.org/lib/AuthorHesse> <http://example.org/lib/influencedBy> <http://example.org/lib/AuthorDostoyevsky> .
+<http://example.org/lib/AuthorWoolf> <http://example.org/lib/influencedBy> <http://example.org/lib/AuthorProust> .
+
+<http://example.org/lib/AuthorFaulkner> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/lib/Author> .
+<http://example.org/lib/AuthorFaulkner> <http://www.w3.org/2000/01/rdf-schema#label> "William Faulkner"@en .
+<http://example.org/lib/AuthorFaulkner> <http://www.w3.org/2000/01/rdf-schema#label> "William Faulkner"@de .
+<http://example.org/lib/AuthorFaulkner> <http://xmlns.com/foaf/0.1/name> "William Cuthbert Faulkner" .
+<http://example.org/lib/AuthorFaulkner> <http://example.org/lib/birthYear> "1897"^^<http://www.w3.org/2001/XMLSchema#gYear> .
+<http://example.org/lib/AuthorFaulkner> <http://example.org/lib/nationality> "American" .
+<http://example.org/lib/AuthorFaulkner> <http://purl.org/dc/terms/description> "American novelist and Nobel laureate in Literature 1949."@en .
+
+<http://example.org/lib/AuthorHuxley> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/lib/Author> .
+<http://example.org/lib/AuthorHuxley> <http://www.w3.org/2000/01/rdf-schema#label> "Aldous Huxley"@en .
+<http://example.org/lib/AuthorHuxley> <http://www.w3.org/2000/01/rdf-schema#label> "Aldous Huxley"@de .
+<http://example.org/lib/AuthorHuxley> <http://xmlns.com/foaf/0.1/name> "Aldous Leonard Huxley" .
+<http://example.org/lib/AuthorHuxley> <http://example.org/lib/birthYear> "1894"^^<http://www.w3.org/2001/XMLSchema#gYear> .
+<http://example.org/lib/AuthorHuxley> <http://example.org/lib/nationality> "British" .
+<http://example.org/lib/AuthorHuxley> <http://purl.org/dc/terms/description> "English writer known for Brave New World."@en .

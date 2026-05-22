@@ -1,0 +1,713 @@
+@prefix :       <http://example.org/kg/> .
+@prefix rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+@prefix owl:    <http://www.w3.org/2002/07/owl#> .
+@prefix foaf:   <http://xmlns.com/foaf/0.1/> .
+@prefix dc:     <http://purl.org/dc/elements/1.1/> .
+@prefix dct:    <http://purl.org/dc/terms/> .
+@prefix skos:   <http://www.w3.org/2004/02/skos/core#> .
+@prefix schema: <http://schema.org/> .
+
+# ── Ontology declaration ──────────────────────────────────────────────────────
+<http://example.org/kg/>
+  rdf:type owl:Ontology ;
+  dc:title "Academic Knowledge Graph"@en ;
+  dc:title "Akademischer Wissensgraph"@de ;
+  dc:title "Graphe de connaissances académiques"@fr ;
+  dct:description "A rich RDF/RDFS dataset for testing parsers and schema extraction."@en ;
+  owl:versionInfo "1.0.0" .
+
+# ── Classes ───────────────────────────────────────────────────────────────────
+:Person
+  rdf:type owl:Class ;
+  rdfs:subClassOf foaf:Person ;
+  rdfs:label "Person"@en ;
+  rdfs:label "Person"@de ;
+  rdfs:label "Personne"@fr ;
+  rdfs:comment "A human individual."@en ;
+  rdfs:comment "Eine natürliche Person."@de .
+
+:Researcher
+  rdf:type owl:Class ;
+  rdfs:subClassOf :Person ;
+  rdfs:label "Researcher"@en ;
+  rdfs:label "Forscher"@de ;
+  rdfs:label "Chercheur"@fr ;
+  rdfs:comment "A person engaged in research activities."@en ;
+  rdfs:comment "Eine forschende Person."@de .
+
+:Professor
+  rdf:type owl:Class ;
+  rdfs:subClassOf :Researcher ;
+  rdfs:label "Professor"@en ;
+  rdfs:label "Professor"@de ;
+  rdfs:label "Professeur"@fr ;
+  rdfs:comment "A senior academic holding a professorship."@en ;
+  rdfs:comment "Eine Professur innehabende Person."@de .
+
+:AssociateProfessor
+  rdf:type owl:Class ;
+  rdfs:subClassOf :Researcher ;
+  rdfs:label "Associate Professor"@en ;
+  rdfs:label "Außerordentlicher Professor"@de ;
+  rdfs:label "Maître de conférences"@fr ;
+  rdfs:comment "An academic between assistant and full professor rank."@en .
+
+:GraduateStudent
+  rdf:type owl:Class ;
+  rdfs:subClassOf :Person ;
+  rdfs:label "Graduate Student"@en ;
+  rdfs:label "Doktorand"@de ;
+  rdfs:label "Doctorant"@fr ;
+  rdfs:comment "A student enrolled in a postgraduate programme."@en ;
+  rdfs:comment "Eine in ein Doktoratsprogramm eingeschriebene Person."@de .
+
+:Organisation
+  rdf:type owl:Class ;
+  rdfs:label "Organisation"@en ;
+  rdfs:label "Organisation"@de ;
+  rdfs:label "Organisation"@fr ;
+  rdfs:comment "A social entity with a collective goal."@en .
+
+:University
+  rdf:type owl:Class ;
+  rdfs:subClassOf :Organisation ;
+  rdfs:label "University"@en ;
+  rdfs:label "Universität"@de ;
+  rdfs:label "Université"@fr ;
+  rdfs:comment "A higher education and research institution."@en ;
+  rdfs:comment "Eine Hochschule mit Forschungsauftrag."@de .
+
+:ResearchGroup
+  rdf:type owl:Class ;
+  rdfs:subClassOf :Organisation ;
+  rdfs:label "Research Group"@en ;
+  rdfs:label "Forschungsgruppe"@de ;
+  rdfs:label "Groupe de recherche"@fr ;
+  rdfs:comment "A group of researchers collaborating on common topics."@en .
+
+:Publication
+  rdf:type owl:Class ;
+  rdfs:label "Publication"@en ;
+  rdfs:label "Publikation"@de ;
+  rdfs:label "Publication"@fr ;
+  rdfs:comment "A document disseminating research findings."@en .
+
+:JournalArticle
+  rdf:type owl:Class ;
+  rdfs:subClassOf :Publication ;
+  rdfs:label "Journal Article"@en ;
+  rdfs:label "Zeitschriftenartikel"@de ;
+  rdfs:label "Article de revue"@fr ;
+  rdfs:comment "A peer-reviewed article published in a scientific journal."@en .
+
+:ConferencePaper
+  rdf:type owl:Class ;
+  rdfs:subClassOf :Publication ;
+  rdfs:label "Conference Paper"@en ;
+  rdfs:label "Konferenzbeitrag"@de ;
+  rdfs:label "Article de conférence"@fr ;
+  rdfs:comment "A paper presented at a scientific conference."@en .
+
+:ResearchProject
+  rdf:type owl:Class ;
+  rdfs:label "Research Project"@en ;
+  rdfs:label "Forschungsprojekt"@de ;
+  rdfs:label "Projet de recherche"@fr ;
+  rdfs:comment "A funded investigation into a research question."@en .
+
+:ResearchTopic
+  rdf:type owl:Class ;
+  rdfs:label "Research Topic"@en ;
+  rdfs:label "Forschungsthema"@de ;
+  rdfs:label "Thème de recherche"@fr ;
+  rdfs:comment "An area or subject of scholarly investigation."@en .
+
+# ── Data properties ───────────────────────────────────────────────────────────
+:name
+  rdf:type owl:DatatypeProperty ;
+  rdfs:subPropertyOf foaf:name ;
+  rdfs:domain :Person ;
+  rdfs:range xsd:string ;
+  rdfs:label "name"@en ;
+  rdfs:label "Name"@de ;
+  rdfs:comment "Full name of the person."@en .
+
+:email
+  rdf:type owl:DatatypeProperty ;
+  rdfs:domain foaf:Person ;
+  rdfs:range xsd:string ;
+  rdfs:label "email"@en ;
+  rdfs:label "E-Mail"@de ;
+  rdfs:comment "Electronic mail address."@en .
+
+:birthDate
+  rdf:type owl:DatatypeProperty ;
+  rdfs:domain :Person ;
+  rdfs:range xsd:date ;
+  rdfs:label "birth date"@en ;
+  rdfs:label "Geburtsdatum"@de ;
+  rdfs:comment "The date on which the person was born."@en .
+
+:hIndex
+  rdf:type owl:DatatypeProperty ;
+  rdfs:domain :Researcher ;
+  rdfs:range xsd:nonNegativeInteger ;
+  rdfs:label "h-index"@en ;
+  rdfs:label "h-Index"@de ;
+  rdfs:comment "Hirsch index measuring scholarly impact."@en .
+
+:citationCount
+  rdf:type owl:DatatypeProperty ;
+  rdfs:domain :Researcher ;
+  rdfs:range xsd:nonNegativeInteger ;
+  rdfs:label "citation count"@en ;
+  rdfs:label "Zitierungsanzahl"@de ;
+  rdfs:comment "Total number of citations received."@en .
+
+:orcid
+  rdf:type owl:DatatypeProperty ;
+  rdfs:domain :Researcher ;
+  rdfs:range xsd:string ;
+  rdfs:label "ORCID"@en ;
+  rdfs:comment "Open Researcher and Contributor ID."@en .
+
+:publicationYear
+  rdf:type owl:DatatypeProperty ;
+  rdfs:domain :Publication ;
+  rdfs:range xsd:gYear ;
+  rdfs:label "publication year"@en ;
+  rdfs:label "Erscheinungsjahr"@de ;
+  rdfs:comment "Year the publication was issued."@en .
+
+:doi
+  rdf:type owl:DatatypeProperty ;
+  rdfs:domain :Publication ;
+  rdfs:range xsd:string ;
+  rdfs:label "DOI"@en ;
+  rdfs:comment "Digital Object Identifier."@en .
+
+:pageCount
+  rdf:type owl:DatatypeProperty ;
+  rdfs:domain :Publication ;
+  rdfs:range xsd:positiveInteger ;
+  rdfs:label "page count"@en ;
+  rdfs:label "Seitenanzahl"@de ;
+  rdfs:comment "Number of pages in the publication."@en .
+
+:startDate
+  rdf:type owl:DatatypeProperty ;
+  rdfs:domain :ResearchProject ;
+  rdfs:range xsd:date ;
+  rdfs:label "start date"@en ;
+  rdfs:label "Startdatum"@de .
+
+:endDate
+  rdf:type owl:DatatypeProperty ;
+  rdfs:domain :ResearchProject ;
+  rdfs:range xsd:date ;
+  rdfs:label "end date"@en ;
+  rdfs:label "Enddatum"@de .
+
+:fundingAmount
+  rdf:type owl:DatatypeProperty ;
+  rdfs:domain :ResearchProject ;
+  rdfs:range xsd:decimal ;
+  rdfs:label "funding amount"@en ;
+  rdfs:label "Förderungsbetrag"@de ;
+  rdfs:comment "Total funding awarded in EUR."@en .
+
+# ── Object properties ─────────────────────────────────────────────────────────
+:affiliatedWith
+  rdf:type owl:ObjectProperty ;
+  rdfs:domain :Person ;
+  rdfs:range :Organisation ;
+  rdfs:label "affiliated with"@en ;
+  rdfs:label "affiliiert mit"@de ;
+  rdfs:comment "Organisation the person is formally affiliated with."@en .
+
+:supervisedBy
+  rdf:type owl:ObjectProperty ;
+  rdfs:domain :GraduateStudent ;
+  rdfs:range :Researcher ;
+  rdfs:label "supervised by"@en ;
+  rdfs:label "betreut von"@de .
+
+:authorOf
+  rdf:type owl:ObjectProperty ;
+  rdfs:domain :Person ;
+  rdfs:range :Publication ;
+  rdfs:label "author of"@en ;
+  rdfs:label "Autor von"@de .
+
+:cites
+  rdf:type owl:ObjectProperty ;
+  rdfs:domain :Publication ;
+  rdfs:range :Publication ;
+  rdfs:label "cites"@en ;
+  rdfs:label "zitiert"@de .
+
+:partOf
+  rdf:type owl:ObjectProperty ;
+  rdfs:domain :ResearchGroup ;
+  rdfs:range :University ;
+  rdfs:label "part of"@en ;
+  rdfs:label "Teil von"@de .
+
+:worksOn
+  rdf:type owl:ObjectProperty ;
+  rdfs:domain :Person ;
+  rdfs:range :ResearchProject ;
+  rdfs:label "works on"@en ;
+  rdfs:label "arbeitet an"@de .
+
+:knows
+  rdf:type owl:ObjectProperty, owl:SymmetricProperty ;
+  rdfs:subPropertyOf foaf:knows ;
+  rdfs:domain :Person ;
+  rdfs:range :Person ;
+  rdfs:label "knows"@en ;
+  rdfs:label "kennt"@de .
+
+:memberOf
+  rdf:type owl:ObjectProperty ;
+  rdfs:domain :Person ;
+  rdfs:range :ResearchGroup ;
+  rdfs:label "member of"@en ;
+  rdfs:label "Mitglied von"@de .
+
+:addressedIn
+  rdf:type owl:ObjectProperty ;
+  rdfs:domain :ResearchTopic ;
+  rdfs:range :Publication ;
+  rdfs:label "addressed in"@en ;
+  rdfs:label "behandelt in"@de .
+
+:fundedBy
+  rdf:type owl:ObjectProperty ;
+  rdfs:domain :ResearchProject ;
+  rdfs:range :Organisation ;
+  rdfs:label "funded by"@en ;
+  rdfs:label "finanziert von"@de .
+
+# ── Universities ──────────────────────────────────────────────────────────────
+:MIT
+  rdf:type :University ;
+  rdfs:label "Massachusetts Institute of Technology"@en ;
+  rdfs:label "Massachusetts-Institut für Technologie"@de ;
+  rdfs:label "Institut de technologie du Massachusetts"@fr ;
+  schema:name "MIT" ;
+  schema:url <https://mit.edu> ;
+  dct:description "A private research university in Cambridge, Massachusetts."@en ;
+  schema:address [
+    rdf:type schema:PostalAddress ;
+    schema:streetAddress "77 Massachusetts Ave" ;
+    schema:addressLocality "Cambridge" ;
+    schema:addressRegion "MA" ;
+    schema:postalCode "02139" ;
+    schema:addressCountry "US"
+  ] .
+
+:Stanford
+  rdf:type :University ;
+  rdfs:label "Stanford University"@en ;
+  rdfs:label "Universität Stanford"@de ;
+  rdfs:label "Université Stanford"@fr ;
+  schema:name "Stanford" ;
+  schema:url <https://stanford.edu> ;
+  dct:description "A private research university in Stanford, California."@en ;
+  schema:address [
+    rdf:type schema:PostalAddress ;
+    schema:streetAddress "450 Serra Mall" ;
+    schema:addressLocality "Stanford" ;
+    schema:addressRegion "CA" ;
+    schema:postalCode "94305" ;
+    schema:addressCountry "US"
+  ] .
+
+:TUMunich
+  rdf:type :University ;
+  rdfs:label "Technical University of Munich"@en ;
+  rdfs:label "Technische Universität München"@de ;
+  rdfs:label "Université technique de Munich"@fr ;
+  schema:name "TUM" ;
+  dct:description "Eine technische Forschungsuniversität in München."@de ;
+  schema:address [
+    rdf:type schema:PostalAddress ;
+    schema:streetAddress "Arcisstraße 21" ;
+    schema:addressLocality "Munich" ;
+    schema:addressRegion "Bavaria" ;
+    schema:postalCode "80333" ;
+    schema:addressCountry "DE"
+  ] .
+
+:ETHZ
+  rdf:type :University ;
+  rdfs:label "ETH Zurich"@en ;
+  rdfs:label "Eidgenössische Technische Hochschule Zürich"@de ;
+  rdfs:label "École polytechnique fédérale de Zurich"@fr ;
+  schema:name "ETH Zürich" ;
+  dct:description "A public research university in Zurich, Switzerland."@en ;
+  schema:address [
+    rdf:type schema:PostalAddress ;
+    schema:streetAddress "Rämistrasse 101" ;
+    schema:addressLocality "Zurich" ;
+    schema:postalCode "8092" ;
+    schema:addressCountry "CH"
+  ] .
+
+# ── Research groups ───────────────────────────────────────────────────────────
+:KGLab
+  rdf:type :ResearchGroup ;
+  rdfs:label "Knowledge Graph Lab"@en ;
+  rdfs:label "Wissensgraphen-Labor"@de ;
+  rdfs:label "Laboratoire de graphes de connaissances"@fr ;
+  :partOf :MIT ;
+  dct:description "Research group focusing on knowledge representation and reasoning."@en .
+
+:NLPGroup
+  rdf:type :ResearchGroup ;
+  rdfs:label "Natural Language Processing Group"@en ;
+  rdfs:label "Gruppe für natürliche Sprachverarbeitung"@de ;
+  rdfs:label "Groupe de traitement du langage naturel"@fr ;
+  :partOf :Stanford ;
+  dct:description "Research group advancing NLP methods and applications."@en .
+
+:SWGroup
+  rdf:type :ResearchGroup ;
+  rdfs:label "Semantic Web Group"@en ;
+  rdfs:label "Semantisches Web Gruppe"@de ;
+  rdfs:label "Groupe Web sémantique"@fr ;
+  :partOf :TUMunich ;
+  dct:description "Forschungsgruppe für semantische Web-Technologien."@de .
+
+# ── Research topics ───────────────────────────────────────────────────────────
+:KnowledgeRepresentation
+  rdf:type :ResearchTopic ;
+  rdfs:label "Knowledge Representation"@en ;
+  rdfs:label "Wissensrepräsentation"@de ;
+  rdfs:label "Représentation des connaissances"@fr ;
+  skos:definition "Study of how knowledge can be represented for use by AI systems."@en ;
+  skos:definition "Studie zur Darstellung von Wissen für KI-Systeme."@de .
+
+:MachineLearning
+  rdf:type :ResearchTopic ;
+  rdfs:label "Machine Learning"@en ;
+  rdfs:label "Maschinelles Lernen"@de ;
+  rdfs:label "Apprentissage automatique"@fr ;
+  skos:definition "A subfield of AI enabling systems to learn from data."@en ;
+  skos:definition "Teilgebiet der KI, das Systemen ermöglicht, aus Daten zu lernen."@de .
+
+:SemanticWeb
+  rdf:type :ResearchTopic ;
+  rdfs:label "Semantic Web"@en ;
+  rdfs:label "Semantisches Web"@de ;
+  rdfs:label "Web sémantique"@fr ;
+  skos:definition "Extension of the Web enabling machine-readable data."@en ;
+  skos:definition "Erweiterung des Webs für maschinenlesbare Daten."@de .
+
+:NaturalLanguageProcessing
+  rdf:type :ResearchTopic ;
+  rdfs:label "Natural Language Processing"@en ;
+  rdfs:label "Natürliche Sprachverarbeitung"@de ;
+  rdfs:label "Traitement automatique du langage naturel"@fr ;
+  skos:definition "Branch of AI concerned with human language."@en ;
+  skos:definition "KI-Zweig zur Verarbeitung menschlicher Sprache."@de .
+
+# ── Professors ────────────────────────────────────────────────────────────────
+:AliceSmith
+  rdf:type :Professor ;
+  rdfs:label "Alice Smith"@en ;
+  :name "Alice Smith" ;
+  :email "alice.smith@mit.edu" ;
+  :birthDate "1972-04-15"^^xsd:date ;
+  :hIndex "42"^^xsd:nonNegativeInteger ;
+  :citationCount "8521"^^xsd:nonNegativeInteger ;
+  :orcid "0000-0001-2345-6789" ;
+  :affiliatedWith :MIT ;
+  :memberOf :KGLab ;
+  dct:description "Expert in knowledge representation and ontology engineering."@en ;
+  dct:description "Experte en représentation des connaissances et ingénierie des ontologies."@fr .
+
+:BobJones
+  rdf:type :Professor ;
+  rdfs:label "Bob Jones"@en ;
+  :name "Bob Jones" ;
+  :email "bob.jones@stanford.edu" ;
+  :birthDate "1968-09-03"^^xsd:date ;
+  :hIndex "51"^^xsd:nonNegativeInteger ;
+  :citationCount "12403"^^xsd:nonNegativeInteger ;
+  :orcid "0000-0002-3456-7890" ;
+  :affiliatedWith :Stanford ;
+  :memberOf :NLPGroup ;
+  dct:description "Pioneer in statistical natural language processing."@en .
+
+:CarolaMueller
+  rdf:type :Professor ;
+  rdfs:label "Carola Müller"@en ;
+  rdfs:label "Carola Müller"@de ;
+  :name "Carola Müller" ;
+  :email "carola.mueller@tum.de" ;
+  :birthDate "1975-02-28"^^xsd:date ;
+  :hIndex "35"^^xsd:nonNegativeInteger ;
+  :citationCount "6210"^^xsd:nonNegativeInteger ;
+  :orcid "0000-0003-4567-8901" ;
+  :affiliatedWith :TUMunich ;
+  :memberOf :SWGroup ;
+  dct:description "Führende Forscherin im Bereich semantische Technologien."@de ;
+  dct:description "Leading researcher in semantic technologies."@en .
+
+:DavidKumar
+  rdf:type :AssociateProfessor ;
+  rdfs:label "David Kumar"@en ;
+  :name "David Kumar" ;
+  :email "david.kumar@ethz.ch" ;
+  :birthDate "1980-11-12"^^xsd:date ;
+  :hIndex "22"^^xsd:nonNegativeInteger ;
+  :citationCount "3140"^^xsd:nonNegativeInteger ;
+  :orcid "0000-0004-5678-9012" ;
+  :affiliatedWith :ETHZ ;
+  dct:description "Specialist in machine learning for graphs."@en .
+
+# ── Researchers ───────────────────────────────────────────────────────────────
+:EvaLange
+  rdf:type :Researcher ;
+  rdfs:label "Eva Lange"@en ;
+  rdfs:label "Eva Lange"@de ;
+  :name "Eva Lange" ;
+  :email "eva.lange@tum.de" ;
+  :birthDate "1983-07-22"^^xsd:date ;
+  :hIndex "18"^^xsd:nonNegativeInteger ;
+  :citationCount "1876"^^xsd:nonNegativeInteger ;
+  :orcid "0000-0005-6789-0123" ;
+  :affiliatedWith :TUMunich ;
+  :memberOf :SWGroup ;
+  dct:description "Semantic web researcher and ontology specialist."@en .
+
+:FrankMorin
+  rdf:type :Researcher ;
+  rdfs:label "Frank Morin"@en ;
+  rdfs:label "Frank Morin"@fr ;
+  :name "Frank Morin" ;
+  :email "frank.morin@mit.edu" ;
+  :birthDate "1985-03-11"^^xsd:date ;
+  :hIndex "15"^^xsd:nonNegativeInteger ;
+  :citationCount "1204"^^xsd:nonNegativeInteger ;
+  :orcid "0000-0006-7890-1234" ;
+  :affiliatedWith :MIT ;
+  :memberOf :KGLab ;
+  dct:description "Chercheur spécialisé dans les graphes de connaissances."@fr ;
+  dct:description "Knowledge graph researcher."@en .
+
+# ── Graduate students ─────────────────────────────────────────────────────────
+:GraceLeung
+  rdf:type :GraduateStudent ;
+  rdfs:label "Grace Leung"@en ;
+  :name "Grace Leung" ;
+  :email "grace.leung@mit.edu" ;
+  :birthDate "1997-06-18"^^xsd:date ;
+  :affiliatedWith :MIT ;
+  :supervisedBy :AliceSmith ;
+  :memberOf :KGLab ;
+  :worksOn :ProjectKGComplete ;
+  dct:description "PhD student working on ontology alignment methods."@en .
+
+:HenrikBerg
+  rdf:type :GraduateStudent ;
+  rdfs:label "Henrik Berg"@en ;
+  rdfs:label "Henrik Berg"@de ;
+  :name "Henrik Berg" ;
+  :email "henrik.berg@tum.de" ;
+  :birthDate "1998-01-25"^^xsd:date ;
+  :affiliatedWith :TUMunich ;
+  :supervisedBy :CarolaMueller ;
+  :memberOf :SWGroup ;
+  :worksOn :ProjectSWOpt ;
+  dct:description "Doktorand der Informationswissenschaft."@de ;
+  dct:description "PhD student in information science."@en .
+
+:IsabelRodriguez
+  rdf:type :GraduateStudent ;
+  rdfs:label "Isabel Rodríguez"@en ;
+  rdfs:label "Isabel Rodríguez"@fr ;
+  :name "Isabel Rodríguez" ;
+  :email "isabel.rodriguez@stanford.edu" ;
+  :birthDate "1999-09-07"^^xsd:date ;
+  :affiliatedWith :Stanford ;
+  :supervisedBy :BobJones ;
+  :memberOf :NLPGroup ;
+  :worksOn :ProjectNLPBench ;
+  dct:description "Doctorante en traitement du langage naturel."@fr ;
+  dct:description "PhD student in natural language processing."@en .
+
+:JungsooPark
+  rdf:type :GraduateStudent ;
+  rdfs:label "Jungsoo Park"@en ;
+  :name "Jungsoo Park" ;
+  :email "jungsoo.park@ethz.ch" ;
+  :birthDate "2000-04-02"^^xsd:date ;
+  :affiliatedWith :ETHZ ;
+  :supervisedBy :DavidKumar ;
+  dct:description "PhD student focused on graph neural networks."@en .
+
+# ── Publications ──────────────────────────────────────────────────────────────
+:ArticleKGSurvey2022
+  rdf:type :JournalArticle ;
+  rdfs:label "A Survey of Knowledge Graph Techniques"@en ;
+  dc:title "A Survey of Knowledge Graph Techniques"@en ;
+  :publicationYear "2022"^^xsd:gYear ;
+  :doi "10.1234/kg-survey-2022" ;
+  :pageCount "24"^^xsd:positiveInteger ;
+  dct:abstract "This paper surveys techniques for knowledge graph construction, completion, and querying across multiple domains."@en .
+
+:ArticleNLPNeural2021
+  rdf:type :JournalArticle ;
+  rdfs:label "Neural Approaches to NLP"@en ;
+  dc:title "Neural Approaches to Natural Language Processing"@en ;
+  :publicationYear "2021"^^xsd:gYear ;
+  :doi "10.1234/nlp-neural-2021" ;
+  :pageCount "18"^^xsd:positiveInteger ;
+  dct:abstract "We examine neural network architectures for natural language understanding tasks."@en .
+
+:PaperSWReasoning2023
+  rdf:type :ConferencePaper ;
+  rdfs:label "Reasoning over Semantic Web Data"@en ;
+  dc:title "Scalable Reasoning over Semantic Web Data"@en ;
+  :publicationYear "2023"^^xsd:gYear ;
+  :doi "10.1234/sw-reasoning-2023" ;
+  :pageCount "12"^^xsd:positiveInteger ;
+  dct:abstract "We present scalable reasoning algorithms for large-scale RDF data."@en .
+
+:ArticleML4KG2022
+  rdf:type :JournalArticle ;
+  rdfs:label "Machine Learning for Knowledge Graphs"@en ;
+  dc:title "Machine Learning for Knowledge Graphs"@en ;
+  :publicationYear "2022"^^xsd:gYear ;
+  :doi "10.1234/ml4kg-2022" ;
+  :pageCount "30"^^xsd:positiveInteger ;
+  dct:abstract "An overview of ML techniques applied to knowledge graph embedding and completion."@en .
+
+:PaperOntAlign2023
+  rdf:type :ConferencePaper ;
+  rdfs:label "Ontology Alignment with Neural Networks"@en ;
+  dc:title "Ontology Alignment with Neural Networks"@en ;
+  :publicationYear "2023"^^xsd:gYear ;
+  :doi "10.1234/ont-align-2023" ;
+  :pageCount "9"^^xsd:positiveInteger ;
+  dct:abstract "We leverage neural networks to solve the ontology alignment problem at scale."@en .
+
+:ArticleRDFQuery2020
+  rdf:type :JournalArticle ;
+  rdfs:label "Optimising SPARQL Query Execution"@en ;
+  dc:title "Optimising SPARQL Query Execution"@en ;
+  :publicationYear "2020"^^xsd:gYear ;
+  :doi "10.1234/sparql-opt-2020" ;
+  :pageCount "22"^^xsd:positiveInteger ;
+  dct:abstract "Techniques for efficient SPARQL query evaluation over distributed RDF stores."@en .
+
+:ArticleGNN2021
+  rdf:type :JournalArticle ;
+  rdfs:label "Graph Neural Networks for Link Prediction"@en ;
+  dc:title "Graph Neural Networks for Link Prediction"@en ;
+  :publicationYear "2021"^^xsd:gYear ;
+  :doi "10.1234/gnn-link-2021" ;
+  :pageCount "15"^^xsd:positiveInteger ;
+  dct:abstract "A comprehensive study of GNN architectures for predicting missing links in graphs."@en .
+
+:PaperOntEval2022
+  rdf:type :ConferencePaper ;
+  rdfs:label "Benchmarking Ontology Matching Systems"@en ;
+  dc:title "Benchmarking Ontology Matching Systems"@en ;
+  :publicationYear "2022"^^xsd:gYear ;
+  :doi "10.1234/ont-bench-2022" ;
+  :pageCount "8"^^xsd:positiveInteger ;
+  dct:abstract "We introduce a new benchmark for evaluating ontology matching systems."@en .
+
+# ── Authorship links ──────────────────────────────────────────────────────────
+:AliceSmith   :authorOf :ArticleKGSurvey2022 .
+:AliceSmith   :authorOf :PaperOntAlign2023 .
+:AliceSmith   :authorOf :PaperOntEval2022 .
+:BobJones     :authorOf :ArticleNLPNeural2021 .
+:CarolaMueller :authorOf :PaperSWReasoning2023 .
+:CarolaMueller :authorOf :ArticleRDFQuery2020 .
+:DavidKumar   :authorOf :ArticleML4KG2022 .
+:DavidKumar   :authorOf :ArticleGNN2021 .
+:EvaLange     :authorOf :PaperSWReasoning2023 .
+:EvaLange     :authorOf :ArticleRDFQuery2020 .
+:FrankMorin   :authorOf :ArticleKGSurvey2022 .
+:GraceLeung   :authorOf :PaperOntAlign2023 .
+:GraceLeung   :authorOf :PaperOntEval2022 .
+:HenrikBerg   :authorOf :ArticleRDFQuery2020 .
+:IsabelRodriguez :authorOf :ArticleNLPNeural2021 .
+:JungsooPark  :authorOf :ArticleGNN2021 .
+
+# ── Citation links ────────────────────────────────────────────────────────────
+:ArticleKGSurvey2022  :cites :ArticleML4KG2022 .
+:ArticleKGSurvey2022  :cites :PaperSWReasoning2023 .
+:PaperOntAlign2023    :cites :ArticleKGSurvey2022 .
+:PaperOntAlign2023    :cites :PaperOntEval2022 .
+:PaperSWReasoning2023 :cites :ArticleRDFQuery2020 .
+:ArticleML4KG2022     :cites :ArticleNLPNeural2021 .
+:ArticleML4KG2022     :cites :ArticleGNN2021 .
+:ArticleNLPNeural2021 :cites :ArticleRDFQuery2020 .
+:ArticleGNN2021       :cites :ArticleML4KG2022 .
+
+# ── Knows relationships ───────────────────────────────────────────────────────
+:AliceSmith  :knows :BobJones .
+:AliceSmith  :knows :CarolaMueller .
+:AliceSmith  :knows :FrankMorin .
+:BobJones    :knows :DavidKumar .
+:BobJones    :knows :IsabelRodriguez .
+:CarolaMueller :knows :EvaLange .
+:CarolaMueller :knows :HenrikBerg .
+:DavidKumar  :knows :JungsooPark .
+:EvaLange    :knows :FrankMorin .
+
+# ── Research topic coverage ───────────────────────────────────────────────────
+:KnowledgeRepresentation :addressedIn :ArticleKGSurvey2022 .
+:KnowledgeRepresentation :addressedIn :PaperOntAlign2023 .
+:KnowledgeRepresentation :addressedIn :PaperOntEval2022 .
+:MachineLearning :addressedIn :ArticleML4KG2022 .
+:MachineLearning :addressedIn :ArticleNLPNeural2021 .
+:MachineLearning :addressedIn :ArticleGNN2021 .
+:SemanticWeb :addressedIn :PaperSWReasoning2023 .
+:SemanticWeb :addressedIn :ArticleRDFQuery2020 .
+:NaturalLanguageProcessing :addressedIn :ArticleNLPNeural2021 .
+
+# ── Research projects ─────────────────────────────────────────────────────────
+:ProjectKGComplete
+  rdf:type :ResearchProject ;
+  rdfs:label "Knowledge Graph Completion"@en ;
+  rdfs:label "Wissensgraph-Vervollständigung"@de ;
+  :startDate "2021-01-01"^^xsd:date ;
+  :endDate "2024-12-31"^^xsd:date ;
+  :fundingAmount "500000.00"^^xsd:decimal ;
+  :fundedBy :MIT ;
+  dct:description "A project to develop methods for completing missing links in knowledge graphs."@en .
+
+:ProjectNLPBench
+  rdf:type :ResearchProject ;
+  rdfs:label "NLP Benchmark Suite"@en ;
+  rdfs:label "NLP-Benchmark-Suite"@de ;
+  :startDate "2022-06-01"^^xsd:date ;
+  :endDate "2025-05-31"^^xsd:date ;
+  :fundingAmount "350000.00"^^xsd:decimal ;
+  :fundedBy :Stanford ;
+  dct:description "Development of comprehensive benchmarks for evaluating NLP systems."@en .
+
+:ProjectSWOpt
+  rdf:type :ResearchProject ;
+  rdfs:label "Semantic Web Query Optimisation"@en ;
+  rdfs:label "Semantisches Web Abfrageoptimierung"@de ;
+  :startDate "2020-09-01"^^xsd:date ;
+  :endDate "2023-08-31"^^xsd:date ;
+  :fundingAmount "420000.00"^^xsd:decimal ;
+  :fundedBy :TUMunich ;
+  dct:description "Project for optimising SPARQL queries over large RDF datasets."@en .
+
+:AliceSmith  :worksOn :ProjectKGComplete .
+:FrankMorin  :worksOn :ProjectKGComplete .
+:BobJones    :worksOn :ProjectNLPBench .
+:CarolaMueller :worksOn :ProjectSWOpt .
+:EvaLange    :worksOn :ProjectSWOpt .
