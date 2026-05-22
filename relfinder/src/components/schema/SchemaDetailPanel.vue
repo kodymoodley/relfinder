@@ -179,7 +179,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, computed, watch } from 'vue'
 import Drawer from 'primevue/drawer'
 import Tag from 'primevue/tag'
 import DataTable from 'primevue/datatable'
@@ -250,13 +250,11 @@ watch(
   () => props.selectedNode,
   (node) => {
     if (!node) return
-    nextTick(() => {
-      const context = connectionStore.queryContext ?? { endpointUrl: '' }
-      const store = connectionStore.rdfStore ?? connectionStore.localRdfStore ?? undefined
-      schemaStore.fetchDataProps(node.iri, context, store).catch(() => {})
-      schemaStore.fetchDescription(node.iri, context, store).catch(() => {})
-      schemaStore.fetchInstances(node.iri, context, store).catch(() => {})
-    })
+    const context = connectionStore.queryContext ?? { endpointUrl: '' }
+    const store = connectionStore.rdfStore ?? connectionStore.localRdfStore ?? undefined
+    schemaStore.fetchDataProps(node.iri, context, store).catch(() => {})
+    schemaStore.fetchDescription(node.iri, context, store).catch(() => {})
+    schemaStore.fetchInstances(node.iri, context, store).catch(() => {})
   },
 )
 
