@@ -137,7 +137,7 @@
             size="small"
             fluid
             data-testid="load-more-btn"
-            @click="schemaStore.loadMore()"
+            @click="onLoadMore"
           />
         </section>
 
@@ -275,6 +275,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useToast } from 'primevue/usetoast'
 import Button from 'primevue/button'
 import Message from 'primevue/message'
 import ProgressBar from 'primevue/progressbar'
@@ -289,6 +290,7 @@ import SchemaCanvas from '@/components/schema/SchemaCanvas.vue'
 import SchemaDetailPanel from '@/components/schema/SchemaDetailPanel.vue'
 
 const router = useRouter()
+const toast = useToast()
 const connectionStore = useConnectionStore()
 const schemaStore = useSchemaStore()
 const { dark, toggle: toggleDark } = useDarkMode()
@@ -364,6 +366,21 @@ function onFindPaths() {
       },
     },
   })
+}
+
+// ── Load more ─────────────────────────────────────────────────────────────────
+
+async function onLoadMore() {
+  const before = schemaStore.nodes.length
+  await schemaStore.loadMore()
+  if (schemaStore.nodes.length === before) {
+    toast.add({
+      severity: 'info',
+      summary: 'Schema complete',
+      detail: 'All classes have already been extracted.',
+      life: 4000,
+    })
+  }
 }
 
 // ── Disconnect ────────────────────────────────────────────────────────────────
