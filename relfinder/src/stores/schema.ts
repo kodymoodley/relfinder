@@ -114,7 +114,7 @@ export const useSchemaStore = defineStore('schema', () => {
     // fast, and using a shared '__file__' key would cause different uploads to
     // collide in localStorage.
     const isFileSource = n3Store !== undefined
-    const endpointUrl = isFileSource ? '' : (context.endpointUrl || '__file__')
+    const endpointUrl = isFileSource ? '' : context.endpointUrl || '__file__'
 
     console.log(
       '[schema] start() called — force:',
@@ -260,7 +260,7 @@ export const useSchemaStore = defineStore('schema', () => {
     const offset = nodes.value.length
     const existingIris = nodes.value.map((n) => n.iri)
     const isFileSource = n3Store !== undefined
-    const endpointUrl = isFileSource ? '' : (context.endpointUrl || '__file__')
+    const endpointUrl = isFileSource ? '' : context.endpointUrl || '__file__'
 
     abortController = new AbortController()
     extracting.value = true

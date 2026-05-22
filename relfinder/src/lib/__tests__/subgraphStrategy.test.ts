@@ -112,9 +112,17 @@ describe('probeTripleCount', () => {
 describe('fetchFullGraph', () => {
   it('populates a local store with all triples from the endpoint', async () => {
     const quads = [
-      makeQuad('http://example.org/Alice', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 'http://example.org/Person'),
+      makeQuad(
+        'http://example.org/Alice',
+        'http://www.w3.org/1999/02/22-rdf-syntax-ns#type',
+        'http://example.org/Person',
+      ),
       makeQuad('http://example.org/Alice', 'http://example.org/knows', 'http://example.org/Bob'),
-      makeQuad('http://example.org/Bob', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 'http://example.org/Person'),
+      makeQuad(
+        'http://example.org/Bob',
+        'http://www.w3.org/1999/02/22-rdf-syntax-ns#type',
+        'http://example.org/Person',
+      ),
     ]
     vi.mocked(executeConstruct).mockResolvedValue(quads)
 
@@ -138,15 +146,21 @@ describe('fetchNeighbourhoodStore', () => {
   it('merges both entities neighbourhoods into one store ready for path finding', async () => {
     // Cillian Murphy and Christopher Nolan are both connected to the film Oppenheimer
     const murphyQuads = [
-      makeQuad('http://dbpedia.org/resource/Cillian_Murphy', 'http://dbpedia.org/ontology/film', 'http://dbpedia.org/resource/Oppenheimer'),
+      makeQuad(
+        'http://dbpedia.org/resource/Cillian_Murphy',
+        'http://dbpedia.org/ontology/film',
+        'http://dbpedia.org/resource/Oppenheimer',
+      ),
     ]
     const nolanQuads = [
-      makeQuad('http://dbpedia.org/resource/Christopher_Nolan', 'http://dbpedia.org/ontology/directed', 'http://dbpedia.org/resource/Oppenheimer'),
+      makeQuad(
+        'http://dbpedia.org/resource/Christopher_Nolan',
+        'http://dbpedia.org/ontology/directed',
+        'http://dbpedia.org/resource/Oppenheimer',
+      ),
     ]
 
-    vi.mocked(executeConstruct)
-      .mockResolvedValueOnce(murphyQuads)
-      .mockResolvedValueOnce(nolanQuads)
+    vi.mocked(executeConstruct).mockResolvedValueOnce(murphyQuads).mockResolvedValueOnce(nolanQuads)
 
     const store = await fetchNeighbourhoodStore(
       'http://dbpedia.org/resource/Cillian_Murphy',
@@ -199,9 +213,7 @@ describe('fetchNeighbourhoodStore', () => {
       makeQuad('http://example.org/Alice', 'http://example.org/knows', 'http://example.org/Bob'),
     ]
 
-    vi.mocked(executeConstruct)
-      .mockResolvedValueOnce(aliceQuads)
-      .mockResolvedValueOnce([]) // Bob is isolated
+    vi.mocked(executeConstruct).mockResolvedValueOnce(aliceQuads).mockResolvedValueOnce([]) // Bob is isolated
 
     const store = await fetchNeighbourhoodStore(
       'http://example.org/Alice',

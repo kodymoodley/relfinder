@@ -56,7 +56,12 @@ describe('connectSparql', () => {
     vi.mocked(probeTripleCount).mockResolvedValue(Infinity)
     const store = useConnectionStore()
 
-    store.connectSparql({ endpointUrl: 'https://dbpedia.org/sparql', username: '', password: '', proxyUrl: '' })
+    store.connectSparql({
+      endpointUrl: 'https://dbpedia.org/sparql',
+      username: '',
+      password: '',
+      proxyUrl: '',
+    })
 
     expect(store.isConnected).toBe(true)
     expect(store.isSparqlSource).toBe(true)
@@ -67,7 +72,12 @@ describe('connectSparql', () => {
     vi.mocked(probeTripleCount).mockResolvedValue(Infinity)
     const store = useConnectionStore()
 
-    store.connectSparql({ endpointUrl: 'https://dbpedia.org/sparql', username: '', password: '', proxyUrl: '' })
+    store.connectSparql({
+      endpointUrl: 'https://dbpedia.org/sparql',
+      username: '',
+      password: '',
+      proxyUrl: '',
+    })
 
     expect(store.queryContext?.endpointUrl).toBe('https://dbpedia.org/sparql')
   })
@@ -76,7 +86,12 @@ describe('connectSparql', () => {
     vi.mocked(probeTripleCount).mockResolvedValue(Infinity)
     const store = useConnectionStore()
 
-    store.connectSparql({ endpointUrl: 'https://private.org/sparql', username: 'alice', password: 'secret', proxyUrl: '' })
+    store.connectSparql({
+      endpointUrl: 'https://private.org/sparql',
+      username: 'alice',
+      password: 'secret',
+      proxyUrl: '',
+    })
 
     expect(store.authorizationHeader).toBe(`Basic ${btoa('alice:secret')}`)
   })
@@ -85,7 +100,12 @@ describe('connectSparql', () => {
     vi.mocked(probeTripleCount).mockResolvedValue(Infinity)
     const store = useConnectionStore()
 
-    store.connectSparql({ endpointUrl: 'https://dbpedia.org/sparql', username: '', password: '', proxyUrl: '' })
+    store.connectSparql({
+      endpointUrl: 'https://dbpedia.org/sparql',
+      username: '',
+      password: '',
+      proxyUrl: '',
+    })
 
     expect(sessionStorage.getItem('rf:endpointUrl')).toBe('https://dbpedia.org/sparql')
   })
@@ -94,22 +114,44 @@ describe('connectSparql', () => {
     vi.mocked(probeTripleCount).mockResolvedValue(Infinity)
     const store = useConnectionStore()
 
-    store.connectSparql({ endpointUrl: 'https://dbpedia.org/sparql', username: '', password: '', proxyUrl: '' })
+    store.connectSparql({
+      endpointUrl: 'https://dbpedia.org/sparql',
+      username: '',
+      password: '',
+      proxyUrl: '',
+    })
     expect(sessionStorage.getItem('rf:proxyUrl')).toBeNull()
 
-    store.connectSparql({ endpointUrl: 'https://dbpedia.org/sparql', username: '', password: '', proxyUrl: 'https://proxy.example.org' })
+    store.connectSparql({
+      endpointUrl: 'https://dbpedia.org/sparql',
+      username: '',
+      password: '',
+      proxyUrl: 'https://proxy.example.org',
+    })
     expect(sessionStorage.getItem('rf:proxyUrl')).toBe('https://proxy.example.org')
   })
 
   it('small endpoint: fetches the full graph into a local store so path finding runs locally', async () => {
     const { namedNode, quad, defaultGraph } = DataFactory
     const mockStore = new Store()
-    mockStore.addQuad(quad(namedNode('http://example.org/Alice'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'), namedNode('http://example.org/Person'), defaultGraph()))
+    mockStore.addQuad(
+      quad(
+        namedNode('http://example.org/Alice'),
+        namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+        namedNode('http://example.org/Person'),
+        defaultGraph(),
+      ),
+    )
     vi.mocked(probeTripleCount).mockResolvedValue(3_500)
     vi.mocked(fetchFullGraph).mockResolvedValue(mockStore)
 
     const store = useConnectionStore()
-    store.connectSparql({ endpointUrl: 'https://small-endpoint.org/sparql', username: '', password: '', proxyUrl: '' })
+    store.connectSparql({
+      endpointUrl: 'https://small-endpoint.org/sparql',
+      username: '',
+      password: '',
+      proxyUrl: '',
+    })
 
     await vi.waitFor(() => expect(store.subgraphStatus).toBe('ready'))
     expect(store.localRdfStore?.size).toBe(1)
@@ -120,7 +162,12 @@ describe('connectSparql', () => {
     vi.mocked(probeTripleCount).mockResolvedValue(500_000_000)
 
     const store = useConnectionStore()
-    store.connectSparql({ endpointUrl: 'https://dbpedia.org/sparql', username: '', password: '', proxyUrl: '' })
+    store.connectSparql({
+      endpointUrl: 'https://dbpedia.org/sparql',
+      username: '',
+      password: '',
+      proxyUrl: '',
+    })
 
     await vi.waitFor(() => expect(store.subgraphStatus).toBe('ready'))
     expect(store.localRdfStore).toBeNull()
@@ -131,7 +178,12 @@ describe('connectSparql', () => {
     vi.mocked(probeTripleCount).mockResolvedValue(Infinity)
 
     const store = useConnectionStore()
-    store.connectSparql({ endpointUrl: 'https://offline.example.org/sparql', username: '', password: '', proxyUrl: '' })
+    store.connectSparql({
+      endpointUrl: 'https://offline.example.org/sparql',
+      username: '',
+      password: '',
+      proxyUrl: '',
+    })
 
     await vi.waitFor(() => expect(store.subgraphStatus).toBe('ready'))
     expect(store.localRdfStore).toBeNull()
@@ -154,7 +206,14 @@ describe('connectFile', () => {
   it('exposes the N3 store so schema extraction and path finding run locally', () => {
     const { namedNode, quad, defaultGraph } = DataFactory
     const n3Store = new Store()
-    n3Store.addQuad(quad(namedNode('http://example.org/Alice'), namedNode('http://example.org/knows'), namedNode('http://example.org/Bob'), defaultGraph()))
+    n3Store.addQuad(
+      quad(
+        namedNode('http://example.org/Alice'),
+        namedNode('http://example.org/knows'),
+        namedNode('http://example.org/Bob'),
+        defaultGraph(),
+      ),
+    )
     const store = useConnectionStore()
 
     store.connectFile({ fileName: 'movies.ttl', store: n3Store })
@@ -186,7 +245,12 @@ describe('disconnect', () => {
   it('resets all connection state when the user clicks Disconnect', async () => {
     vi.mocked(probeTripleCount).mockResolvedValue(500_000_000)
     const store = useConnectionStore()
-    store.connectSparql({ endpointUrl: 'https://dbpedia.org/sparql', username: '', password: '', proxyUrl: '' })
+    store.connectSparql({
+      endpointUrl: 'https://dbpedia.org/sparql',
+      username: '',
+      password: '',
+      proxyUrl: '',
+    })
     await vi.waitFor(() => expect(store.subgraphStatus).toBe('ready'))
 
     store.disconnect()
@@ -201,7 +265,12 @@ describe('disconnect', () => {
   it('removes persisted endpoint from sessionStorage — next page load shows connection screen', () => {
     vi.mocked(probeTripleCount).mockResolvedValue(Infinity)
     const store = useConnectionStore()
-    store.connectSparql({ endpointUrl: 'https://dbpedia.org/sparql', username: '', password: '', proxyUrl: 'https://proxy.example.org' })
+    store.connectSparql({
+      endpointUrl: 'https://dbpedia.org/sparql',
+      username: '',
+      password: '',
+      proxyUrl: 'https://proxy.example.org',
+    })
 
     store.disconnect()
 
@@ -271,7 +340,12 @@ describe('waitForSubgraph', () => {
   it('resolves immediately when the probe has already finished', async () => {
     vi.mocked(probeTripleCount).mockResolvedValue(500_000_000)
     const store = useConnectionStore()
-    store.connectSparql({ endpointUrl: 'https://dbpedia.org/sparql', username: '', password: '', proxyUrl: '' })
+    store.connectSparql({
+      endpointUrl: 'https://dbpedia.org/sparql',
+      username: '',
+      password: '',
+      proxyUrl: '',
+    })
     await vi.waitFor(() => expect(store.subgraphStatus).toBe('ready'))
 
     await expect(store.waitForSubgraph()).resolves.toBeUndefined()
@@ -280,15 +354,25 @@ describe('waitForSubgraph', () => {
   it('holds path finding until the endpoint probe completes — prevents racing ahead with wrong strategy', async () => {
     let resolveProbe!: (n: number) => void
     vi.mocked(probeTripleCount).mockImplementation(
-      () => new Promise((r) => { resolveProbe = r }),
+      () =>
+        new Promise((r) => {
+          resolveProbe = r
+        }),
     )
 
     const store = useConnectionStore()
-    store.connectSparql({ endpointUrl: 'https://dbpedia.org/sparql', username: '', password: '', proxyUrl: '' })
+    store.connectSparql({
+      endpointUrl: 'https://dbpedia.org/sparql',
+      username: '',
+      password: '',
+      proxyUrl: '',
+    })
     expect(store.subgraphStatus).toBe('probing')
 
     let pathFindingStarted = false
-    const waitPromise = store.waitForSubgraph().then(() => { pathFindingStarted = true })
+    const waitPromise = store.waitForSubgraph().then(() => {
+      pathFindingStarted = true
+    })
 
     expect(pathFindingStarted).toBe(false)
     resolveProbe(999_999_999) // large endpoint — probe resolves

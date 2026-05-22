@@ -31,6 +31,7 @@ import {
   searchEntities,
   fetchLabels,
   fetchTypes,
+  fetchDataProperties,
   refreshGraphLabels,
 } from '@/lib/sparql/entitySearch'
 import { executeSelect, executeSelectOnStore } from '@/lib/sparql/engine'
@@ -45,8 +46,12 @@ vi.mock('@/lib/sparql/engine', () => ({
 const CTX = { endpointUrl: 'https://dbpedia.org/sparql' }
 
 /** Helpers that produce minimal RDF.js-compatible Term objects */
-function namedNode(value: string) { return { value, termType: 'NamedNode' } }
-function literal(value: string, lang = '') { return { value, lang, termType: 'Literal' } }
+function namedNode(value: string) {
+  return { value, termType: 'NamedNode' }
+}
+function literal(value: string, lang = '') {
+  return { value, lang, termType: 'Literal' }
+}
 
 beforeEach(() => {
   cacheInvalidate()
@@ -58,15 +63,27 @@ beforeEach(() => {
 describe('fetchInstancesByClass', () => {
   it('returns instances with their rdfs:label when the endpoint provides one', async () => {
     vi.mocked(executeSelect).mockResolvedValue([
-      { s: namedNode('http://dbpedia.org/resource/Cillian_Murphy'), label: literal('Cillian Murphy', 'en') },
-      { s: namedNode('http://dbpedia.org/resource/Emma_Thomas'),   label: literal('Emma Thomas',   'en') },
+      {
+        s: namedNode('http://dbpedia.org/resource/Cillian_Murphy'),
+        label: literal('Cillian Murphy', 'en'),
+      },
+      {
+        s: namedNode('http://dbpedia.org/resource/Emma_Thomas'),
+        label: literal('Emma Thomas', 'en'),
+      },
     ])
 
     const results = await fetchInstancesByClass('http://dbpedia.org/ontology/Actor', CTX)
 
     expect(results).toHaveLength(2)
-    expect(results[0]).toEqual({ iri: 'http://dbpedia.org/resource/Cillian_Murphy', label: 'Cillian Murphy' })
-    expect(results[1]).toEqual({ iri: 'http://dbpedia.org/resource/Emma_Thomas',   label: 'Emma Thomas'   })
+    expect(results[0]).toEqual({
+      iri: 'http://dbpedia.org/resource/Cillian_Murphy',
+      label: 'Cillian Murphy',
+    })
+    expect(results[1]).toEqual({
+      iri: 'http://dbpedia.org/resource/Emma_Thomas',
+      label: 'Emma Thomas',
+    })
   })
 
   it('falls back to the IRI local name when an instance has no label — custom vocab files still show something readable', async () => {
@@ -81,7 +98,10 @@ describe('fetchInstancesByClass', () => {
 
   it('returns the cached list on repeated calls — the Browse panel can open and close without re-fetching', async () => {
     vi.mocked(executeSelect).mockResolvedValue([
-      { s: namedNode('http://dbpedia.org/resource/Cillian_Murphy'), label: literal('Cillian Murphy') },
+      {
+        s: namedNode('http://dbpedia.org/resource/Cillian_Murphy'),
+        label: literal('Cillian Murphy'),
+      },
     ])
 
     await fetchInstancesByClass('http://dbpedia.org/ontology/Actor', CTX)
@@ -178,7 +198,11 @@ describe('fetchEntityProps', () => {
 describe('searchEntities', () => {
   it('queries the remote endpoint with a restricted label predicate list', async () => {
     vi.mocked(executeSelect).mockResolvedValue([
-      { s: namedNode('http://dbpedia.org/resource/Cillian_Murphy'), label: literal('Cillian Murphy'), ctype: namedNode('http://dbpedia.org/ontology/Actor') },
+      {
+        s: namedNode('http://dbpedia.org/resource/Cillian_Murphy'),
+        label: literal('Cillian Murphy'),
+        ctype: namedNode('http://dbpedia.org/ontology/Actor'),
+      },
     ])
 
     const results = await searchEntities(CTX)
@@ -234,7 +258,7 @@ describe('searchEntities', () => {
     const murphy = namedNode('http://dbpedia.org/resource/Cillian_Murphy')
     const actor = namedNode('http://dbpedia.org/ontology/Actor')
     vi.mocked(executeSelect).mockResolvedValue([
-      { s: murphy, label: literal('Cillian Murphy'),     ctype: actor },
+      { s: murphy, label: literal('Cillian Murphy'), ctype: actor },
       { s: murphy, label: literal('Cillian Murphy', 'en'), ctype: actor }, // same IRI, second label
     ])
 
@@ -256,15 +280,21 @@ describe('fetchLabels', () => {
 
   it('groups all language variants of a label under the same IRI key', async () => {
     vi.mocked(executeSelect).mockResolvedValue([
-      { p: namedNode('http://dbpedia.org/resource/Cillian_Murphy'), label: literal('Cillian Murphy', 'en') },
-      { p: namedNode('http://dbpedia.org/resource/Cillian_Murphy'), label: literal('Cillian Murphy', 'fr') },
+      {
+        p: namedNode('http://dbpedia.org/resource/Cillian_Murphy'),
+        label: literal('Cillian Murphy', 'en'),
+      },
+      {
+        p: namedNode('http://dbpedia.org/resource/Cillian_Murphy'),
+        label: literal('Cillian Murphy', 'fr'),
+      },
     ])
 
     const map = await fetchLabels(['http://dbpedia.org/resource/Cillian_Murphy'], CTX)
 
     const entries = map.get('http://dbpedia.org/resource/Cillian_Murphy')
     expect(entries).toHaveLength(2)
-    expect(entries?.map(e => e.lang)).toEqual(['en', 'fr'])
+    expect(entries?.map((e) => e.lang)).toEqual(['en', 'fr'])
   })
 })
 
@@ -280,7 +310,10 @@ describe('fetchTypes', () => {
 
   it('accepts types from any namespace when ontologyPrefix is empty', async () => {
     vi.mocked(executeSelect).mockResolvedValue([
-      { o: namedNode('http://dbpedia.org/resource/Cillian_Murphy'), type: namedNode('http://schema.org/Person') },
+      {
+        o: namedNode('http://dbpedia.org/resource/Cillian_Murphy'),
+        type: namedNode('http://schema.org/Person'),
+      },
     ])
 
     const map = await fetchTypes(['http://dbpedia.org/resource/Cillian_Murphy'], CTX, '')
@@ -290,8 +323,14 @@ describe('fetchTypes', () => {
 
   it('filters out types that do not match the ontology prefix', async () => {
     vi.mocked(executeSelect).mockResolvedValue([
-      { o: namedNode('http://dbpedia.org/resource/Cillian_Murphy'), type: namedNode('http://schema.org/Person') }, // wrong namespace
-      { o: namedNode('http://dbpedia.org/resource/Cillian_Murphy'), type: namedNode('http://dbpedia.org/ontology/Actor') }, // correct
+      {
+        o: namedNode('http://dbpedia.org/resource/Cillian_Murphy'),
+        type: namedNode('http://schema.org/Person'),
+      }, // wrong namespace
+      {
+        o: namedNode('http://dbpedia.org/resource/Cillian_Murphy'),
+        type: namedNode('http://dbpedia.org/ontology/Actor'),
+      }, // correct
     ])
 
     const map = await fetchTypes(
@@ -300,7 +339,9 @@ describe('fetchTypes', () => {
       'http://dbpedia.org/ontology/',
     )
 
-    expect(map.get('http://dbpedia.org/resource/Cillian_Murphy')).toBe('http://dbpedia.org/ontology/Actor')
+    expect(map.get('http://dbpedia.org/resource/Cillian_Murphy')).toBe(
+      'http://dbpedia.org/ontology/Actor',
+    )
   })
 })
 
@@ -309,21 +350,31 @@ describe('fetchTypes', () => {
 describe('refreshGraphLabels', () => {
   const baseGraph = (): RelationshipGraph => ({
     nodes: [
-      { id: 1, iri: 'http://dbpedia.org/resource/Oppenheimer', label: 'Oppenheimer', class: 'http://dbpedia.org/ontology/Film', isEndpoint: false },
+      {
+        id: 1,
+        iri: 'http://dbpedia.org/resource/Oppenheimer',
+        label: 'Oppenheimer',
+        class: 'http://dbpedia.org/ontology/Film',
+        isEndpoint: false,
+      },
     ],
-    edges: [
-      { sid: 1, tid: 2, iris: ['http://dbpedia.org/ontology/director'], label: 'director' },
-    ],
+    edges: [{ sid: 1, tid: 2, iris: ['http://dbpedia.org/ontology/director'], label: 'director' }],
     classes: [],
     allLabels: new Map([
-      ['http://dbpedia.org/resource/Oppenheimer', [
-        { value: 'Oppenheimer', lang: 'en' },
-        { value: 'Oppenheimer (film)', lang: 'fr' },
-      ]],
-      ['http://dbpedia.org/ontology/director', [
-        { value: 'director', lang: 'en' },
-        { value: 'réalisateur', lang: 'fr' },
-      ]],
+      [
+        'http://dbpedia.org/resource/Oppenheimer',
+        [
+          { value: 'Oppenheimer', lang: 'en' },
+          { value: 'Oppenheimer (film)', lang: 'fr' },
+        ],
+      ],
+      [
+        'http://dbpedia.org/ontology/director',
+        [
+          { value: 'director', lang: 'en' },
+          { value: 'réalisateur', lang: 'fr' },
+        ],
+      ],
     ]),
   })
 
@@ -357,12 +408,104 @@ describe('refreshGraphLabels', () => {
   it('uses an untagged literal before falling back to English', () => {
     const graph = baseGraph()
     graph.allLabels.set('http://dbpedia.org/resource/Oppenheimer', [
-      { value: 'Oppenheimer plain', lang: '' },   // untagged
+      { value: 'Oppenheimer plain', lang: '' }, // untagged
       { value: 'Oppenheimer', lang: 'en' },
     ])
 
     refreshGraphLabels(graph, 'de') // no 'de' match → untagged wins over 'en'
 
     expect(graph.nodes[0].label).toBe('Oppenheimer plain')
+  })
+
+  it('skips the exact-language check when language is empty — falls through to the untagged entry', () => {
+    // pickLabel: if(language) is false when language='', skip exact match, find untagged
+    const graph = baseGraph()
+    graph.allLabels.set('http://dbpedia.org/resource/Oppenheimer', [
+      { value: 'Oppenheimer plain', lang: '' },
+      { value: 'Oppenheimer', lang: 'en' },
+    ])
+
+    refreshGraphLabels(graph, '')
+
+    expect(graph.nodes[0].label).toBe('Oppenheimer plain')
+  })
+
+  it("returns the first available entry when language is 'en' and there is no 'en' label", () => {
+    // pickLabel: language='en', no exact 'en', no untagged → if(language !== 'en') is false → entries[0]
+    const graph = baseGraph()
+    graph.allLabels.set('http://dbpedia.org/resource/Oppenheimer', [
+      { value: 'Oppenheimer auf Deutsch', lang: 'de' },
+    ])
+
+    refreshGraphLabels(graph, 'en')
+
+    expect(graph.nodes[0].label).toBe('Oppenheimer auf Deutsch')
+  })
+})
+
+// ── fetchDataProperties ───────────────────────────────────────────────────────
+
+describe('fetchDataProperties', () => {
+  it('returns an empty array when the endpoint has no data properties for the entity', async () => {
+    vi.mocked(executeSelect).mockResolvedValue([])
+
+    const props = await fetchDataProperties('http://dbpedia.org/resource/Cillian_Murphy', CTX)
+
+    expect(props).toHaveLength(0)
+  })
+
+  it('returns labelled literal properties for an entity', async () => {
+    vi.mocked(executeSelect).mockResolvedValue([
+      {
+        p: namedNode('http://dbpedia.org/ontology/birthDate'),
+        propLabel: literal('birth date', 'en'),
+        propValue: literal('1976-05-21'),
+      },
+    ])
+
+    const props = await fetchDataProperties('http://dbpedia.org/resource/Cillian_Murphy', CTX)
+
+    expect(props).toHaveLength(1)
+    expect(props[0]!.iri).toBe('http://dbpedia.org/ontology/birthDate')
+    expect(props[0]!.label).toBe('birth date')
+    expect(props[0]!.value).toBe('1976-05-21')
+  })
+
+  it('deduplicates rows with the same predicate — keeps only the first occurrence', async () => {
+    const p = namedNode('http://dbpedia.org/ontology/birthDate')
+    vi.mocked(executeSelect).mockResolvedValue([
+      { p, propLabel: literal('birth date', 'en'), propValue: literal('1976-05-21') },
+      { p, propLabel: literal('birth date', 'en'), propValue: literal('1976-05-21') },
+    ])
+
+    const props = await fetchDataProperties('http://dbpedia.org/resource/Cillian_Murphy', CTX)
+
+    expect(props).toHaveLength(1)
+  })
+
+  it('uses executeSelectOnStore for local file uploads — no network call', async () => {
+    vi.mocked(executeSelectOnStore).mockResolvedValue([
+      {
+        p: namedNode('http://example.org/name'),
+        propLabel: literal('name', 'en'),
+        propValue: literal('Alice'),
+      },
+    ])
+
+    const props = await fetchDataProperties('http://example.org/Alice', CTX, 50, new Store())
+
+    expect(executeSelectOnStore).toHaveBeenCalledTimes(1)
+    expect(executeSelect).not.toHaveBeenCalled()
+    expect(props[0]!.label).toBe('name')
+  })
+
+  it('skips rows that are missing predicate, propLabel, or propValue bindings', async () => {
+    vi.mocked(executeSelect).mockResolvedValue([
+      { p: namedNode('http://example.org/name') }, // missing propLabel and propValue
+    ])
+
+    const props = await fetchDataProperties('http://example.org/Alice', CTX)
+
+    expect(props).toHaveLength(0)
   })
 })

@@ -39,8 +39,8 @@ vi.mock('@/lib/sparql/entitySearch', () => ({
 }))
 
 const CTX = { endpointUrl: 'https://dbpedia.org/sparql' }
-const ACTOR_CLASS  = 'http://dbpedia.org/ontology/Actor'
-const MURPHY_IRI   = 'http://dbpedia.org/resource/Cillian_Murphy'
+const ACTOR_CLASS = 'http://dbpedia.org/ontology/Actor'
+const MURPHY_IRI = 'http://dbpedia.org/resource/Cillian_Murphy'
 
 beforeEach(() => {
   setActivePinia(createPinia())
@@ -51,7 +51,13 @@ beforeEach(() => {
 
 describe('fetchDataProps', () => {
   it('fetches data properties and stores them in the cache', async () => {
-    const props = [{ iri: 'http://dbpedia.org/ontology/birthDate', label: 'birth date', sampleValue: '1976-05-21' }]
+    const props = [
+      {
+        iri: 'http://dbpedia.org/ontology/birthDate',
+        label: 'birth date',
+        sampleValue: '1976-05-21',
+      },
+    ]
     vi.mocked(fetchSchemaDataProperties).mockResolvedValue(props)
 
     const store = useSchemaStore()
@@ -90,10 +96,15 @@ describe('fetchDataProps', () => {
 
   it('does not fire a second request while the first is still in-flight', async () => {
     let resolve!: (v: []) => void
-    vi.mocked(fetchSchemaDataProperties).mockImplementation(() => new Promise((r) => { resolve = r }))
+    vi.mocked(fetchSchemaDataProperties).mockImplementation(
+      () =>
+        new Promise((r) => {
+          resolve = r
+        }),
+    )
 
     const store = useSchemaStore()
-    const first  = store.fetchDataProps(ACTOR_CLASS, CTX, undefined)
+    const first = store.fetchDataProps(ACTOR_CLASS, CTX, undefined)
     const second = store.fetchDataProps(ACTOR_CLASS, CTX, undefined) // duplicate — in-flight guard
 
     resolve([])
@@ -146,10 +157,15 @@ describe('fetchDescription', () => {
 
   it('does not fire a second request while the first is still in-flight', async () => {
     let resolve!: (v: string) => void
-    vi.mocked(fetchClassDescription).mockImplementation(() => new Promise((r) => { resolve = r }))
+    vi.mocked(fetchClassDescription).mockImplementation(
+      () =>
+        new Promise((r) => {
+          resolve = r
+        }),
+    )
 
     const store = useSchemaStore()
-    const first  = store.fetchDescription(ACTOR_CLASS, CTX, undefined)
+    const first = store.fetchDescription(ACTOR_CLASS, CTX, undefined)
     const second = store.fetchDescription(ACTOR_CLASS, CTX, undefined)
 
     resolve('description text')
@@ -193,10 +209,15 @@ describe('fetchInstances', () => {
 
   it('does not fire a second request while the first is still in-flight', async () => {
     let resolve!: (v: []) => void
-    vi.mocked(fetchInstancesByClass).mockImplementation(() => new Promise((r) => { resolve = r }))
+    vi.mocked(fetchInstancesByClass).mockImplementation(
+      () =>
+        new Promise((r) => {
+          resolve = r
+        }),
+    )
 
     const store = useSchemaStore()
-    const first  = store.fetchInstances(ACTOR_CLASS, CTX, undefined)
+    const first = store.fetchInstances(ACTOR_CLASS, CTX, undefined)
     const second = store.fetchInstances(ACTOR_CLASS, CTX, undefined)
 
     resolve([])
@@ -210,7 +231,13 @@ describe('fetchInstances', () => {
 
 describe('fetchEntityPropsForInstance', () => {
   it('fetches entity props and stores them in the cache', async () => {
-    const props = [{ predIri: 'http://dbpedia.org/ontology/birthDate', predLabel: 'birth date', value: '1976-05-21' }]
+    const props = [
+      {
+        predIri: 'http://dbpedia.org/ontology/birthDate',
+        predLabel: 'birth date',
+        value: '1976-05-21',
+      },
+    ]
     vi.mocked(fetchEntityProps).mockResolvedValue(props)
 
     const store = useSchemaStore()
@@ -240,10 +267,15 @@ describe('fetchEntityPropsForInstance', () => {
 
   it('does not fire a second request while the first is still in-flight', async () => {
     let resolve!: (v: []) => void
-    vi.mocked(fetchEntityProps).mockImplementation(() => new Promise((r) => { resolve = r }))
+    vi.mocked(fetchEntityProps).mockImplementation(
+      () =>
+        new Promise((r) => {
+          resolve = r
+        }),
+    )
 
     const store = useSchemaStore()
-    const first  = store.fetchEntityPropsForInstance(MURPHY_IRI, CTX, undefined)
+    const first = store.fetchEntityPropsForInstance(MURPHY_IRI, CTX, undefined)
     const second = store.fetchEntityPropsForInstance(MURPHY_IRI, CTX, undefined)
 
     resolve([])

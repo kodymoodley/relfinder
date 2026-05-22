@@ -20,6 +20,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { extractSchema, fetchSchemaDataProperties } from '@/lib/sparql/schemaExtractor'
 import { executeSelect } from '@/lib/sparql/engine'
+import { fetchLabels } from '@/lib/sparql/entitySearch'
 import type { SchemaNode } from '@/lib/sparql/types'
 import type { SchemaExtractionCallbacks } from '@/lib/sparql/schemaExtractor'
 
@@ -32,7 +33,7 @@ vi.mock('@/lib/sparql/entitySearch', () => ({
   fetchLabels: vi.fn().mockResolvedValue(new Map()),
 }))
 
-const CTX   = { endpointUrl: 'https://example.org/sparql' }
+const CTX = { endpointUrl: 'https://example.org/sparql' }
 const NODES: SchemaNode[] = [
   { iri: 'http://example.org/A', label: 'A' },
   { iri: 'http://example.org/B', label: 'B' },
@@ -40,10 +41,10 @@ const NODES: SchemaNode[] = [
 
 function makeCallbacks(): SchemaExtractionCallbacks {
   return {
-    onClassesLoaded:    vi.fn(),
-    onEdgesLoaded:      vi.fn(),
-    onProgress:         vi.fn(),
-    onClassProcessed:   vi.fn(),
+    onClassesLoaded: vi.fn(),
+    onEdgesLoaded: vi.fn(),
+    onProgress: vi.fn(),
+    onClassProcessed: vi.fn(),
     onDescriptionsLoaded: vi.fn(),
   }
 }
@@ -120,11 +121,10 @@ describe('extractSchema — all nodes in skipClasses', () => {
   it('returns the preloaded nodes unchanged', async () => {
     vi.mocked(executeSelect).mockResolvedValue([])
 
-    const result = await extractSchema(
-      CTX,
-      undefined,
-      { preloadedNodes: NODES, skipClasses: new Set(NODES.map((n) => n.iri)) },
-    )
+    const result = await extractSchema(CTX, undefined, {
+      preloadedNodes: NODES,
+      skipClasses: new Set(NODES.map((n) => n.iri)),
+    })
 
     expect(result.nodes).toEqual(NODES)
     expect(result.edges).toHaveLength(0)
@@ -138,7 +138,7 @@ describe('fetchSchemaDataProperties', () => {
   const NAME_PROP = 'http://dbpedia.org/property/name'
   const DATE_PROP = 'http://dbpedia.org/ontology/birthDate'
   const XSD_STRING = 'http://www.w3.org/2001/XMLSchema#string'
-  const XSD_DATE   = 'http://www.w3.org/2001/XMLSchema#date'
+  const XSD_DATE = 'http://www.w3.org/2001/XMLSchema#date'
 
   it('returns an empty array when the class has no literal properties', async () => {
     vi.mocked(executeSelect).mockResolvedValue([])
@@ -150,21 +150,27 @@ describe('fetchSchemaDataProperties', () => {
 
   it('returns each distinct property with its label and datatype', async () => {
     vi.mocked(executeSelect).mockResolvedValue([
-      { prop: { value: NAME_PROP, type: 'NamedNode' }, dt: { value: XSD_STRING, type: 'NamedNode' } },
+      {
+        prop: { value: NAME_PROP, type: 'NamedNode' },
+        dt: { value: XSD_STRING, type: 'NamedNode' },
+      },
     ])
 
     const props = await fetchSchemaDataProperties(CLASS_IRI, CTX, undefined)
 
     expect(props).toHaveLength(1)
     expect(props[0]!.iri).toBe(NAME_PROP)
-    expect(props[0]!.label).toBe('name')           // shortIri of NAME_PROP
+    expect(props[0]!.label).toBe('name') // shortIri of NAME_PROP
     expect(props[0]!.datatypes).toContain('string') // shortIri of XSD_STRING
   })
 
   it('groups multiple datatypes under one property entry', async () => {
     vi.mocked(executeSelect).mockResolvedValue([
-      { prop: { value: DATE_PROP, type: 'NamedNode' }, dt: { value: XSD_DATE,   type: 'NamedNode' } },
-      { prop: { value: DATE_PROP, type: 'NamedNode' }, dt: { value: XSD_STRING, type: 'NamedNode' } },
+      { prop: { value: DATE_PROP, type: 'NamedNode' }, dt: { value: XSD_DATE, type: 'NamedNode' } },
+      {
+        prop: { value: DATE_PROP, type: 'NamedNode' },
+        dt: { value: XSD_STRING, type: 'NamedNode' },
+      },
     ])
 
     const props = await fetchSchemaDataProperties(CLASS_IRI, CTX, undefined)
@@ -187,7 +193,10 @@ describe('fetchSchemaDataProperties', () => {
 
   it('calls onStatus twice — once after the query, once after processing', async () => {
     vi.mocked(executeSelect).mockResolvedValue([
-      { prop: { value: NAME_PROP, type: 'NamedNode' }, dt: { value: XSD_STRING, type: 'NamedNode' } },
+      {
+        prop: { value: NAME_PROP, type: 'NamedNode' },
+        dt: { value: XSD_STRING, type: 'NamedNode' },
+      },
     ])
     const onStatus = vi.fn()
 
@@ -198,32 +207,79 @@ describe('fetchSchemaDataProperties', () => {
 
   it('uses plural form in onStatus messages when there are multiple rows or properties', async () => {
     vi.mocked(executeSelect).mockResolvedValue([
-      { prop: { value: NAME_PROP, type: 'NamedNode' }, dt: { value: XSD_STRING, type: 'NamedNode' } },
-      { prop: { value: DATE_PROP, type: 'NamedNode' }, dt: { value: XSD_DATE,   type: 'NamedNode' } },
+      {
+        prop: { value: NAME_PROP, type: 'NamedNode' },
+        dt: { value: XSD_STRING, type: 'NamedNode' },
+      },
+      { prop: { value: DATE_PROP, type: 'NamedNode' }, dt: { value: XSD_DATE, type: 'NamedNode' } },
     ])
     const onStatus = vi.fn()
 
     await fetchSchemaDataProperties(CLASS_IRI, CTX, undefined, 50, onStatus)
 
-    expect(onStatus).toHaveBeenCalledWith(expect.stringContaining('rows'))        // plural
-    expect(onStatus).toHaveBeenCalledWith(expect.stringContaining('properties'))  // plural
+    expect(onStatus).toHaveBeenCalledWith(expect.stringContaining('rows')) // plural
+    expect(onStatus).toHaveBeenCalledWith(expect.stringContaining('properties')) // plural
   })
 
   it('uses singular form in onStatus messages when there is exactly one row and one property', async () => {
     vi.mocked(executeSelect).mockResolvedValue([
-      { prop: { value: NAME_PROP, type: 'NamedNode' }, dt: { value: XSD_STRING, type: 'NamedNode' } },
+      {
+        prop: { value: NAME_PROP, type: 'NamedNode' },
+        dt: { value: XSD_STRING, type: 'NamedNode' },
+      },
     ])
     const onStatus = vi.fn()
 
     await fetchSchemaDataProperties(CLASS_IRI, CTX, undefined, 50, onStatus)
 
-    expect(onStatus).toHaveBeenCalledWith(expect.stringContaining('row'))         // singular
-    expect(onStatus).toHaveBeenCalledWith(expect.stringContaining('property'))    // singular
+    expect(onStatus).toHaveBeenCalledWith(expect.stringContaining('row')) // singular
+    expect(onStatus).toHaveBeenCalledWith(expect.stringContaining('property')) // singular
   })
 
   it('works without an onStatus callback — no error when omitted', async () => {
     vi.mocked(executeSelect).mockResolvedValue([])
 
     await expect(fetchSchemaDataProperties(CLASS_IRI, CTX, undefined)).resolves.toEqual([])
+  })
+})
+
+// ── Phase 1 label assignment (lines 253-261) ──────────────────────────────────
+
+describe('extractSchema — Phase 1 label assignment from fetchLabels', () => {
+  it('applies the best label to a class node when fetchLabels returns entries', async () => {
+    vi.mocked(executeSelect)
+      .mockResolvedValueOnce([
+        { class: { value: 'http://example.org/A', type: 'NamedNode' } },
+      ])
+      .mockResolvedValue([]) // descriptions + Phase 2 edges: empty
+
+    // Override the default empty-Map return just for this call
+    vi.mocked(fetchLabels).mockResolvedValueOnce(
+      new Map([['http://example.org/A', [{ value: 'Class A', lang: 'en' }]]]),
+    )
+
+    const result = await extractSchema(CTX, undefined, {})
+
+    expect(result.nodes[0]!.label).toBe('Class A')
+  })
+})
+
+// ── additionalClassIris branch (line 272-273) ─────────────────────────────────
+
+describe('extractSchema — additionalClassIris option', () => {
+  it('uses additionalClassIris to expand the edge-query class set without re-processing them', async () => {
+    vi.mocked(executeSelect)
+      .mockResolvedValueOnce([
+        { class: { value: 'http://example.org/A', type: 'NamedNode' } },
+      ])
+      .mockResolvedValue([]) // descriptions + Phase 2 edges: empty
+
+    const result = await extractSchema(CTX, undefined, {
+      additionalClassIris: ['http://example.org/PriorClass'],
+    })
+
+    // The function takes the true branch for additionalClassIris and returns normally
+    expect(result.nodes).toHaveLength(1)
+    expect(result.nodes[0]!.iri).toBe('http://example.org/A')
   })
 })

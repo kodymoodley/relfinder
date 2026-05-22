@@ -29,11 +29,15 @@ afterEach(() => {
 
 describe('queryCache', () => {
   it('returns undefined on a cache miss', () => {
-    expect(cacheGet('instances:https://dbpedia.org/sparql:http://example.org/Person')).toBeUndefined()
+    expect(
+      cacheGet('instances:https://dbpedia.org/sparql:http://example.org/Person'),
+    ).toBeUndefined()
   })
 
   it('returns the stored value on a cache hit', () => {
-    const instances = [{ iri: 'http://dbpedia.org/resource/Albert_Einstein', label: 'Albert Einstein' }]
+    const instances = [
+      { iri: 'http://dbpedia.org/resource/Albert_Einstein', label: 'Albert Einstein' },
+    ]
     const key = 'instances:https://dbpedia.org/sparql:http://dbpedia.org/ontology/Scientist'
     cacheSet(key, instances)
     expect(cacheGet(key)).toEqual(instances)
@@ -55,14 +59,20 @@ describe('queryCache', () => {
     // User disconnects and connects to a different endpoint
     cacheInvalidate()
 
-    expect(cacheGet('instances:https://endpoint-a.org/sparql:http://example.org/Person')).toBeUndefined()
-    expect(cacheGet('instances:https://endpoint-a.org/sparql:http://example.org/Movie')).toBeUndefined()
+    expect(
+      cacheGet('instances:https://endpoint-a.org/sparql:http://example.org/Person'),
+    ).toBeUndefined()
+    expect(
+      cacheGet('instances:https://endpoint-a.org/sparql:http://example.org/Movie'),
+    ).toBeUndefined()
   })
 
   it('entries added after cacheInvalidate are served normally', () => {
     cacheSet('instances:https://endpoint-a.org/sparql:http://example.org/Person', ['stale'])
     cacheInvalidate()
     cacheSet('instances:https://endpoint-b.org/sparql:http://example.org/Person', ['fresh'])
-    expect(cacheGet('instances:https://endpoint-b.org/sparql:http://example.org/Person')).toEqual(['fresh'])
+    expect(cacheGet('instances:https://endpoint-b.org/sparql:http://example.org/Person')).toEqual([
+      'fresh',
+    ])
   })
 })

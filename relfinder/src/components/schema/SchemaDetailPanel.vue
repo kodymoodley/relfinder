@@ -48,7 +48,10 @@
               v-for="inst in instances.slice(0, 20)"
               :key="inst.iri"
               class="instance-item"
-              :class="{ 'instance-item--start': pendingStart?.iri === inst.iri, 'instance-item--expanded': expandedInstances.has(inst.iri) }"
+              :class="{
+                'instance-item--start': pendingStart?.iri === inst.iri,
+                'instance-item--expanded': expandedInstances.has(inst.iri),
+              }"
             >
               <div class="instance-row">
                 <button
@@ -56,7 +59,12 @@
                   :aria-label="expandedInstances.has(inst.iri) ? 'Hide details' : 'Show details'"
                   @click.stop="toggleExpand(inst.iri)"
                 >
-                  <i :class="['pi', expandedInstances.has(inst.iri) ? 'pi-chevron-down' : 'pi-info-circle']" />
+                  <i
+                    :class="[
+                      'pi',
+                      expandedInstances.has(inst.iri) ? 'pi-chevron-down' : 'pi-info-circle',
+                    ]"
+                  />
                 </button>
                 <span class="instance-label" :title="inst.iri">{{ inst.label }}</span>
                 <Button
@@ -65,7 +73,13 @@
                   text
                   label="Set as start"
                   class="set-start-btn"
-                  @click="pendingStart = { iri: inst.iri, label: inst.label, class: props.selectedNode!.iri }"
+                  @click="
+                    pendingStart = {
+                      iri: inst.iri,
+                      label: inst.label,
+                      class: props.selectedNode!.iri,
+                    }
+                  "
                 />
                 <Button
                   v-else-if="pendingStart.iri !== inst.iri"
@@ -73,21 +87,37 @@
                   text
                   label="Find path →"
                   class="find-path-btn"
-                  @click="emit('find-paths', pendingStart!, { iri: inst.iri, label: inst.label, class: props.selectedNode!.iri })"
+                  @click="
+                    emit('find-paths', pendingStart!, {
+                      iri: inst.iri,
+                      label: inst.label,
+                      class: props.selectedNode!.iri,
+                    })
+                  "
                 />
               </div>
               <div v-if="expandedInstances.has(inst.iri)" class="instance-detail">
                 <a :href="inst.iri" target="_blank" rel="noopener" class="instance-iri">
-                  {{ inst.iri }}<i class="pi pi-external-link" style="font-size:0.65rem;margin-left:0.25rem" />
+                  {{ inst.iri
+                  }}<i
+                    class="pi pi-external-link"
+                    style="font-size: 0.65rem; margin-left: 0.25rem"
+                  />
                 </a>
                 <div v-if="schemaStore.entityPropsLoading.has(inst.iri)" class="spinner-row">
-                  <ProgressSpinner stroke-width="4" style="width:16px;height:16px" />
+                  <ProgressSpinner stroke-width="4" style="width: 16px; height: 16px" />
                   <span class="spinner-status">Loading…</span>
                 </div>
                 <template v-else>
-                  <p v-if="entityProps(inst.iri).length === 0" class="list-empty">No data properties found.</p>
+                  <p v-if="entityProps(inst.iri).length === 0" class="list-empty">
+                    No data properties found.
+                  </p>
                   <table v-else class="entity-props-table">
-                    <tr v-for="p in entityProps(inst.iri)" :key="p.predIri + p.value" class="entity-prop-row">
+                    <tr
+                      v-for="p in entityProps(inst.iri)"
+                      :key="p.predIri + p.value"
+                      class="entity-prop-row"
+                    >
                       <td class="entity-prop-pred" :title="p.predIri">{{ p.predLabel }}</td>
                       <td class="entity-prop-val">{{ p.value }}</td>
                     </tr>

@@ -105,7 +105,10 @@ export async function executeSelect(
  */
 export async function executeSelectOnStore(query: string, store: Store): Promise<SparqlBinding[]> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const bindingsStream = await engine.queryBindings(query, { sources: [store as any], unionDefaultGraph: true })
+  const bindingsStream = await engine.queryBindings(query, {
+    sources: [store as any],
+    unionDefaultGraph: true,
+  })
   const rawBindings = await bindingsStream.toArray()
   return rawBindings.map(convertBindings)
 }

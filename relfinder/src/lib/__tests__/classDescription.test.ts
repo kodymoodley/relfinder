@@ -24,11 +24,11 @@ vi.mock('@/lib/sparql/engine', () => ({
   executeSelectOnStore: vi.fn(),
 }))
 
-const CTX        = { endpointUrl: 'https://dbpedia.org/sparql' }
+const CTX = { endpointUrl: 'https://dbpedia.org/sparql' }
 const ACTOR_CLASS = 'http://dbpedia.org/ontology/Actor'
 
 const RDFS_COMMENT = 'http://www.w3.org/2000/01/rdf-schema#comment'
-const SKOS_DEF    = 'http://www.w3.org/2004/02/skos/core#definition'
+const SKOS_DEF = 'http://www.w3.org/2004/02/skos/core#definition'
 const DBO_ABSTRACT = 'http://dbpedia.org/ontology/abstract'
 
 function row(prop: string, val: string, lang = '') {
@@ -51,13 +51,13 @@ describe('fetchClassDescription', () => {
       row(RDFS_COMMENT, 'A person who performs in films.', 'en'),
     ])
 
-    expect(await fetchClassDescription(ACTOR_CLASS, CTX, undefined)).toBe('A person who performs in films.')
+    expect(await fetchClassDescription(ACTOR_CLASS, CTX, undefined)).toBe(
+      'A person who performs in films.',
+    )
   })
 
   it('uses executeSelectOnStore for file uploads — no network call made', async () => {
-    vi.mocked(executeSelectOnStore).mockResolvedValue([
-      row(RDFS_COMMENT, 'An actor.', 'en'),
-    ])
+    vi.mocked(executeSelectOnStore).mockResolvedValue([row(RDFS_COMMENT, 'An actor.', 'en')])
 
     const desc = await fetchClassDescription(ACTOR_CLASS, CTX, new Store())
 
@@ -70,25 +70,21 @@ describe('fetchClassDescription', () => {
 
   it('prefers rdfs:comment over skos:definition when both are present', async () => {
     vi.mocked(executeSelect).mockResolvedValue([
-      row(SKOS_DEF,    'SKOS definition of Actor.', 'en'),
-      row(RDFS_COMMENT, 'rdfs comment for Actor.',  'en'),
+      row(SKOS_DEF, 'SKOS definition of Actor.', 'en'),
+      row(RDFS_COMMENT, 'rdfs comment for Actor.', 'en'),
     ])
 
     expect(await fetchClassDescription(ACTOR_CLASS, CTX, undefined)).toBe('rdfs comment for Actor.')
   })
 
   it('falls back to skos:definition when rdfs:comment is absent', async () => {
-    vi.mocked(executeSelect).mockResolvedValue([
-      row(SKOS_DEF, 'A definition of Actor.', 'en'),
-    ])
+    vi.mocked(executeSelect).mockResolvedValue([row(SKOS_DEF, 'A definition of Actor.', 'en')])
 
     expect(await fetchClassDescription(ACTOR_CLASS, CTX, undefined)).toBe('A definition of Actor.')
   })
 
   it('falls back to dbo:abstract when higher-priority properties are absent', async () => {
-    vi.mocked(executeSelect).mockResolvedValue([
-      row(DBO_ABSTRACT, 'DBpedia abstract text.', 'en'),
-    ])
+    vi.mocked(executeSelect).mockResolvedValue([row(DBO_ABSTRACT, 'DBpedia abstract text.', 'en')])
 
     expect(await fetchClassDescription(ACTOR_CLASS, CTX, undefined)).toBe('DBpedia abstract text.')
   })
@@ -105,19 +101,17 @@ describe('fetchClassDescription', () => {
   })
 
   it('falls back to English when the requested language has no match', async () => {
-    vi.mocked(executeSelect).mockResolvedValue([
-      row(RDFS_COMMENT, 'An actor.', 'en'),
-    ])
+    vi.mocked(executeSelect).mockResolvedValue([row(RDFS_COMMENT, 'An actor.', 'en')])
 
     expect(await fetchClassDescription(ACTOR_CLASS, CTX, undefined, 'de')).toBe('An actor.')
   })
 
   it('falls back to an untagged literal when neither requested language nor English is available', async () => {
-    vi.mocked(executeSelect).mockResolvedValue([
-      row(RDFS_COMMENT, 'Untagged description.', ''),
-    ])
+    vi.mocked(executeSelect).mockResolvedValue([row(RDFS_COMMENT, 'Untagged description.', '')])
 
-    expect(await fetchClassDescription(ACTOR_CLASS, CTX, undefined, 'de')).toBe('Untagged description.')
+    expect(await fetchClassDescription(ACTOR_CLASS, CTX, undefined, 'de')).toBe(
+      'Untagged description.',
+    )
   })
 
   it('falls back to the first available language when no other match exists', async () => {

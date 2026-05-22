@@ -21,9 +21,21 @@ import { setActivePinia, createPinia } from 'pinia'
 import { usePinnedStore } from '@/stores/pinned'
 import type { PinnedEntity } from '@/stores/pinned'
 
-const ALICE: PinnedEntity = { iri: 'http://dbpedia.org/resource/Cillian_Murphy', label: 'Cillian Murphy', class: 'http://dbpedia.org/ontology/Actor' }
-const BOB: PinnedEntity   = { iri: 'http://dbpedia.org/resource/Christopher_Nolan', label: 'Christopher Nolan', class: 'http://dbpedia.org/ontology/FilmDirector' }
-const CAROL: PinnedEntity = { iri: 'http://dbpedia.org/resource/Emma_Thomas', label: 'Emma Thomas', class: 'http://dbpedia.org/ontology/Person' }
+const ALICE: PinnedEntity = {
+  iri: 'http://dbpedia.org/resource/Cillian_Murphy',
+  label: 'Cillian Murphy',
+  class: 'http://dbpedia.org/ontology/Actor',
+}
+const BOB: PinnedEntity = {
+  iri: 'http://dbpedia.org/resource/Christopher_Nolan',
+  label: 'Christopher Nolan',
+  class: 'http://dbpedia.org/ontology/FilmDirector',
+}
+const CAROL: PinnedEntity = {
+  iri: 'http://dbpedia.org/resource/Emma_Thomas',
+  label: 'Emma Thomas',
+  class: 'http://dbpedia.org/ontology/Person',
+}
 
 beforeEach(() => {
   setActivePinia(createPinia())
@@ -143,7 +155,11 @@ describe('recordPair', () => {
     const store = usePinnedStore()
 
     for (let i = 0; i < 11; i++) {
-      const e1: PinnedEntity = { iri: `http://example.org/Entity${i}`, label: `Entity ${i}`, class: 'http://example.org/Thing' }
+      const e1: PinnedEntity = {
+        iri: `http://example.org/Entity${i}`,
+        label: `Entity ${i}`,
+        class: 'http://example.org/Thing',
+      }
       store.recordPair(e1, BOB)
     }
 
@@ -151,7 +167,7 @@ describe('recordPair', () => {
     // Most recent entry is first
     expect(store.history[0].entity1.iri).toBe('http://example.org/Entity10')
     // Oldest entry (Entity0) was evicted
-    expect(store.history.some(p => p.entity1.iri === 'http://example.org/Entity0')).toBe(false)
+    expect(store.history.some((p) => p.entity1.iri === 'http://example.org/Entity0')).toBe(false)
   })
 })
 

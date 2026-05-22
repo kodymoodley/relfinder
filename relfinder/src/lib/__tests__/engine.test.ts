@@ -84,11 +84,13 @@ describe('executeSelect — binding conversion', () => {
   })
 
   it('converts NamedNode terms correctly — value and type, no lang property', async () => {
-    mockQueryBindings.mockResolvedValue(bindingStream([
-      makeBinding({
-        s: { termType: 'NamedNode', value: 'http://dbpedia.org/resource/Cillian_Murphy' },
-      }),
-    ]))
+    mockQueryBindings.mockResolvedValue(
+      bindingStream([
+        makeBinding({
+          s: { termType: 'NamedNode', value: 'http://dbpedia.org/resource/Cillian_Murphy' },
+        }),
+      ]),
+    )
 
     const [row] = await executeSelect('SELECT ?s WHERE { ?s a dbo:Actor }', CTX_NO_AUTH)
 
@@ -98,11 +100,13 @@ describe('executeSelect — binding conversion', () => {
   })
 
   it('converts Literal terms and attaches the language tag', async () => {
-    mockQueryBindings.mockResolvedValue(bindingStream([
-      makeBinding({
-        label: { termType: 'Literal', value: 'Cillian Murphy', language: 'en' },
-      }),
-    ]))
+    mockQueryBindings.mockResolvedValue(
+      bindingStream([
+        makeBinding({
+          label: { termType: 'Literal', value: 'Cillian Murphy', language: 'en' },
+        }),
+      ]),
+    )
 
     const [row] = await executeSelect('SELECT ?label WHERE { ?s rdfs:label ?label }', CTX_NO_AUTH)
 
@@ -112,11 +116,13 @@ describe('executeSelect — binding conversion', () => {
   })
 
   it('attaches an empty lang string for untagged plain literals', async () => {
-    mockQueryBindings.mockResolvedValue(bindingStream([
-      makeBinding({
-        n: { termType: 'Literal', value: '42', language: '' },
-      }),
-    ]))
+    mockQueryBindings.mockResolvedValue(
+      bindingStream([
+        makeBinding({
+          n: { termType: 'Literal', value: '42', language: '' },
+        }),
+      ]),
+    )
 
     const [row] = await executeSelect('SELECT (COUNT(*) AS ?n) WHERE { ?s ?p ?o }', CTX_NO_AUTH)
 
@@ -124,13 +130,15 @@ describe('executeSelect — binding conversion', () => {
   })
 
   it('handles multiple variables in a single binding row', async () => {
-    mockQueryBindings.mockResolvedValue(bindingStream([
-      makeBinding({
-        s:     { termType: 'NamedNode', value: 'http://dbpedia.org/resource/Cillian_Murphy' },
-        label: { termType: 'Literal',   value: 'Cillian Murphy', language: 'en' },
-        type:  { termType: 'NamedNode', value: 'http://dbpedia.org/ontology/Actor' },
-      }),
-    ]))
+    mockQueryBindings.mockResolvedValue(
+      bindingStream([
+        makeBinding({
+          s: { termType: 'NamedNode', value: 'http://dbpedia.org/resource/Cillian_Murphy' },
+          label: { termType: 'Literal', value: 'Cillian Murphy', language: 'en' },
+          type: { termType: 'NamedNode', value: 'http://dbpedia.org/ontology/Actor' },
+        }),
+      ]),
+    )
 
     const [row] = await executeSelect('SELECT ?s ?label ?type WHERE { … }', CTX_NO_AUTH)
 
@@ -202,10 +210,7 @@ describe('executeConstruct', () => {
     const fakeQuad = { subject: 'Alice', predicate: 'type', object: 'Person' }
     mockQueryQuads.mockResolvedValue(quadStream([fakeQuad]))
 
-    const quads = await executeConstruct(
-      'CONSTRUCT { ?s ?p ?o } WHERE { ?s ?p ?o }',
-      CTX_NO_AUTH,
-    )
+    const quads = await executeConstruct('CONSTRUCT { ?s ?p ?o } WHERE { ?s ?p ?o }', CTX_NO_AUTH)
 
     expect(quads).toHaveLength(1)
     expect(quads[0]).toBe(fakeQuad)
@@ -253,11 +258,13 @@ describe('executeSelectOnStore', () => {
   })
 
   it('returns converted bindings from the in-memory store', async () => {
-    mockQueryBindings.mockResolvedValue(bindingStream([
-      makeBinding({
-        s: { termType: 'NamedNode', value: 'http://example.org/Alice' },
-      }),
-    ]))
+    mockQueryBindings.mockResolvedValue(
+      bindingStream([
+        makeBinding({
+          s: { termType: 'NamedNode', value: 'http://example.org/Alice' },
+        }),
+      ]),
+    )
 
     const result = await executeSelectOnStore('SELECT ?s WHERE { ?s ?p ?o }', new Store())
 
