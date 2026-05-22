@@ -33,39 +33,43 @@
           <span class="spinner-status">Loading…</span>
         </div>
         <p v-else-if="instances.length === 0" class="list-empty">No instances found.</p>
-        <ul v-else class="instance-list">
-          <li v-for="inst in instances.slice(0, 20)" :key="inst.iri" class="instance-item">
-            <span class="instance-label" :title="inst.iri">{{ inst.label }}</span>
-            <div class="instance-btns">
+        <template v-else>
+          <!-- Start entity chip — persists across class selections -->
+          <div v-if="pendingStart" class="start-chip">
+            <span class="start-dot" />
+            <span class="start-chip-label" :title="pendingStart.iri">{{ pendingStart.label }}</span>
+            <button class="start-chip-clear" aria-label="Clear start" @click="pendingStart = null">
+              <i class="pi pi-times" />
+            </button>
+          </div>
+          <p v-if="pendingStart" class="start-hint">Pick a destination:</p>
+          <ul class="instance-list">
+            <li
+              v-for="inst in instances.slice(0, 20)"
+              :key="inst.iri"
+              class="instance-item"
+              :class="{ 'instance-item--start': pendingStart?.iri === inst.iri }"
+            >
+              <span class="instance-label" :title="inst.iri">{{ inst.label }}</span>
               <Button
+                v-if="!pendingStart"
                 size="small"
                 text
-                label="E1"
-                class="entity-btn entity-btn--1"
-                @click="
-                  emit('set-entity', 1, {
-                    iri: inst.iri,
-                    label: inst.label,
-                    class: props.selectedNode!.iri,
-                  })
-                "
+                label="Set as start"
+                class="set-start-btn"
+                @click="pendingStart = { iri: inst.iri, label: inst.label, class: props.selectedNode!.iri }"
               />
               <Button
+                v-else-if="pendingStart.iri !== inst.iri"
                 size="small"
                 text
-                label="E2"
-                class="entity-btn entity-btn--2"
-                @click="
-                  emit('set-entity', 2, {
-                    iri: inst.iri,
-                    label: inst.label,
-                    class: props.selectedNode!.iri,
-                  })
-                "
+                label="Find path →"
+                class="find-path-btn"
+                @click="emit('find-paths', pendingStart!, { iri: inst.iri, label: inst.label, class: props.selectedNode!.iri })"
               />
-            </div>
-          </li>
-        </ul>
+            </li>
+          </ul>
+        </template>
       </div>
 
       <!-- Data properties -->
@@ -169,8 +173,13 @@ const props = defineProps<{
 const emit = defineEmits<{
   'update:selectedNode': [value: SchemaNode | null]
   'update:selectedEdge': [value: SchemaEdge | null]
-  'set-entity': [slot: 1 | 2, entity: { iri: string; label: string; class: string }]
+  'find-paths': [
+    start: { iri: string; label: string; class: string },
+    end: { iri: string; label: string; class: string },
+  ]
 }>()
+
+const pendingStart = ref<{ iri: string; label: string; class: string } | null>(null)
 
 const connectionStore = useConnectionStore()
 const schemaStore = useSchemaStore()
@@ -507,24 +516,82 @@ const incoming = computed(() => {
   flex: 1;
 }
 
-.instance-btns {
+.instance-item--start {
+  border-color: color-mix(in srgb, var(--rf-primary) 40%, transparent);
+  background: color-mix(in srgb, var(--rf-primary) 6%, var(--rf-surface-alt));
+}
+
+.set-start-btn {
+  font-size: 11px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.find-path-btn {
+  font-size: 11px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  color: var(--rf-primary);
+}
+
+.start-chip {
   display: flex;
-  gap: 2px;
+  align-items: center;
+  gap: var(--rf-space-2);
+  padding: var(--rf-space-2) var(--rf-space-3);
+  background: color-mix(in srgb, var(--rf-primary) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--rf-primary) 35%, transparent);
+  border-radius: var(--rf-radius-md);
+  margin-bottom: var(--rf-space-2);
+}
+
+.start-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--rf-primary);
   flex-shrink: 0;
 }
 
-.entity-btn {
-  font-size: 10px;
-  font-weight: var(--rf-weight-semibold);
-  padding: 2px 6px;
-  min-width: unset;
+.start-chip-label {
+  flex: 1;
+  font-size: var(--rf-text-sm);
+  font-weight: var(--rf-weight-medium);
+  color: var(--rf-primary);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.entity-btn--1 {
-  color: #f97316;
+.start-chip-clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--rf-primary);
+  opacity: 0.6;
+  padding: 2px;
+  border-radius: var(--rf-radius-sm);
+  line-height: 1;
+  flex-shrink: 0;
+  transition: opacity var(--rf-duration-fast) var(--rf-ease-out);
 }
 
-.entity-btn--2 {
-  color: #8b5cf6;
+.start-chip-clear:hover {
+  opacity: 1;
+}
+
+.start-chip-clear .pi {
+  font-size: 0.65rem;
+}
+
+.start-hint {
+  margin: 0 0 var(--rf-space-2);
+  font-size: var(--rf-text-xs);
+  color: var(--rf-text-muted);
+  font-style: italic;
 }
 </style>
