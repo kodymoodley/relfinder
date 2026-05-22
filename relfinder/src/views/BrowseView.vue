@@ -267,7 +267,6 @@
       :all-edges="schemaStore.edges"
       @update:selected-node="selectedNode = $event"
       @update:selected-edge="selectedEdge = $event"
-      @explore="onExplore"
       @set-entity="onSetEntity"
     />
   </div>
@@ -362,22 +361,6 @@ function onFindPaths() {
       example: {
         entity1: { ...browseEntity1.value },
         entity2: { ...browseEntity2.value },
-      },
-    },
-  })
-}
-
-// ── Navigate to Graph View ────────────────────────────────────────────────────
-
-function onExplore(sourceIri: string, targetIri: string) {
-  const sourceNode = schemaStore.nodes.find((n) => n.iri === sourceIri)
-  const targetNode = schemaStore.nodes.find((n) => n.iri === targetIri)
-  router.push({
-    name: 'graph',
-    state: {
-      example: {
-        entity1: { iri: sourceIri, label: sourceNode?.label ?? sourceIri, class: sourceIri },
-        entity2: { iri: targetIri, label: targetNode?.label ?? targetIri, class: targetIri },
       },
     },
   })

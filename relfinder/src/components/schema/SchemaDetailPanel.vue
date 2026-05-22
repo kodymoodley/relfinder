@@ -143,15 +143,6 @@
           </Column>
         </DataTable>
       </div>
-
-      <div class="detail-section">
-        <Button
-          label="Explore in Graph View"
-          icon="pi pi-share-alt"
-          size="small"
-          @click="emitExplore"
-        />
-      </div>
     </template>
   </Drawer>
 </template>
@@ -176,7 +167,6 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  explore: [sourceIri: string, targetIri: string]
   'update:selectedNode': [value: SchemaNode | null]
   'update:selectedEdge': [value: SchemaEdge | null]
   'set-entity': [slot: 1 | 2, entity: { iri: string; label: string; class: string }]
@@ -296,12 +286,6 @@ const incoming = computed(() => {
       dominantProp: e.props[0]?.label ?? '',
     }))
 })
-
-function emitExplore() {
-  if (props.selectedEdge) {
-    emit('explore', props.selectedEdge.sourceIri, props.selectedEdge.targetIri)
-  }
-}
 </script>
 
 <style scoped>
