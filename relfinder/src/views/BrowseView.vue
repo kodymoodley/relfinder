@@ -141,6 +141,55 @@
           />
         </section>
 
+        <!-- Entity slots — path finder staging area -->
+        <section
+          v-if="browseEntity1 || browseEntity2"
+          class="sidebar-section entity-slots"
+          data-testid="entity-slots"
+        >
+          <p class="section-label">Path finder</p>
+
+          <div class="slot-row">
+            <span class="slot-dot slot-dot--1" />
+            <span class="slot-label" :title="browseEntity1?.iri">
+              {{ browseEntity1?.label ?? 'Not set' }}
+            </span>
+            <button
+              v-if="browseEntity1"
+              class="slot-clear"
+              aria-label="Clear entity 1"
+              @click="browseEntity1 = null"
+            >
+              <i class="pi pi-times" />
+            </button>
+          </div>
+
+          <div class="slot-row">
+            <span class="slot-dot slot-dot--2" />
+            <span class="slot-label" :title="browseEntity2?.iri">
+              {{ browseEntity2?.label ?? 'Not set' }}
+            </span>
+            <button
+              v-if="browseEntity2"
+              class="slot-clear"
+              aria-label="Clear entity 2"
+              @click="browseEntity2 = null"
+            >
+              <i class="pi pi-times" />
+            </button>
+          </div>
+
+          <Button
+            label="Find Paths"
+            icon="pi pi-share-alt"
+            :disabled="!canFindPaths"
+            fluid
+            size="small"
+            data-testid="find-paths-btn"
+            @click="onFindPaths"
+          />
+        </section>
+
         <!-- Options -->
         <Divider v-if="schemaStore.nodes.length > 0" />
         <section v-if="schemaStore.nodes.length > 0" class="sidebar-section">
@@ -219,6 +268,7 @@
       @update:selected-node="selectedNode = $event"
       @update:selected-edge="selectedEdge = $event"
       @explore="onExplore"
+      @set-entity="onSetEntity"
     />
   </div>
 </template>
@@ -252,6 +302,12 @@ const sidebarCollapsed = ref(false)
 const optionsOpen = ref(false)
 const classLimit = ref(10)
 const edgeLimit = ref(3)
+
+// ── Entity slots (transient — staging area for path finding) ──────────────────
+
+const browseEntity1 = ref<{ iri: string; label: string } | null>(null)
+const browseEntity2 = ref<{ iri: string; label: string } | null>(null)
+const canFindPaths = computed(() => !!browseEntity1.value && !!browseEntity2.value)
 
 // True when the last discovered batch was a full page — more classes likely exist
 const canLoadMore = computed(
@@ -288,6 +344,26 @@ function onNodeClick(node: SchemaNode) {
 function onEdgeClick(edge: SchemaEdge) {
   selectedNode.value = null
   selectedEdge.value = edge
+}
+
+// ── Entity slot management ────────────────────────────────────────────────────
+
+function onSetEntity(slot: 1 | 2, entity: { iri: string; label: string; class: string }) {
+  if (slot === 1) browseEntity1.value = entity
+  else browseEntity2.value = entity
+}
+
+function onFindPaths() {
+  if (!browseEntity1.value || !browseEntity2.value) return
+  router.push({
+    name: 'graph',
+    state: {
+      example: {
+        entity1: browseEntity1.value,
+        entity2: browseEntity2.value,
+      },
+    },
+  })
 }
 
 // ── Navigate to Graph View ────────────────────────────────────────────────────
@@ -529,6 +605,72 @@ onMounted(() => {
 .stat-label {
   font-size: var(--rf-text-xs);
   color: var(--rf-text-muted);
+}
+
+/* ── Entity slots ─────────────────────────────────────────────────────────── */
+
+.entity-slots {
+  display: flex;
+  flex-direction: column;
+  gap: var(--rf-space-2);
+}
+
+.slot-row {
+  display: flex;
+  align-items: center;
+  gap: var(--rf-space-2);
+  padding: var(--rf-space-2) var(--rf-space-3);
+  background: var(--rf-surface-alt);
+  border: 1px solid var(--rf-border);
+  border-radius: var(--rf-radius-md);
+  min-width: 0;
+}
+
+.slot-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.slot-dot--1 {
+  background: #f97316;
+}
+.slot-dot--2 {
+  background: #8b5cf6;
+}
+
+.slot-label {
+  flex: 1;
+  font-size: var(--rf-text-sm);
+  color: var(--rf-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.slot-clear {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--rf-text-muted);
+  padding: 2px;
+  border-radius: var(--rf-radius-sm);
+  line-height: 1;
+  transition: color var(--rf-duration-fast) var(--rf-ease-out);
+}
+
+.slot-clear:hover {
+  color: var(--rf-text);
+}
+
+.slot-clear .pi {
+  font-size: 0.65rem;
 }
 
 /* ── Options ──────────────────────────────────────────────────────────────── */

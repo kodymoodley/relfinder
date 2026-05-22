@@ -42,14 +42,26 @@
                 text
                 label="E1"
                 class="entity-btn entity-btn--1"
-                @click="emit('set-entity', 1, { iri: inst.iri, label: inst.label, class: props.selectedNode!.iri })"
+                @click="
+                  emit('set-entity', 1, {
+                    iri: inst.iri,
+                    label: inst.label,
+                    class: props.selectedNode!.iri,
+                  })
+                "
               />
               <Button
                 size="small"
                 text
                 label="E2"
                 class="entity-btn entity-btn--2"
-                @click="emit('set-entity', 2, { iri: inst.iri, label: inst.label, class: props.selectedNode!.iri })"
+                @click="
+                  emit('set-entity', 2, {
+                    iri: inst.iri,
+                    label: inst.label,
+                    class: props.selectedNode!.iri,
+                  })
+                "
               />
             </div>
           </li>

@@ -55,10 +55,7 @@ export async function probeTripleCount(
  * Fetches up to SMALL_GRAPH_LIMIT triples from the endpoint and returns them
  * as a populated N3 Store. Used when the endpoint has ≤ 50 000 triples.
  */
-export async function fetchFullGraph(
-  context: QueryContext,
-  signal?: AbortSignal,
-): Promise<Store> {
+export async function fetchFullGraph(context: QueryContext, signal?: AbortSignal): Promise<Store> {
   const quads = await executeConstruct(
     `CONSTRUCT { ?s ?p ?o } WHERE { ?s ?p ?o } LIMIT ${SMALL_GRAPH_LIMIT}`,
     context,

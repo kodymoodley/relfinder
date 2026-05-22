@@ -68,12 +68,12 @@ function makeStoredSchema(overrides: Partial<PersistedSchema> = {}): PersistedSc
  */
 function mockFullExtraction(nodes: SchemaNode[] = NODES) {
   vi.mocked(extractSchema).mockImplementation(
-    async (_ctx, _store, _opts, callbacks: SchemaExtractionCallbacks) => {
-      callbacks.onClassesLoaded?.(nodes)
+    async (_ctx, _store, _opts, callbacks?: SchemaExtractionCallbacks) => {
+      callbacks?.onClassesLoaded?.(nodes)
       for (let i = 0; i < nodes.length; i++) {
-        callbacks.onEdgesLoaded?.([])
-        callbacks.onProgress?.(i + 1, nodes.length)
-        callbacks.onClassProcessed?.(nodes[i].iri)
+        callbacks?.onEdgesLoaded?.([])
+        callbacks?.onProgress?.(i + 1, nodes.length)
+        callbacks?.onClassProcessed?.(nodes[i]!.iri)
       }
       return { nodes, edges: [] }
     },
@@ -93,11 +93,11 @@ function mockGatedExtraction(nodes: SchemaNode[] = NODES): () => void {
   })
 
   vi.mocked(extractSchema).mockImplementation(
-    async (_ctx, _store, _opts, callbacks: SchemaExtractionCallbacks) => {
-      callbacks.onClassesLoaded?.(nodes)
+    async (_ctx, _store, _opts, callbacks?: SchemaExtractionCallbacks) => {
+      callbacks?.onClassesLoaded?.(nodes)
       await gate
-      callbacks.onProgress?.(1, nodes.length)
-      callbacks.onClassProcessed?.(nodes[0].iri)
+      callbacks?.onProgress?.(1, nodes.length)
+      callbacks?.onClassProcessed?.(nodes[0]!.iri)
       return { nodes, edges: [] }
     },
   )
@@ -130,7 +130,7 @@ describe('schema store — caching', () => {
       mockFullExtraction()
       await useSchemaStore().start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
 
-      const opts = vi.mocked(extractSchema).mock.calls[0]![2]
+      const opts = vi.mocked(extractSchema).mock.calls[0]![2]!
       expect(opts.preloadedNodes).toBeUndefined()
       expect(opts.skipClasses).toBeUndefined()
     })
@@ -144,7 +144,7 @@ describe('schema store — caching', () => {
 
       expect(extractSchema).not.toHaveBeenCalled()
       expect(store.nodes).toHaveLength(NODES.length)
-      expect(store.nodes[0].iri).toBe(NODES[0].iri)
+      expect(store.nodes[0]!.iri).toBe(NODES[0]!.iri)
     })
 
     it('restores dataPropsCache and descriptionCache', async () => {
@@ -188,20 +188,20 @@ describe('schema store — caching', () => {
     it('restores nodes and passes preloadedNodes + skipClasses to extractSchema', async () => {
       mockFullExtraction()
       // Only first node was processed
-      saveSchema(ENDPOINT, makeStoredSchema({ processedClassIris: [NODES[0].iri] }))
+      saveSchema(ENDPOINT, makeStoredSchema({ processedClassIris: [NODES[0]!.iri] }))
       await useSchemaStore().start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
 
       expect(extractSchema).toHaveBeenCalledOnce()
-      const opts = vi.mocked(extractSchema).mock.calls[0]![2]
+      const opts = vi.mocked(extractSchema).mock.calls[0]![2]!
       expect(opts.preloadedNodes).toHaveLength(NODES.length)
-      expect(opts.skipClasses?.has(NODES[0].iri)).toBe(true)
-      expect(opts.skipClasses?.has(NODES[1].iri)).toBe(false)
+      expect(opts.skipClasses?.has(NODES[0]!.iri)).toBe(true)
+      expect(opts.skipClasses?.has(NODES[1]!.iri)).toBe(false)
     })
 
     it('initialises progress counter at the number of already-skipped classes', async () => {
       // Use gated extraction so Phase 2 doesn't fire before we can inspect state
       const openGate = mockGatedExtraction()
-      saveSchema(ENDPOINT, makeStoredSchema({ processedClassIris: [NODES[0].iri] }))
+      saveSchema(ENDPOINT, makeStoredSchema({ processedClassIris: [NODES[0]!.iri] }))
       const store = useSchemaStore()
       const done = store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
 
@@ -229,7 +229,7 @@ describe('schema store — caching', () => {
       saveSchema(ENDPOINT, makeStoredSchema())
       await useSchemaStore().start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT, true)
 
-      const opts = vi.mocked(extractSchema).mock.calls[0]![2]
+      const opts = vi.mocked(extractSchema).mock.calls[0]![2]!
       expect(opts.preloadedNodes).toBeUndefined()
     })
   })

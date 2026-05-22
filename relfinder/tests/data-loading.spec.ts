@@ -2,7 +2,6 @@ import { fileURLToPath } from 'node:url'
 import { test, expect } from '@playwright/test'
 import {
   twoClassesResponse,
-  noEdgesResponse,
   pingResponse,
   sparqlJsonHeaders,
   toBody,

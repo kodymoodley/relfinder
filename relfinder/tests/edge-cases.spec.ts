@@ -166,7 +166,7 @@ test.describe('Dark mode toggle', () => {
   })
 
   test('dark mode toggle on Browse screen works', async ({ page }) => {
-    const browse = await connectViaFileAndWait(page)
+    await connectViaFileAndWait(page)
     const toggleBtn = page.getByRole('button', { name: /Switch to dark mode|Switch to light mode/i }).first()
     await expect(toggleBtn).toBeVisible()
     await toggleBtn.click()
@@ -230,7 +230,7 @@ test.describe('Accessibility', () => {
   })
 
   test('Browse page navigation uses button elements', async ({ page }) => {
-    const browse = await connectViaFileAndWait(page)
+    await connectViaFileAndWait(page)
     await expect(page.getByTestId('nav-paths')).toHaveJSProperty('tagName', 'BUTTON')
   })
 

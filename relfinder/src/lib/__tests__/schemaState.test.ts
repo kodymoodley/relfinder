@@ -72,12 +72,12 @@ function makeStoredSchema(overrides: Partial<PersistedSchema> = {}): PersistedSc
 /** All callbacks fire synchronously; resolves before yielding to caller. */
 function mockFullExtraction(nodes: SchemaNode[] = NODES) {
   vi.mocked(extractSchema).mockImplementation(
-    async (_ctx, _store, _opts, callbacks: SchemaExtractionCallbacks) => {
-      callbacks.onClassesLoaded?.(nodes)
+    async (_ctx, _store, _opts, callbacks?: SchemaExtractionCallbacks) => {
+      callbacks?.onClassesLoaded?.(nodes)
       for (let i = 0; i < nodes.length; i++) {
-        callbacks.onEdgesLoaded?.([])
-        callbacks.onProgress?.(i + 1, nodes.length)
-        callbacks.onClassProcessed?.(nodes[i].iri)
+        callbacks?.onEdgesLoaded?.([])
+        callbacks?.onProgress?.(i + 1, nodes.length)
+        callbacks?.onClassProcessed?.(nodes[i]!.iri)
       }
       return { nodes, edges: [] }
     },
@@ -97,13 +97,13 @@ function mockGatedExtraction(nodes: SchemaNode[] = NODES): () => void {
   })
 
   vi.mocked(extractSchema).mockImplementation(
-    async (_ctx, _store, opts: SchemaExtractionOptions, callbacks: SchemaExtractionCallbacks) => {
-      if (!opts.preloadedNodes) {
-        callbacks.onClassesLoaded?.(nodes)
+    async (_ctx, _store, opts?: SchemaExtractionOptions, callbacks?: SchemaExtractionCallbacks) => {
+      if (!opts?.preloadedNodes) {
+        callbacks?.onClassesLoaded?.(nodes)
       }
       await gate
-      callbacks.onProgress?.(1, nodes.length)
-      callbacks.onClassProcessed?.(nodes[0].iri)
+      callbacks?.onProgress?.(1, nodes.length)
+      callbacks?.onClassProcessed?.(nodes[0]!.iri)
       return { nodes, edges: [] }
     },
   )
@@ -122,14 +122,14 @@ function mockFullyGatedExtraction(nodes: SchemaNode[] = NODES): () => void {
   })
 
   vi.mocked(extractSchema).mockImplementation(
-    async (_ctx, _store, opts: SchemaExtractionOptions, callbacks: SchemaExtractionCallbacks) => {
+    async (_ctx, _store, opts?: SchemaExtractionOptions, callbacks?: SchemaExtractionCallbacks) => {
       await gate
-      if (!opts.preloadedNodes) {
-        callbacks.onClassesLoaded?.(nodes)
+      if (!opts?.preloadedNodes) {
+        callbacks?.onClassesLoaded?.(nodes)
       }
       for (let i = 0; i < nodes.length; i++) {
-        callbacks.onProgress?.(i + 1, nodes.length)
-        callbacks.onClassProcessed?.(nodes[i].iri)
+        callbacks?.onProgress?.(i + 1, nodes.length)
+        callbacks?.onClassProcessed?.(nodes[i]!.iri)
       }
       return { nodes, edges: [] }
     },
@@ -366,7 +366,7 @@ describe('schema store — state machine', () => {
 
     it('is "Resuming..." before Phase 2 starts when resuming a partial cache', async () => {
       // Only NODES[0] was processed — Phase 2 resumes for the rest
-      saveSchema(ENDPOINT, makeStoredSchema({ processedClassIris: [NODES[0].iri] }))
+      saveSchema(ENDPOINT, makeStoredSchema({ processedClassIris: [NODES[0]!.iri] }))
       const openGate = mockGatedExtraction()
       const store = useSchemaStore()
       const done = store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
@@ -505,7 +505,7 @@ describe('schema store — state machine', () => {
     })
 
     it('reflects the skipped count immediately when resuming a partial cache', async () => {
-      saveSchema(ENDPOINT, makeStoredSchema({ processedClassIris: [NODES[0].iri] }))
+      saveSchema(ENDPOINT, makeStoredSchema({ processedClassIris: [NODES[0]!.iri] }))
       const openGate = mockGatedExtraction()
       const store = useSchemaStore()
       const done = store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
@@ -577,22 +577,22 @@ describe('schema store — state machine', () => {
     it('correctly resumes Phase 2 after sanitising a corrupt partial cache', async () => {
       mockFullExtraction()
       // Only NODES[0] was validly processed; phantoms don't count
-      const corruptProcessed = [NODES[0].iri, ...phantomIris(10)]
+      const corruptProcessed = [NODES[0]!.iri, ...phantomIris(10)]
       saveSchema(ENDPOINT, makeStoredSchema({ processedClassIris: corruptProcessed }))
 
       const store = useSchemaStore()
       await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
 
       expect(extractSchema).toHaveBeenCalledOnce()
-      const opts = vi.mocked(extractSchema).mock.calls[0]![2]
+      const opts = vi.mocked(extractSchema).mock.calls[0]![2]!
       // Only the one valid processed IRI should be in skipClasses
       expect(opts.skipClasses?.size).toBe(1)
-      expect(opts.skipClasses?.has(NODES[0].iri)).toBe(true)
+      expect(opts.skipClasses?.has(NODES[0]!.iri)).toBe(true)
     })
 
     it('progress.completed reflects only valid processed IRIs after sanitisation', async () => {
       const openGate = mockGatedExtraction()
-      const corruptProcessed = [NODES[0].iri, ...phantomIris(10)]
+      const corruptProcessed = [NODES[0]!.iri, ...phantomIris(10)]
       saveSchema(ENDPOINT, makeStoredSchema({ processedClassIris: corruptProcessed }))
 
       const store = useSchemaStore()
@@ -615,12 +615,12 @@ describe('schema store — state machine', () => {
       nodes: SchemaNode[] = NODES,
     ) {
       vi.mocked(extractSchema).mockImplementation(
-        async (_ctx, _store, _opts, callbacks: SchemaExtractionCallbacks) => {
-          callbacks.onDescriptionsLoaded?.(descriptions)
-          callbacks.onClassesLoaded?.(nodes)
+        async (_ctx, _store, _opts, callbacks?: SchemaExtractionCallbacks) => {
+          callbacks?.onDescriptionsLoaded?.(descriptions)
+          callbacks?.onClassesLoaded?.(nodes)
           for (let i = 0; i < nodes.length; i++) {
-            callbacks.onProgress?.(i + 1, nodes.length)
-            callbacks.onClassProcessed?.(nodes[i].iri)
+            callbacks?.onProgress?.(i + 1, nodes.length)
+            callbacks?.onClassProcessed?.(nodes[i]!.iri)
           }
           return { nodes, edges: [] }
         },
@@ -628,42 +628,42 @@ describe('schema store — state machine', () => {
     }
 
     it('descriptionCache is populated with text from onDescriptionsLoaded', async () => {
-      const descs = new Map([[NODES[0].iri, 'First class description']])
+      const descs = new Map([[NODES[0]!.iri, 'First class description']])
       mockExtractionWithDescriptions(descs)
       const store = useSchemaStore()
       await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
 
-      expect(store.descriptionCache.get(NODES[0].iri)).toBe('First class description')
+      expect(store.descriptionCache.get(NODES[0]!.iri)).toBe('First class description')
     })
 
     it('empty-string entries are stored to prevent redundant on-demand fetches', async () => {
       const descs = new Map<string, string>([
-        [NODES[0].iri, 'Has description'],
-        [NODES[1].iri, ''],
+        [NODES[0]!.iri, 'Has description'],
+        [NODES[1]!.iri, ''],
       ])
       mockExtractionWithDescriptions(descs)
       const store = useSchemaStore()
       await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
 
-      expect(store.descriptionCache.has(NODES[1].iri)).toBe(true)
-      expect(store.descriptionCache.get(NODES[1].iri)).toBe('')
+      expect(store.descriptionCache.has(NODES[1]!.iri)).toBe(true)
+      expect(store.descriptionCache.get(NODES[1]!.iri)).toBe('')
     })
 
     it('multiple onDescriptionsLoaded calls are merged into the cache', async () => {
       vi.mocked(extractSchema).mockImplementation(
-        async (_ctx, _store, _opts, callbacks: SchemaExtractionCallbacks) => {
+        async (_ctx, _store, _opts, callbacks?: SchemaExtractionCallbacks) => {
           // Simulate two batches
-          callbacks.onDescriptionsLoaded?.(new Map([[NODES[0].iri, 'Batch 1']]))
-          callbacks.onDescriptionsLoaded?.(new Map([[NODES[1].iri, 'Batch 2']]))
-          callbacks.onClassesLoaded?.(NODES)
+          callbacks?.onDescriptionsLoaded?.(new Map([[NODES[0]!.iri, 'Batch 1']]))
+          callbacks?.onDescriptionsLoaded?.(new Map([[NODES[1]!.iri, 'Batch 2']]))
+          callbacks?.onClassesLoaded?.(NODES)
           return { nodes: NODES, edges: [] }
         },
       )
       const store = useSchemaStore()
       await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
 
-      expect(store.descriptionCache.get(NODES[0].iri)).toBe('Batch 1')
-      expect(store.descriptionCache.get(NODES[1].iri)).toBe('Batch 2')
+      expect(store.descriptionCache.get(NODES[0]!.iri)).toBe('Batch 1')
+      expect(store.descriptionCache.get(NODES[1]!.iri)).toBe('Batch 2')
     })
 
     it('pre-existing cache entries from persisted schema are preserved after extraction', async () => {
@@ -671,27 +671,27 @@ describe('schema store — state machine', () => {
       saveSchema(
         ENDPOINT,
         makeStoredSchema({
-          processedClassIris: [NODES[0].iri],
-          descriptionCache: [[NODES[0].iri, 'Persisted description']],
+          processedClassIris: [NODES[0]!.iri],
+          descriptionCache: [[NODES[0]!.iri, 'Persisted description']],
         }),
       )
       vi.mocked(extractSchema).mockImplementation(
-        async (_ctx, _store, _opts, callbacks: SchemaExtractionCallbacks) => {
-          callbacks.onDescriptionsLoaded?.(new Map([[NODES[1].iri, 'New description']]))
-          callbacks.onProgress?.(1, NODES.length)
-          callbacks.onClassProcessed?.(NODES[1].iri)
+        async (_ctx, _store, _opts, callbacks?: SchemaExtractionCallbacks) => {
+          callbacks?.onDescriptionsLoaded?.(new Map([[NODES[1]!.iri, 'New description']]))
+          callbacks?.onProgress?.(1, NODES.length)
+          callbacks?.onClassProcessed?.(NODES[1]!.iri)
           return { nodes: NODES, edges: [] }
         },
       )
       const store = useSchemaStore()
       await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
 
-      expect(store.descriptionCache.get(NODES[0].iri)).toBe('Persisted description')
-      expect(store.descriptionCache.get(NODES[1].iri)).toBe('New description')
+      expect(store.descriptionCache.get(NODES[0]!.iri)).toBe('Persisted description')
+      expect(store.descriptionCache.get(NODES[1]!.iri)).toBe('New description')
     })
 
     it('descriptionCache is reset by clear()', async () => {
-      const descs = new Map([[NODES[0].iri, 'Some description']])
+      const descs = new Map([[NODES[0]!.iri, 'Some description']])
       mockExtractionWithDescriptions(descs)
       const store = useSchemaStore()
       await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
@@ -747,7 +747,7 @@ describe('schema store — state machine', () => {
 
       const calls = vi.mocked(extractSchema).mock.calls
       const loadMoreCall = calls[calls.length - 1]!
-      expect(loadMoreCall[2].classOffset).toBe(NODES.length)
+      expect(loadMoreCall[2]!.classOffset).toBe(NODES.length)
     })
 
     it('passes existing node IRIs as additionalClassIris', async () => {
@@ -760,7 +760,7 @@ describe('schema store — state machine', () => {
 
       const calls = vi.mocked(extractSchema).mock.calls
       const loadMoreCall = calls[calls.length - 1]!
-      expect(loadMoreCall[2].additionalClassIris).toEqual(NODES.map((n) => n.iri))
+      expect(loadMoreCall[2]!.additionalClassIris).toEqual(NODES.map((n) => n.iri))
     })
 
     it('resets progress to { 0, 0 } at the start of loadMore', async () => {
@@ -774,9 +774,9 @@ describe('schema store — state machine', () => {
       const gate = new Promise<void>((r) => {
         openGate = r
       })
-      vi.mocked(extractSchema).mockImplementation(async (_c, _s, _o, cbs) => {
+      vi.mocked(extractSchema).mockImplementation(async (_c, _s, _o, cbs?) => {
         await gate
-        cbs.onClassesLoaded?.([])
+        cbs?.onClassesLoaded?.([])
         return { nodes: [], edges: [] }
       })
 

@@ -62,7 +62,7 @@ describe('schemaStorage', () => {
       expect(loaded!.processedClassIris).toEqual(['http://example.org/A'])
       expect(loaded!.dataPropsCache).toHaveLength(1)
       expect(loaded!.descriptionCache).toHaveLength(1)
-      expect(loaded!.descriptionCache[0][1]).toBe('A thing called A')
+      expect(loaded!.descriptionCache[0]![1]).toBe('A thing called A')
     })
 
     it('stores under a key namespaced by endpoint URL', () => {

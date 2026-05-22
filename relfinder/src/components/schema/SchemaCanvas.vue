@@ -7,9 +7,7 @@
       </div>
       <p class="empty-title">{{ props.extracting ? 'Extracting schema…' : 'No schema loaded' }}</p>
       <p class="empty-hint">
-        <template v-if="props.extracting">
-          Discovering classes and relationships
-        </template>
+        <template v-if="props.extracting"> Discovering classes and relationships </template>
         <template v-else>
           Connect to a SPARQL endpoint and click <strong>Extract Schema</strong>
         </template>
@@ -593,7 +591,10 @@ watch(
       renderedEdgeCount = 0
     } else if (!cy || prev === 0) {
       initCytoscape()
-    } else if (n > renderedNodeCount && props.nodes[renderedNodeCount - 1]?.iri === lastRenderedNodeIri) {
+    } else if (
+      n > renderedNodeCount &&
+      props.nodes[renderedNodeCount - 1]?.iri === lastRenderedNodeIri
+    ) {
       // Pure append (loadMore) — first renderedNodeCount nodes are unchanged
       addNewNodes()
     } else {

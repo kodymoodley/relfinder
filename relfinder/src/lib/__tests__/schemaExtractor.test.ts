@@ -111,7 +111,7 @@ describe('extractSchema — Phase 2 abort guard', () => {
       const done = extractSchema(
         CONTEXT,
         undefined,
-        { preloadedNodes: [NODES[0]] },
+        { preloadedNodes: [NODES[0]!] },
         cbs,
         controller.signal,
       )
@@ -136,7 +136,7 @@ describe('extractSchema — Phase 2 abort guard', () => {
       const done = extractSchema(
         CONTEXT,
         undefined,
-        { preloadedNodes: [NODES[0]] },
+        { preloadedNodes: [NODES[0]!] },
         cbs,
         controller.signal,
       )
@@ -167,7 +167,7 @@ describe('extractSchema — Phase 2 abort guard', () => {
       const done = extractSchema(
         CONTEXT,
         undefined,
-        { preloadedNodes: [NODES[0]], skipClasses: new Set([NODES[1].iri]) },
+        { preloadedNodes: [NODES[0]!], skipClasses: new Set([NODES[1]!.iri]) },
         cbs,
         controller.signal,
       )
@@ -247,7 +247,7 @@ describe('extractSchema — Phase 2 abort guard', () => {
       await extractSchema(
         CONTEXT,
         undefined,
-        { preloadedNodes: NODES, skipClasses: new Set([NODES[0].iri]) },
+        { preloadedNodes: NODES, skipClasses: new Set([NODES[0]!.iri]) },
         cbs,
         controller.signal,
       )
@@ -255,8 +255,8 @@ describe('extractSchema — Phase 2 abort guard', () => {
       // Only class B processed; progress starts at 1 (skip offset) and goes to 2
       expect(executeSelect).toHaveBeenCalledTimes(1)
       expect(cbs.onProgress).toHaveBeenCalledWith(2, NODES.length)
-      expect(cbs.onClassProcessed).toHaveBeenCalledWith(NODES[1].iri)
-      expect(cbs.onClassProcessed).not.toHaveBeenCalledWith(NODES[0].iri)
+      expect(cbs.onClassProcessed).toHaveBeenCalledWith(NODES[1]!.iri)
+      expect(cbs.onClassProcessed).not.toHaveBeenCalledWith(NODES[0]!.iri)
     })
   })
 })

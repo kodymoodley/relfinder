@@ -221,7 +221,7 @@ describe('graphStorage', () => {
 
       const recent = listRecentGraphs(ENDPOINT)
       expect(recent).toHaveLength(2) // no duplicate
-      expect(recent[0].entity1.iri).toBe(ENTITY1.iri) // moved to front
+      expect(recent[0]!.entity1.iri).toBe(ENTITY1.iri) // moved to front
     })
   })
 
@@ -263,7 +263,7 @@ describe('graphStorage', () => {
       // The first entry saved (E0a → E0b) should have been pruned
       expect(recent.some((e) => e.entity1.iri === 'http://example.org/E0a')).toBe(false)
       // The new extra entry should be at the front
-      expect(recent[0].entity1.iri).toBe('http://example.org/extra1')
+      expect(recent[0]!.entity1.iri).toBe('http://example.org/extra1')
     })
 
     it('limits are applied per-endpoint, not globally', () => {
@@ -347,12 +347,12 @@ describe('graphStorage', () => {
       expect(recent).toHaveLength(2)
 
       // Newest first
-      expect(recent[0].entity1.iri).toBe(e3.iri)
-      expect(recent[0].maxDistance).toBe(3)
-      expect(recent[1].entity1.iri).toBe(ENTITY1.iri)
+      expect(recent[0]!.entity1.iri).toBe(e3.iri)
+      expect(recent[0]!.maxDistance).toBe(3)
+      expect(recent[1]!.entity1.iri).toBe(ENTITY1.iri)
 
       // No graph data in metadata
-      expect((recent[0] as { graph?: unknown }).graph).toBeUndefined()
+      expect((recent[0]! as { graph?: unknown }).graph).toBeUndefined()
     })
 
     it('excludes entries whose TTL has expired', () => {

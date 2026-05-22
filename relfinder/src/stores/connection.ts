@@ -11,11 +11,7 @@ import { ref, computed, watch } from 'vue'
 import type { Store } from 'n3'
 import { cacheInvalidate } from '@/lib/cache/queryCache'
 import { usePinnedStore } from './pinned'
-import {
-  probeTripleCount,
-  fetchFullGraph,
-  SMALL_GRAPH_LIMIT,
-} from '@/lib/sparql/subgraphStrategy'
+import { probeTripleCount, fetchFullGraph, SMALL_GRAPH_LIMIT } from '@/lib/sparql/subgraphStrategy'
 
 export type SubgraphStatus = 'idle' | 'probing' | 'fetching' | 'ready' | 'error'
 
@@ -128,7 +124,10 @@ export const useConnectionStore = defineStore('connection', () => {
     subgraphStatus.value = 'probing'
 
     const ctx = queryContext.value
-    if (!ctx) { subgraphStatus.value = 'error'; return }
+    if (!ctx) {
+      subgraphStatus.value = 'error'
+      return
+    }
 
     const n = await probeTripleCount(ctx, signal)
     if (signal.aborted) return
@@ -137,7 +136,10 @@ export const useConnectionStore = defineStore('connection', () => {
     if (n <= SMALL_GRAPH_LIMIT) {
       subgraphStatus.value = 'fetching'
       localRdfStore.value = await fetchFullGraph(ctx, signal)
-      if (signal.aborted) { localRdfStore.value = null; return }
+      if (signal.aborted) {
+        localRdfStore.value = null
+        return
+      }
     }
 
     subgraphStatus.value = 'ready'
@@ -149,7 +151,11 @@ export const useConnectionStore = defineStore('connection', () => {
    * can choose the right store without racing the probe.
    */
   function waitForSubgraph(): Promise<void> {
-    if (subgraphStatus.value === 'ready' || subgraphStatus.value === 'error' || subgraphStatus.value === 'idle') {
+    if (
+      subgraphStatus.value === 'ready' ||
+      subgraphStatus.value === 'error' ||
+      subgraphStatus.value === 'idle'
+    ) {
       return Promise.resolve()
     }
     return new Promise((resolve) => {
