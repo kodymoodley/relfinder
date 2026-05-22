@@ -127,8 +127,8 @@
           </div>
         </section>
 
-        <!-- Load more -->
-        <section v-if="canLoadMore" class="sidebar-section">
+        <!-- Load more (SPARQL only — file sources extract all classes at once) -->
+        <section v-if="canLoadMore && !connectionStore.isFileSource" class="sidebar-section">
           <Button
             :label="`Load next ${classLimit} classes`"
             icon="pi pi-plus-circle"
@@ -198,7 +198,7 @@
             Options
           </p>
           <template v-if="optionsOpen">
-            <div class="option-row">
+            <div v-if="!connectionStore.isFileSource" class="option-row">
               <label class="option-label" for="class-limit">Class limit</label>
               <InputNumber
                 id="class-limit"
@@ -332,7 +332,9 @@ function startExtraction(force = false) {
   selectedEdge.value = null
   const context = connectionStore.queryContext ?? { endpointUrl: '' }
   const store = connectionStore.rdfStore ?? undefined
-  schemaStore.start(context, store, classLimit.value, edgeLimit.value, force)
+  // File sources are fully in-memory — fetch all classes at once.
+  const effectiveClassLimit = connectionStore.isFileSource ? 10_000 : classLimit.value
+  schemaStore.start(context, store, effectiveClassLimit, edgeLimit.value, force)
 }
 
 // ── Node / edge selection ─────────────────────────────────────────────────────
