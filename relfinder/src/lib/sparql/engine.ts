@@ -104,9 +104,9 @@ export async function executeSelect(
  * perfectly match Comunica's internal source union type.
  */
 export async function executeSelectOnStore(query: string, store: Store): Promise<SparqlBinding[]> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const bindingsStream = await engine.queryBindings(query, {
-    sources: [store as any],
+    sources: [store as unknown as RDF.Store],
     unionDefaultGraph: true,
   })
   const rawBindings = await bindingsStream.toArray()
