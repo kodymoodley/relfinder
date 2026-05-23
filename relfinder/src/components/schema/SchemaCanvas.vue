@@ -916,6 +916,17 @@ defineExpose({ zoomIn, zoomOut, fitGraph, rerunLayout, toggleEdgeLabels })
   box-shadow: var(--rf-shadow-md);
 }
 
+@media (max-width: 767px) {
+  .canvas-toolbar {
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: calc(100% - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px) - var(--rf-space-8));
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+}
+
 .canvas-toolbar :deep(button) {
   min-width: 44px;
   min-height: 44px;
