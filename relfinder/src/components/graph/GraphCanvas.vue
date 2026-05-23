@@ -42,6 +42,8 @@
       ref="cyContainer"
       class="cy-container"
       :class="{ hidden: !hasGraph }"
+      role="application"
+      aria-label="Relationship graph — use mouse or touch to pan, zoom, and click nodes"
       data-testid="graph-canvas"
     />
 
@@ -813,5 +815,10 @@ defineExpose({ PALETTE })
   border-radius: var(--rf-radius-lg);
   padding: var(--rf-space-1);
   box-shadow: var(--rf-shadow-md);
+}
+
+.canvas-toolbar :deep(button) {
+  min-width: 44px;
+  min-height: 44px;
 }
 </style>

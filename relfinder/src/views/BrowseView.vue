@@ -93,6 +93,8 @@
         <section
           v-if="schemaStore.extracting"
           class="sidebar-section"
+          aria-live="polite"
+          aria-atomic="false"
           data-testid="extraction-progress"
         >
           <div class="progress-row">
@@ -371,7 +373,7 @@ onMounted(() => {
 <style scoped>
 .browse-view {
   display: flex;
-  height: 100vh;
+  height: 100dvh;
   overflow: hidden;
   background: var(--rf-bg);
 }
@@ -426,6 +428,7 @@ onMounted(() => {
 
 .view-tab {
   flex: 1;
+  min-height: 44px;
   padding: var(--rf-space-2) 0;
   font-size: var(--rf-text-sm);
   font-weight: var(--rf-weight-medium);

@@ -19,6 +19,8 @@
       ref="cyContainer"
       class="cy-container"
       :class="{ hidden: props.nodes.length === 0 }"
+      role="application"
+      aria-label="Schema graph — use mouse or touch to pan, zoom, and click nodes"
       data-testid="schema-canvas"
     />
 
@@ -534,6 +536,36 @@ function attachHandlers() {
     const edge = props.edges.find((ed) => ed.sourceIri === sourceIri && ed.targetIri === targetIri)
     if (edge) emit('edgeClick', edge)
   })
+
+  // Touch equivalent for hover tooltip — long-press shows, tap-off hides
+  cy.on('taphold', 'node', (e) => {
+    const rp = e.renderedPosition
+    tooltipX.value = rp.x + 16
+    tooltipY.value = rp.y + 16
+    const { iri } = e.target.data() as { iri: string }
+    hoveredNodeIri.value = iri
+    hoveredEdge.value = null
+    tooltipVisible.value = true
+    if (!schemaStore.dataPropsCache.has(iri) && !schemaStore.dataPropsLoading.has(iri)) {
+      const context = connectionStore.queryContext ?? { endpointUrl: '' }
+      const store = connectionStore.rdfStore ?? undefined
+      schemaStore.fetchDataProps(iri, context, store).catch(() => {})
+    }
+  })
+
+  cy.on('taphold', 'edge', (e) => {
+    const rp = e.renderedPosition
+    tooltipX.value = rp.x + 16
+    tooltipY.value = rp.y + 16
+    const { sourceIri, targetIri } = e.target.data() as { sourceIri: string; targetIri: string }
+    hoveredEdge.value = { sourceIri, targetIri }
+    hoveredNodeIri.value = null
+    tooltipVisible.value = true
+  })
+
+  cy.on('tap', (e) => {
+    if (e.target === cy) tooltipVisible.value = false
+  })
 }
 
 // ── Layout ────────────────────────────────────────────────────────────────────
@@ -857,5 +889,10 @@ onUnmounted(() => {
   border-radius: var(--rf-radius-lg);
   padding: var(--rf-space-1);
   box-shadow: var(--rf-shadow-md);
+}
+
+.canvas-toolbar :deep(button) {
+  min-width: 44px;
+  min-height: 44px;
 }
 </style>

@@ -537,7 +537,7 @@ function shortIri(iri: string): string {
 <style scoped>
 .graph-view {
   display: flex;
-  height: 100vh;
+  height: 100dvh;
   overflow: hidden;
   background: var(--rf-bg);
 }
@@ -592,6 +592,7 @@ function shortIri(iri: string): string {
 
 .view-tab {
   flex: 1;
+  min-height: 44px;
   padding: var(--rf-space-2) 0;
   font-size: var(--rf-text-sm);
   font-weight: var(--rf-weight-medium);
