@@ -109,6 +109,12 @@
   --rf-shadow-primary: 0 0 0 3px rgb(8 145 178 / 0.2); /* cyan focus ring  */
   --rf-shadow-accent: 0 0 0 3px rgb(245 158 11 / 0.2); /* amber focus ring */
 
+  /* ── Breakpoints (reference only — CSS custom properties cannot be used  */
+  /* inside @media queries; these values are mirrored in useBreakpoint.ts)  */
+  /* mobile   < 768 px  — mobile-first baseline, no media query needed      */
+  /* tablet  >= 768 px  — @media (min-width: 768px)  { … }                 */
+  /* desktop >= 1280 px — @media (min-width: 1280px) { … }                 */
+
   /* ── Animation ───────────────────────────────────────────────────────── */
   --rf-duration-fast: 120ms;
   --rf-duration-base: 200ms;
