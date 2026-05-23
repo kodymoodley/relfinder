@@ -921,11 +921,17 @@ defineExpose({ zoomIn, zoomOut, fitGraph, rerunLayout, toggleEdgeLabels })
     right: auto;
     left: 50%;
     transform: translateX(-50%);
-    max-width: calc(
-      100% - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px) - var(--rf-space-8)
-    );
-    flex-wrap: wrap;
-    justify-content: center;
+    gap: 2px;
+    padding: 2px;
+  }
+
+  .canvas-toolbar :deep(button) {
+    min-width: 36px;
+    min-height: 44px;
+  }
+
+  .zoom-level-btn {
+    min-width: 40px;
   }
 }
 
