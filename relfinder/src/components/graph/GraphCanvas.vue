@@ -370,6 +370,15 @@ function initCytoscape() {
         selector: '.no-label',
         style: { label: '' },
       },
+      {
+        selector: '.dimmed',
+        style: {
+          opacity: 0.12,
+          'transition-property': 'opacity',
+          'transition-duration': 150,
+          'transition-timing-function': 'ease-out',
+        },
+      },
     ],
     layout: { name: 'preset' },
     userPanningEnabled: true,
@@ -408,7 +417,7 @@ function initCytoscape() {
     if (cyContainer.value) cyContainer.value.style.cursor = ''
   })
 
-  // Node click → emit event to parent
+  // Node click → emit + neighbourhood highlight
   cy.on('tap', 'node', (evt) => {
     const nodeData = evt.target.data() as {
       id: string
@@ -425,6 +434,23 @@ function initCytoscape() {
       isEndpoint: nodeData.isEndpoint,
     }
     emit('nodeClick', graphNode)
+
+    // Dim everything outside the immediate neighbourhood (pan mode only)
+    if (selectionMode.value === 'pan') {
+      cy!.startBatch()
+      cy!.elements().addClass('dimmed')
+      evt.target.closedNeighborhood().removeClass('dimmed')
+      cy!.endBatch()
+    }
+  })
+
+  // Tap on background clears neighbourhood highlight
+  cy.on('tap', (evt) => {
+    if (evt.target === cy) {
+      cy!.startBatch()
+      cy!.elements().removeClass('dimmed')
+      cy!.endBatch()
+    }
   })
 
   hasGraph.value = true
@@ -480,6 +506,7 @@ function restoreLabels() {
   } else {
     cy.edges().addClass('no-label')
   }
+  cy.elements().removeClass('dimmed')
   cy.endBatch()
 }
 
