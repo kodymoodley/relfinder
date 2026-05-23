@@ -207,6 +207,7 @@ const connectionStore = useConnectionStore()
 const cyContainer = ref<HTMLElement | null>(null)
 let cy: Core | null = null
 let layout: Layouts | null = null
+let resizeObserver: ResizeObserver | null = null
 let renderedNodeCount = 0
 let renderedEdgeCount = 0
 // IRI of the last node that was actually rendered — used to detect whether
@@ -614,9 +615,18 @@ watch(
 
 onMounted(() => {
   if (props.nodes.length > 0) initCytoscape()
+
+  if (cyContainer.value) {
+    resizeObserver = new ResizeObserver(() => {
+      cy?.resize()
+    })
+    resizeObserver.observe(cyContainer.value)
+  }
 })
 
 onUnmounted(() => {
+  resizeObserver?.disconnect()
+  resizeObserver = null
   layout?.stop()
   layout = null
   cy?.destroy()

@@ -177,6 +177,7 @@ const emit = defineEmits<{
 const cyContainer = ref<HTMLElement | null>(null)
 let cy: Core | null = null
 let layout: Layouts | null = null
+let resizeObserver: ResizeObserver | null = null
 
 const { dark } = useDarkMode()
 
@@ -550,9 +551,18 @@ watch(
 
 onMounted(() => {
   if (props.nodes.length > 0) initCytoscape()
+
+  if (cyContainer.value) {
+    resizeObserver = new ResizeObserver(() => {
+      cy?.resize()
+    })
+    resizeObserver.observe(cyContainer.value)
+  }
 })
 
 onUnmounted(() => {
+  resizeObserver?.disconnect()
+  resizeObserver = null
   layout?.stop()
   layout = null
   cy?.destroy()
