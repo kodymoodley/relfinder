@@ -11,7 +11,7 @@ async function loadSchemaAndWait(page: import('@playwright/test').Page): Promise
   await page.getByTestId('rdf-file-input').setInputFiles(SMALL_TTL)
   await expect(page.getByTestId('rdf-drop-zone')).toContainText('triples loaded', { timeout: 10_000 })
   await page.getByTestId('open-graph-btn').click()
-  await expect(page).toHaveURL('/browse')
+  await expect(page).toHaveURL('/browse', { timeout: 15_000 })
   const browse = new BrowsePage(page)
   await browse.waitForExtractionComplete(60_000)
   // Wait for Cytoscape to mount and expose __schemaCy

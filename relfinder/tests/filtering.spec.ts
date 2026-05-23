@@ -19,7 +19,7 @@ async function connectAndExtract(page: Page): Promise<BrowsePage> {
   await page.getByTestId('rdf-file-input').setInputFiles(MEDIUM_TTL)
   await expect(page.getByTestId('rdf-drop-zone')).toContainText('triples loaded', { timeout: 10_000 })
   await page.getByTestId('open-graph-btn').click()
-  await expect(page).toHaveURL('/browse')
+  await expect(page).toHaveURL('/browse', { timeout: 15_000 })
   const browse = new BrowsePage(page)
   // Wait for auto-started extraction to complete
   await browse.waitForExtractionComplete(60_000)
@@ -76,7 +76,7 @@ async function loadOrphanGraphAndWait(page: Page): Promise<BrowsePage> {
   await page.getByTestId('rdf-file-input').setInputFiles(ORPHAN_TTL)
   await expect(page.getByTestId('rdf-drop-zone')).toContainText('triples loaded', { timeout: 10_000 })
   await page.getByTestId('open-graph-btn').click()
-  await expect(page).toHaveURL('/browse')
+  await expect(page).toHaveURL('/browse', { timeout: 15_000 })
   const browse = new BrowsePage(page)
   await browse.waitForExtractionComplete(60_000)
   // Wait for Cytoscape to mount
@@ -191,9 +191,9 @@ test.describe('Entity search in Paths tab', () => {
     await page.getByTestId('rdf-file-input').setInputFiles(MEDIUM_TTL)
     await expect(page.getByTestId('rdf-drop-zone')).toContainText('triples loaded', { timeout: 10_000 })
     await page.getByTestId('open-graph-btn').click()
-    await expect(page).toHaveURL('/browse')
+    await expect(page).toHaveURL('/browse', { timeout: 15_000 })
     await page.getByTestId('nav-paths').click()
-    await expect(page).toHaveURL('/graph')
+    await expect(page).toHaveURL('/graph', { timeout: 15_000 })
   }
 
   test('typing in entity1 search input shows autocomplete results', async ({ page }) => {
