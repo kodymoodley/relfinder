@@ -235,7 +235,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed, onMounted, nextTick } from 'vue'
+import { ref, watch, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import { useDarkMode } from '@/composables/useDarkMode'
@@ -481,9 +481,22 @@ function onDisconnect() {
   router.push({ name: 'connection' })
 }
 
+// ── Escape key closes mobile sidebar ─────────────────────────────────────────
+
+function onEscKey(e: KeyboardEvent) {
+  if (e.key === 'Escape' && isMobile.value && !sidebarCollapsed.value) {
+    sidebarCollapsed.value = true
+  }
+}
+
+onUnmounted(() => {
+  document.removeEventListener('keydown', onEscKey)
+})
+
 // ── Auto-run when entities are preset (from browse or examples panel) ────────
 
 onMounted(() => {
+  document.addEventListener('keydown', onEscKey)
   refreshRecent()
 
   if (!_historyExample) return

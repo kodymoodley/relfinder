@@ -244,7 +244,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
 import Button from 'primevue/button'
@@ -363,10 +363,21 @@ function onDisconnect() {
 
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
 
+function onEscKey(e: KeyboardEvent) {
+  if (e.key === 'Escape' && isMobile.value && !sidebarCollapsed.value) {
+    sidebarCollapsed.value = true
+  }
+}
+
 onMounted(() => {
+  document.addEventListener('keydown', onEscKey)
   if (connectionStore.isConnected && !schemaStore.hasData && !schemaStore.extracting) {
     startExtraction()
   }
+})
+
+onUnmounted(() => {
+  document.removeEventListener('keydown', onEscKey)
 })
 </script>
 
