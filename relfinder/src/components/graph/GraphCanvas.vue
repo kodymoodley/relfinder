@@ -47,6 +47,32 @@
       data-testid="graph-canvas"
     />
 
+    <!-- Class legend (shown when ≥ 2 distinct classes are present) -->
+    <Transition name="legend-fade">
+      <div
+        v-if="hasGraph && legendEntries.length >= 2"
+        class="graph-legend"
+        role="complementary"
+        aria-label="Node class legend"
+      >
+        <button
+          class="legend-toggle"
+          :aria-expanded="!legendCollapsed"
+          aria-controls="graph-legend-list"
+          @click="legendCollapsed = !legendCollapsed"
+        >
+          <span class="legend-title">Legend</span>
+          <i :class="['pi', legendCollapsed ? 'pi-chevron-down' : 'pi-chevron-up']" />
+        </button>
+        <ul v-if="!legendCollapsed" id="graph-legend-list" class="legend-list">
+          <li v-for="entry in legendEntries" :key="entry.iri" class="legend-item">
+            <span class="legend-swatch" :style="{ background: entry.color }" aria-hidden="true" />
+            <span class="legend-label" :title="entry.iri">{{ entry.label }}</span>
+          </li>
+        </ul>
+      </div>
+    </Transition>
+
     <!-- Select mode indicator -->
     <Transition name="mode-badge">
       <div v-if="selectionMode === 'select'" class="select-mode-badge">
@@ -80,7 +106,9 @@
         class="zoom-level-btn"
         aria-label="Reset zoom to 100%"
         @click="resetZoom"
-      >{{ zoomLevel }}%</button>
+      >
+        {{ zoomLevel }}%
+      </button>
       <Button
         v-tooltip.top="'Fit graph to screen'"
         icon="pi pi-arrows-alt"
@@ -195,6 +223,21 @@ const selectionMode = ref<'pan' | 'select'>('pan')
 const hasSelection = ref(false)
 const cropHistory = ref<cytoscape.ElementDefinition[][]>([])
 const zoomLevel = ref(100)
+const legendCollapsed = ref(false)
+
+const legendEntries = computed(() => {
+  const seen = new Map<string, string>()
+  for (const node of props.nodes) {
+    if (!seen.has(node.class)) {
+      seen.set(node.class, props.classColors.get(node.class) ?? '#71717a')
+    }
+  }
+  return Array.from(seen.entries()).map(([iri, color]) => ({
+    iri,
+    label: iri.split(/[#/]/).pop() ?? iri,
+    color,
+  }))
+})
 
 const LOADING_STAGES = ['Querying endpoint', 'Traversing paths', 'Collecting results']
 const elapsedSeconds = ref(0)
@@ -894,5 +937,84 @@ defineExpose({ PALETTE, zoomIn, zoomOut, fitGraph, rerunLayout, toggleEdgeLabels
 .zoom-level-btn:hover {
   color: var(--rf-text);
   background: var(--rf-surface-raised);
+}
+
+.graph-legend {
+  position: absolute;
+  top: var(--rf-space-4);
+  left: var(--rf-space-4);
+  background: var(--rf-surface);
+  border: 1px solid var(--rf-border);
+  border-radius: var(--rf-radius-md);
+  box-shadow: var(--rf-shadow-sm);
+  padding: var(--rf-space-2) var(--rf-space-3);
+  min-width: 120px;
+  max-width: 180px;
+  z-index: 5;
+}
+
+.legend-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  gap: var(--rf-space-2);
+  min-height: 32px;
+}
+
+.legend-title {
+  font-size: var(--rf-text-xs);
+  font-weight: var(--rf-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--rf-text-subtle);
+}
+
+.legend-toggle .pi {
+  font-size: 0.6rem;
+  color: var(--rf-text-subtle);
+}
+
+.legend-list {
+  list-style: none;
+  margin: var(--rf-space-2) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--rf-space-2);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: var(--rf-space-2);
+}
+
+.legend-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.legend-label {
+  font-size: var(--rf-text-xs);
+  color: var(--rf-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.legend-fade-enter-active,
+.legend-fade-leave-active {
+  transition: opacity var(--rf-duration-base) var(--rf-ease-out);
+}
+.legend-fade-enter-from,
+.legend-fade-leave-to {
+  opacity: 0;
 }
 </style>

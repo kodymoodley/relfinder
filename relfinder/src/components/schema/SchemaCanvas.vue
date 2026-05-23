@@ -143,7 +143,9 @@
         class="zoom-level-btn"
         aria-label="Reset zoom to 100%"
         @click="resetZoom"
-      >{{ zoomLevel }}%</button>
+      >
+        {{ zoomLevel }}%
+      </button>
       <Button
         v-tooltip.top="'Fit to screen'"
         icon="pi pi-arrows-alt"
