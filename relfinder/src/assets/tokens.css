@@ -62,14 +62,14 @@
   --rf-font-body: 'DM Sans', system-ui, sans-serif;
   --rf-font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
 
-  /* ── Typography — size scale ─────────────────────────────────────────── */
-  --rf-text-xs: 0.72rem; /* ~11.5px */
-  --rf-text-sm: 0.8125rem; /*   13px  */
-  --rf-text-base: 0.9375rem; /*   15px  */
-  --rf-text-md: 1rem; /*   16px  */
-  --rf-text-lg: 1.125rem; /*   18px  */
-  --rf-text-xl: 1.375rem; /*   22px  */
-  --rf-text-2xl: 1.75rem; /*   28px  */
+  /* ── Typography — size scale (fluid: 375px → 1280px) ───────────────── */
+  --rf-text-xs:   clamp(0.688rem,  calc(0.675rem + 0.055vw), 0.72rem);    /* 11→11.5px */
+  --rf-text-sm:   clamp(0.75rem,   calc(0.724rem + 0.110vw), 0.8125rem);  /* 12→13px   */
+  --rf-text-base: clamp(0.875rem,  calc(0.849rem + 0.110vw), 0.9375rem);  /* 14→15px   */
+  --rf-text-md:   clamp(0.9375rem, calc(0.912rem + 0.110vw), 1rem);       /* 15→16px   */
+  --rf-text-lg:   clamp(1rem,      calc(0.948rem + 0.221vw), 1.125rem);   /* 16→18px   */
+  --rf-text-xl:   clamp(1.125rem,  calc(1.021rem + 0.442vw), 1.375rem);   /* 18→22px   */
+  --rf-text-2xl:  clamp(1.375rem,  calc(1.220rem + 0.663vw), 1.75rem);    /* 22→28px   */
 
   /* ── Typography — weights ────────────────────────────────────────────── */
   --rf-weight-normal: 400;

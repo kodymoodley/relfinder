@@ -283,12 +283,14 @@ const showShortcuts = ref(false)
 const schemaCanvasRef = ref<InstanceType<typeof SchemaCanvas> | null>(null)
 
 useKeyboardShortcuts({
-  zoomIn:       () => schemaCanvasRef.value?.zoomIn(),
-  zoomOut:      () => schemaCanvasRef.value?.zoomOut(),
-  fit:          () => schemaCanvasRef.value?.fitGraph(),
-  layout:       () => schemaCanvasRef.value?.rerunLayout(),
+  zoomIn: () => schemaCanvasRef.value?.zoomIn(),
+  zoomOut: () => schemaCanvasRef.value?.zoomOut(),
+  fit: () => schemaCanvasRef.value?.fitGraph(),
+  layout: () => schemaCanvasRef.value?.rerunLayout(),
   toggleLabels: () => schemaCanvasRef.value?.toggleEdgeLabels(),
-  help:         () => { showShortcuts.value = true },
+  help: () => {
+    showShortcuts.value = true
+  },
 })
 
 watch(isMobile, (mobile) => {

@@ -303,12 +303,14 @@ watch(isMobile, (mobile) => {
 })
 
 useKeyboardShortcuts({
-  zoomIn:       () => graphCanvasRef.value?.zoomIn(),
-  zoomOut:      () => graphCanvasRef.value?.zoomOut(),
-  fit:          () => graphCanvasRef.value?.fitGraph(),
-  layout:       () => graphCanvasRef.value?.rerunLayout(),
+  zoomIn: () => graphCanvasRef.value?.zoomIn(),
+  zoomOut: () => graphCanvasRef.value?.zoomOut(),
+  fit: () => graphCanvasRef.value?.fitGraph(),
+  layout: () => graphCanvasRef.value?.rerunLayout(),
   toggleLabels: () => graphCanvasRef.value?.toggleEdgeLabels(),
-  help:         () => { showShortcuts.value = true },
+  help: () => {
+    showShortcuts.value = true
+  },
 })
 
 const recentOpen = ref(true)
