@@ -52,6 +52,11 @@ const SHORTCUT_GROUPS = [
   padding: var(--rf-space-5) var(--rf-space-6);
 }
 
+:deep(.p-dialog-header) {
+  padding-top: var(--rf-space-5);
+  padding-left: var(--rf-space-6);
+}
+
 .shortcut-group {
   display: flex;
   flex-direction: column;
