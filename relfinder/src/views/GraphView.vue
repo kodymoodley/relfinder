@@ -230,6 +230,7 @@
         :entity2-label="entity2?.label"
         @node-click="selectedNode = $event"
       />
+      <FirstRunTip />
     </main>
 
     <!-- ── Node detail drawer ───────────────────────────────────────────────── -->
@@ -272,6 +273,7 @@ import type { GraphOptions } from '@/components/graph/OptionsPanel.vue'
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
 import NodeDetail from '@/components/graph/NodeDetail.vue'
 import ShortcutsModal from '@/components/common/ShortcutsModal.vue'
+import FirstRunTip from '@/components/common/FirstRunTip.vue'
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
 
 const router = useRouter()

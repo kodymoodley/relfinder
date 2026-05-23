@@ -229,6 +229,7 @@
         @node-click="onNodeClick"
         @edge-click="onEdgeClick"
       />
+      <FirstRunTip />
     </main>
 
     <!-- ── Detail panel ────────────────────────────────────────────────────────── -->
@@ -264,6 +265,7 @@ import type { SchemaNode, SchemaEdge } from '@/lib/sparql/types'
 import SchemaCanvas from '@/components/schema/SchemaCanvas.vue'
 import SchemaDetailPanel from '@/components/schema/SchemaDetailPanel.vue'
 import ShortcutsModal from '@/components/common/ShortcutsModal.vue'
+import FirstRunTip from '@/components/common/FirstRunTip.vue'
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
 
 const router = useRouter()
