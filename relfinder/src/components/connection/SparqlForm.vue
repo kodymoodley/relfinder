@@ -94,6 +94,7 @@
       v-if="connectionError"
       severity="error"
       :closable="true"
+      :pt="{ root: { role: 'alert' } }"
       @close="connectionError = ''"
       data-testid="connection-error-msg"
     >

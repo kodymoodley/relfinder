@@ -95,7 +95,13 @@
             data-testid="find-relationships-btn"
             @click="onFindRelationships"
           />
-          <Message v-if="searchError" severity="error" :closable="true" @close="searchError = ''">
+          <Message
+            v-if="searchError"
+            severity="error"
+            :closable="true"
+            :pt="{ root: { role: 'alert' } }"
+            @close="searchError = ''"
+          >
             {{ searchError }}
           </Message>
         </section>
@@ -470,7 +476,8 @@ async function onFindRelationships() {
     )
 
     if (graph.value.nodes.length === 0) {
-      searchError.value = 'No relationships found between the selected entities.'
+      searchError.value =
+        'No relationships found. Try increasing Max Depth, or select different entities.'
     } else {
       // Persist for future sessions
       saveGraph(
@@ -487,7 +494,7 @@ async function onFindRelationships() {
     searchError.value =
       err instanceof Error
         ? `Query failed: ${err.message}`
-        : 'An unexpected error occurred. Check the browser console for details.'
+        : 'An unexpected error occurred. Try again or check your network connection.'
   } finally {
     searching.value = false
   }
