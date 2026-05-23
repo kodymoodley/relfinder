@@ -1,7 +1,11 @@
 <template>
   <div class="graph-view">
     <!-- ── Sidebar ──────────────────────────────────────────────────────────── -->
-    <aside class="sidebar" :class="{ 'sidebar--collapsed': sidebarCollapsed }" aria-label="Navigation sidebar">
+    <aside
+      class="sidebar"
+      :class="{ 'sidebar--collapsed': sidebarCollapsed }"
+      aria-label="Navigation sidebar"
+    >
       <div class="sidebar-header">
         <div v-show="!sidebarCollapsed" class="header-left">
           <span class="app-brand">RelFinder</span>
