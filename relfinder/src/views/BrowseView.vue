@@ -624,6 +624,8 @@ onMounted(() => {
     bottom: 0;
     left: 0;
     width: min(280px, 85vw);
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
     transform: translateX(-100%);
     transition: transform var(--rf-duration-base) var(--rf-ease-out);
     z-index: 100;
@@ -683,8 +685,8 @@ onMounted(() => {
 
 .mobile-menu-btn {
   position: absolute;
-  top: var(--rf-space-3);
-  left: var(--rf-space-3);
+  top: calc(var(--rf-space-3) + env(safe-area-inset-top, 0px));
+  left: calc(var(--rf-space-3) + env(safe-area-inset-left, 0px));
   z-index: 50;
   width: 44px;
   height: 44px;

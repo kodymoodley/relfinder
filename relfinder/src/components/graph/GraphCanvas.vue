@@ -472,12 +472,15 @@ function rerunLayout() {
 }
 
 function restoreLabels() {
-  cy?.nodes().removeClass('no-label')
+  if (!cy) return
+  cy.startBatch()
+  cy.nodes().removeClass('no-label')
   if (showEdgeLabels.value) {
-    cy?.edges().removeClass('no-label')
+    cy.edges().removeClass('no-label')
   } else {
-    cy?.edges().addClass('no-label')
+    cy.edges().addClass('no-label')
   }
+  cy.endBatch()
 }
 
 function cropToSelection() {
@@ -485,8 +488,10 @@ function cropToSelection() {
   const selected = cy.elements(':selected')
   if (selected.length === 0) return
   cropHistory.value.push(cy.elements().jsons() as cytoscape.ElementDefinition[])
+  cy.startBatch()
   cy.elements().not(':selected').remove()
   cy.elements().unselect()
+  cy.endBatch()
   hasSelection.value = false
   restoreLabels()
 }
@@ -494,8 +499,10 @@ function cropToSelection() {
 function undoCrop() {
   if (!cy || cropHistory.value.length === 0) return
   const snapshot = cropHistory.value.pop()!
+  cy.startBatch()
   cy.elements().remove()
   cy.add(snapshot)
+  cy.endBatch()
   hasSelection.value = false
   restoreLabels()
 }
@@ -590,6 +597,8 @@ defineExpose({ PALETTE })
 .cy-container {
   width: 100%;
   height: 100%;
+  touch-action: none;
+  user-select: none;
   opacity: 1;
   transition: opacity var(--rf-duration-base) var(--rf-ease-out);
 }
@@ -805,8 +814,8 @@ defineExpose({ PALETTE })
 
 .canvas-toolbar {
   position: absolute;
-  bottom: var(--rf-space-4);
-  right: var(--rf-space-4);
+  bottom: calc(var(--rf-space-4) + env(safe-area-inset-bottom, 0px));
+  right: calc(var(--rf-space-4) + env(safe-area-inset-right, 0px));
   display: flex;
   align-items: center;
   gap: var(--rf-space-1);

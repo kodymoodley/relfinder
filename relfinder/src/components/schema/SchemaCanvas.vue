@@ -444,10 +444,12 @@ function addNewNodes() {
   if (!cy) return
   const newNodes = props.nodes.slice(renderedNodeCount)
   if (newNodes.length === 0) return
+  cy.startBatch()
   cy.add(newNodes.map((n) => ({ data: { id: n.iri, label: n.label, iri: n.iri } })))
   renderedNodeCount = props.nodes.length
   lastRenderedNodeIri = props.nodes[renderedNodeCount - 1]?.iri ?? ''
   addNewEdges()
+  cy.endBatch()
 }
 
 // ── Incremental edge addition ─────────────────────────────────────────────────
@@ -677,6 +679,8 @@ onUnmounted(() => {
 .cy-container {
   width: 100%;
   height: 100%;
+  touch-action: none;
+  user-select: none;
 }
 
 .cy-container.hidden {
@@ -879,8 +883,8 @@ onUnmounted(() => {
 
 .canvas-toolbar {
   position: absolute;
-  bottom: var(--rf-space-4);
-  right: var(--rf-space-4);
+  bottom: calc(var(--rf-space-4) + env(safe-area-inset-bottom, 0px));
+  right: calc(var(--rf-space-4) + env(safe-area-inset-right, 0px));
   display: flex;
   align-items: center;
   gap: var(--rf-space-1);
