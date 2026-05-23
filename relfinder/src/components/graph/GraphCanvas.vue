@@ -182,6 +182,7 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useDarkMode } from '@/composables/useDarkMode'
 import { prefersReducedMotion } from '@/composables/useReducedMotion'
+import { useTouchBoxSelect } from '@/composables/useTouchBoxSelect'
 import cytoscape from 'cytoscape'
 import type { Core, NodeSingular, Layouts } from 'cytoscape'
 import d3Force from 'cytoscape-d3-force'
@@ -225,6 +226,26 @@ const hasSelection = ref(false)
 const cropHistory = ref<cytoscape.ElementDefinition[][]>([])
 const zoomLevel = ref(100)
 const legendCollapsed = ref(false)
+
+// ── Touch box-selection (long-press → drag on mobile) ─────────────────────────
+
+const { attach: attachTouchSelect, detach: detachTouchSelect } = useTouchBoxSelect(
+  () => cy,
+  () => cyContainer.value,
+  () => {
+    selectionMode.value = 'select'
+    if (cy) { cy.userPanningEnabled(false); cy.boxSelectionEnabled(true) }
+  },
+  () => {
+    // Re-enable panning but keep the selection visible so the user can crop.
+    selectionMode.value = 'pan'
+    if (cy) { cy.userPanningEnabled(true); cy.boxSelectionEnabled(false) }
+  },
+)
+
+// Keep a stable reference to the container so we can detach in onUnmounted
+// (template refs are nulled before onUnmounted fires in Vue 3).
+let touchSelectEl: HTMLElement | null = null
 
 const legendEntries = computed(() => {
   const seen = new Map<string, string>()
@@ -653,10 +674,16 @@ onMounted(() => {
       cy?.resize()
     })
     resizeObserver.observe(cyContainer.value)
+    touchSelectEl = cyContainer.value
+    attachTouchSelect(touchSelectEl)
   }
 })
 
 onUnmounted(() => {
+  if (touchSelectEl) {
+    detachTouchSelect(touchSelectEl)
+    touchSelectEl = null
+  }
   resizeObserver?.disconnect()
   resizeObserver = null
   layout?.stop()
