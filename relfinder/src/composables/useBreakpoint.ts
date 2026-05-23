@@ -4,8 +4,8 @@ export type Breakpoint = 'mobile' | 'tablet' | 'desktop'
 
 // Canonical breakpoint thresholds — matches the documented values in tokens.css.
 // Import these constants in any component that needs a numeric comparison.
-export const BP_MD = 768   // tablet and above
-export const BP_LG = 1280  // desktop and above
+export const BP_MD = 768 // tablet and above
+export const BP_LG = 1280 // desktop and above
 
 function currentBreakpoint(): Breakpoint {
   if (window.matchMedia(`(min-width: ${BP_LG}px)`).matches) return 'desktop'
@@ -48,8 +48,8 @@ export function useBreakpoint() {
 
   return {
     breakpoint,
-    isMobile:  computed(() => breakpoint.value === 'mobile'),
-    isTablet:  computed(() => breakpoint.value === 'tablet'),
+    isMobile: computed(() => breakpoint.value === 'mobile'),
+    isTablet: computed(() => breakpoint.value === 'tablet'),
     isDesktop: computed(() => breakpoint.value === 'desktop'),
   }
 }

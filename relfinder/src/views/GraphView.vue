@@ -291,7 +291,9 @@ const selectedNode = ref<GraphNode | null>(null)
 const sidebarCollapsed = ref(isMobile.value)
 const optionsOpen = ref(false)
 
-watch(isMobile, (mobile) => { if (mobile) sidebarCollapsed.value = true })
+watch(isMobile, (mobile) => {
+  if (mobile) sidebarCollapsed.value = true
+})
 const recentOpen = ref(true)
 const recentGraphs = ref<GraphHistoryMeta[]>([])
 const entitySearchKey = ref(0)

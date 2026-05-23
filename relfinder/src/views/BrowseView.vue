@@ -273,7 +273,9 @@ const selectedEdge = ref<SchemaEdge | null>(null)
 const sidebarCollapsed = ref(isMobile.value)
 const optionsOpen = ref(false)
 
-watch(isMobile, (mobile) => { if (mobile) sidebarCollapsed.value = true })
+watch(isMobile, (mobile) => {
+  if (mobile) sidebarCollapsed.value = true
+})
 const classLimit = ref(10)
 const edgeLimit = ref(3)
 
