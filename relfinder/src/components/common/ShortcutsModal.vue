@@ -49,6 +49,7 @@ const SHORTCUT_GROUPS = [
   display: flex;
   flex-direction: column;
   gap: var(--rf-space-5);
+  padding: var(--rf-space-5) var(--rf-space-6);
 }
 
 .shortcut-group {
