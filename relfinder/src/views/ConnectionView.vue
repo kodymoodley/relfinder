@@ -75,7 +75,7 @@ const { dark, toggle: toggleDark } = useDarkMode()
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-height: 100vh;
+  min-height: 100dvh;
   padding: var(--rf-space-10) var(--rf-space-4) var(--rf-space-12);
   background: var(--rf-bg);
   background-image:

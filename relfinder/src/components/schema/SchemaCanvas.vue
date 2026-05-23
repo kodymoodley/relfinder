@@ -185,6 +185,7 @@
 
 <script setup lang="ts">
 import { ref, watch, computed, onMounted, onUnmounted } from 'vue'
+import { prefersReducedMotion } from '@/composables/useReducedMotion'
 import cytoscape from 'cytoscape'
 import type { Core, Layouts } from 'cytoscape'
 import d3Force from 'cytoscape-d3-force'
@@ -378,7 +379,7 @@ function initCytoscape() {
           'text-outline-width': 1.5,
           'text-outline-color': 'rgba(0,0,0,0.3)',
           'transition-property': 'width height border-width border-color',
-          'transition-duration': 120,
+          'transition-duration': prefersReducedMotion() ? 0 : 120,
           'transition-timing-function': 'ease-out',
         },
       },
@@ -590,7 +591,7 @@ function runLayout() {
   layout?.stop()
   layout = cy.layout({
     name: 'd3-force',
-    animate: true,
+    animate: !prefersReducedMotion(),
     linkId: (d: { id: string }) => d.id,
     linkDistance: 150,
     manyBodyStrength: -800,
@@ -602,7 +603,7 @@ function runLayout() {
   } as Parameters<Core['layout']>[0])
   layout.run()
   // Fit once after nodes have spread out; subsequent zoom/pan is user-controlled
-  setTimeout(() => cy?.fit(undefined, 40), 800)
+  setTimeout(() => cy?.fit(undefined, 40), prefersReducedMotion() ? 0 : 800)
 }
 
 // ── Toolbar actions ───────────────────────────────────────────────────────────

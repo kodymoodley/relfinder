@@ -181,6 +181,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useDarkMode } from '@/composables/useDarkMode'
+import { prefersReducedMotion } from '@/composables/useReducedMotion'
 import cytoscape from 'cytoscape'
 import type { Core, NodeSingular, Layouts } from 'cytoscape'
 import d3Force from 'cytoscape-d3-force'
@@ -345,7 +346,7 @@ function initCytoscape() {
           'text-outline-width': 1.5,
           'text-outline-color': 'rgba(0,0,0,0.3)',
           'transition-property': 'width height border-width border-color',
-          'transition-duration': 120,
+          'transition-duration': prefersReducedMotion() ? 0 : 120,
           'transition-timing-function': 'ease-out',
         },
       },
@@ -515,7 +516,7 @@ function runLayout() {
   layout?.stop()
   layout = cy.layout({
     name: 'd3-force',
-    animate: true,
+    animate: !prefersReducedMotion(),
     // Required: tell forceLink to use the node's `id` field instead of
     // its array index (the plugin only sets this when linkId is defined).
     linkId: (d: { id: string }) => d.id,
