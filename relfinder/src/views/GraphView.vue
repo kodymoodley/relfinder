@@ -192,8 +192,26 @@
       </div>
     </aside>
 
+    <!-- ── Mobile backdrop ──────────────────────────────────────────────────────── -->
+    <Transition name="backdrop">
+      <div
+        v-if="isMobile && !sidebarCollapsed"
+        class="sidebar-backdrop"
+        aria-hidden="true"
+        @click="sidebarCollapsed = true"
+      />
+    </Transition>
+
     <!-- ── Graph canvas ─────────────────────────────────────────────────────── -->
     <main class="graph-main">
+      <button
+        v-if="isMobile && sidebarCollapsed"
+        class="mobile-menu-btn"
+        aria-label="Open menu"
+        @click="sidebarCollapsed = false"
+      >
+        <i class="pi pi-bars" />
+      </button>
       <GraphCanvas
         :nodes="displayNodes"
         :edges="displayEdges"
@@ -221,6 +239,7 @@ import { ref, watch, computed, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import { useDarkMode } from '@/composables/useDarkMode'
+import { useBreakpoint } from '@/composables/useBreakpoint'
 import Divider from 'primevue/divider'
 import Message from 'primevue/message'
 import Tag from 'primevue/tag'
@@ -247,6 +266,7 @@ import NodeDetail from '@/components/graph/NodeDetail.vue'
 const router = useRouter()
 const connectionStore = useConnectionStore()
 const { dark, toggle: toggleDark } = useDarkMode()
+const { isMobile } = useBreakpoint()
 
 // ── State ─────────────────────────────────────────────────────────────────────
 
@@ -268,8 +288,10 @@ const graph = ref<RelationshipGraph | null>(null)
 const searching = ref(false)
 const searchError = ref('')
 const selectedNode = ref<GraphNode | null>(null)
-const sidebarCollapsed = ref(false)
+const sidebarCollapsed = ref(isMobile.value)
 const optionsOpen = ref(false)
+
+watch(isMobile, (mobile) => { if (mobile) sidebarCollapsed.value = true })
 const recentOpen = ref(true)
 const recentGraphs = ref<GraphHistoryMeta[]>([])
 const entitySearchKey = ref(0)
@@ -716,6 +738,93 @@ function shortIri(iri: string): string {
   flex: 1;
   position: relative;
   overflow: hidden;
+}
+
+/* ── Responsive: mobile overlay drawer ───────────────────────────────────── */
+
+@media (max-width: 767px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: min(300px, 85vw);
+    transform: translateX(-100%);
+    transition: transform var(--rf-duration-base) var(--rf-ease-out);
+    z-index: 100;
+  }
+
+  .sidebar:not(.sidebar--collapsed) {
+    transform: translateX(0);
+  }
+
+  .sidebar--collapsed {
+    width: min(300px, 85vw);
+  }
+}
+
+/* ── Responsive: tablet+ — restore in-flow layout ───────────────────────── */
+
+@media (min-width: 768px) {
+  .sidebar {
+    position: relative;
+    width: 300px;
+    transform: none !important;
+    flex-shrink: 0;
+    transition: width var(--rf-duration-base) var(--rf-ease-out);
+  }
+
+  .sidebar--collapsed {
+    width: 52px;
+  }
+
+  .mobile-menu-btn {
+    display: none;
+  }
+}
+
+/* ── Backdrop ─────────────────────────────────────────────────────────────── */
+
+.sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 99;
+  background: rgb(0 0 0 / 0.45);
+}
+
+.backdrop-enter-active,
+.backdrop-leave-active {
+  transition: opacity var(--rf-duration-base) var(--rf-ease-out);
+}
+
+.backdrop-enter-from,
+.backdrop-leave-to {
+  opacity: 0;
+}
+
+/* ── Mobile menu button ───────────────────────────────────────────────────── */
+
+.mobile-menu-btn {
+  position: absolute;
+  top: var(--rf-space-3);
+  left: var(--rf-space-3);
+  z-index: 50;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: var(--rf-radius-md);
+  background: var(--rf-surface);
+  color: var(--rf-text);
+  box-shadow: var(--rf-shadow-md);
+  cursor: pointer;
+  transition: background var(--rf-duration-fast) var(--rf-ease-out);
+}
+
+.mobile-menu-btn:hover {
+  background: var(--rf-surface-raised);
 }
 
 /* ── Recent graphs ────────────────────────────────────────────────────────── */

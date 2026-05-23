@@ -199,8 +199,26 @@
       </div>
     </aside>
 
+    <!-- ── Mobile backdrop ──────────────────────────────────────────────────────── -->
+    <Transition name="backdrop">
+      <div
+        v-if="isMobile && !sidebarCollapsed"
+        class="sidebar-backdrop"
+        aria-hidden="true"
+        @click="sidebarCollapsed = true"
+      />
+    </Transition>
+
     <!-- ── Schema canvas ──────────────────────────────────────────────────────── -->
     <main class="browse-main">
+      <button
+        v-if="isMobile && sidebarCollapsed"
+        class="mobile-menu-btn"
+        aria-label="Open menu"
+        @click="sidebarCollapsed = false"
+      >
+        <i class="pi pi-bars" />
+      </button>
       <SchemaCanvas
         :nodes="displayNodes"
         :edges="schemaStore.edges"
@@ -224,7 +242,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
 import Button from 'primevue/button'
@@ -234,6 +252,7 @@ import Divider from 'primevue/divider'
 import InputNumber from 'primevue/inputnumber'
 import ToggleButton from 'primevue/togglebutton'
 import { useDarkMode } from '@/composables/useDarkMode'
+import { useBreakpoint } from '@/composables/useBreakpoint'
 import { useConnectionStore } from '@/stores/connection'
 import { useSchemaStore } from '@/stores/schema'
 import type { SchemaNode, SchemaEdge } from '@/lib/sparql/types'
@@ -245,13 +264,16 @@ const toast = useToast()
 const connectionStore = useConnectionStore()
 const schemaStore = useSchemaStore()
 const { dark, toggle: toggleDark } = useDarkMode()
+const { isMobile } = useBreakpoint()
 
 // ── Local UI state ────────────────────────────────────────────────────────────
 
 const selectedNode = ref<SchemaNode | null>(null)
 const selectedEdge = ref<SchemaEdge | null>(null)
-const sidebarCollapsed = ref(false)
+const sidebarCollapsed = ref(isMobile.value)
 const optionsOpen = ref(false)
+
+watch(isMobile, (mobile) => { if (mobile) sidebarCollapsed.value = true })
 const classLimit = ref(10)
 const edgeLimit = ref(3)
 
@@ -338,14 +360,6 @@ function onDisconnect() {
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
 
 onMounted(() => {
-  console.log(
-    '[browse] onMounted — connected:',
-    connectionStore.isConnected,
-    '| hasData:',
-    schemaStore.hasData,
-    '| extracting:',
-    schemaStore.extracting,
-  )
   if (connectionStore.isConnected && !schemaStore.hasData && !schemaStore.extracting) {
     startExtraction()
   }
@@ -594,5 +608,94 @@ onMounted(() => {
   flex: 1;
   position: relative;
   overflow: hidden;
+}
+
+/* ── Responsive: mobile overlay drawer ───────────────────────────────────── */
+
+@media (max-width: 767px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: min(280px, 85vw);
+    transform: translateX(-100%);
+    transition: transform var(--rf-duration-base) var(--rf-ease-out);
+    z-index: 100;
+  }
+
+  .sidebar:not(.sidebar--collapsed) {
+    transform: translateX(0);
+  }
+
+  /* On mobile the "collapsed" width shrinks to 52px on desktop — here it just
+     stays off-screen so override width to fill the drawer width. */
+  .sidebar--collapsed {
+    width: min(280px, 85vw);
+  }
+}
+
+/* ── Responsive: tablet+ — restore in-flow layout ───────────────────────── */
+
+@media (min-width: 768px) {
+  .sidebar {
+    position: relative;
+    width: 260px;
+    transform: none !important;
+    flex-shrink: 0;
+    transition: width var(--rf-duration-base) var(--rf-ease-out);
+  }
+
+  .sidebar--collapsed {
+    width: 52px;
+  }
+
+  .mobile-menu-btn {
+    display: none;
+  }
+}
+
+/* ── Backdrop ─────────────────────────────────────────────────────────────── */
+
+.sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 99;
+  background: rgb(0 0 0 / 0.45);
+}
+
+.backdrop-enter-active,
+.backdrop-leave-active {
+  transition: opacity var(--rf-duration-base) var(--rf-ease-out);
+}
+
+.backdrop-enter-from,
+.backdrop-leave-to {
+  opacity: 0;
+}
+
+/* ── Mobile menu button ───────────────────────────────────────────────────── */
+
+.mobile-menu-btn {
+  position: absolute;
+  top: var(--rf-space-3);
+  left: var(--rf-space-3);
+  z-index: 50;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: var(--rf-radius-md);
+  background: var(--rf-surface);
+  color: var(--rf-text);
+  box-shadow: var(--rf-shadow-md);
+  cursor: pointer;
+  transition: background var(--rf-duration-fast) var(--rf-ease-out);
+}
+
+.mobile-menu-btn:hover {
+  background: var(--rf-surface-raised);
 }
 </style>
