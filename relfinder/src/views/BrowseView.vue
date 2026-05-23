@@ -1,7 +1,7 @@
 <template>
   <div class="browse-view">
     <!-- ── Sidebar ──────────────────────────────────────────────────────────── -->
-    <aside class="sidebar" :class="{ 'sidebar--collapsed': sidebarCollapsed }">
+    <aside class="sidebar" :class="{ 'sidebar--collapsed': sidebarCollapsed }" aria-label="Navigation sidebar">
       <div class="sidebar-header">
         <div v-show="!sidebarCollapsed" class="header-left">
           <span class="app-brand">RelFinder</span>
@@ -38,7 +38,7 @@
         </div>
       </div>
 
-      <nav v-show="!sidebarCollapsed" class="sidebar-nav">
+      <nav v-show="!sidebarCollapsed" class="sidebar-nav" aria-label="View switcher">
         <button class="view-tab view-tab--active" aria-current="page" data-testid="nav-schema">
           Schema
         </button>
