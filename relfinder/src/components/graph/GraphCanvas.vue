@@ -75,6 +75,12 @@
         @click="zoomOut"
         aria-label="Zoom out"
       />
+      <button
+        v-tooltip.top="'Reset zoom to 100%'"
+        class="zoom-level-btn"
+        aria-label="Reset zoom to 100%"
+        @click="resetZoom"
+      >{{ zoomLevel }}%</button>
       <Button
         v-tooltip.top="'Fit graph to screen'"
         icon="pi pi-arrows-alt"
@@ -188,6 +194,7 @@ const showEdgeLabels = ref(false)
 const selectionMode = ref<'pan' | 'select'>('pan')
 const hasSelection = ref(false)
 const cropHistory = ref<cytoscape.ElementDefinition[][]>([])
+const zoomLevel = ref(100)
 
 const LOADING_STAGES = ['Querying endpoint', 'Traversing paths', 'Collecting results']
 const elapsedSeconds = ref(0)
@@ -453,6 +460,10 @@ function initCytoscape() {
     }
   })
 
+  cy.on('zoom', () => {
+    zoomLevel.value = Math.round(cy!.zoom() * 100)
+  })
+
   hasGraph.value = true
 }
 
@@ -489,6 +500,11 @@ function zoomIn() {
 }
 function zoomOut() {
   cy?.zoom(cy.zoom() / 1.2)
+}
+function resetZoom() {
+  if (!cy) return
+  cy.zoom(1)
+  cy.center()
 }
 function fitGraph() {
   cy?.fit(undefined, 40)
@@ -855,5 +871,28 @@ defineExpose({ PALETTE, zoomIn, zoomOut, fitGraph, rerunLayout, toggleEdgeLabels
 .canvas-toolbar :deep(button) {
   min-width: 44px;
   min-height: 44px;
+}
+
+.zoom-level-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 52px;
+  min-height: 44px;
+  padding: 0 var(--rf-space-2);
+  background: transparent;
+  border: none;
+  border-radius: var(--rf-radius-sm);
+  font-family: var(--rf-font-mono);
+  font-size: var(--rf-text-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--rf-text-muted);
+  cursor: pointer;
+  transition: color var(--rf-duration-fast) var(--rf-ease-out);
+}
+
+.zoom-level-btn:hover {
+  color: var(--rf-text);
+  background: var(--rf-surface-raised);
 }
 </style>
