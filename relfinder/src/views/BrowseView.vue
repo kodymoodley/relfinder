@@ -701,7 +701,10 @@ onUnmounted(() => {
 
 .sidebar-backdrop {
   position: fixed;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: min(280px, 85vw);
   z-index: 99;
   background: rgb(0 0 0 / 0.45);
 }

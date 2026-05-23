@@ -156,8 +156,20 @@ async function runExample(example: Example) {
 
 .examples-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--rf-space-4);
+}
+
+@media (max-width: 599px) {
+  .examples-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 600px) and (max-width: 1023px) {
+  .examples-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 /* ── Card ────────────────────────────────────────────────────────────────── */

@@ -21,7 +21,7 @@ async function loadSchemaAndWait(page: import('@playwright/test').Page): Promise
   }).toPass({ timeout: 5_000 })
   // runLayout schedules cy.fit() 800 ms after init — wait for it to settle
   // before any test reads or manipulates zoom, otherwise the fit fires mid-test
-  await page.waitForTimeout(1100)
+  await page.waitForTimeout(1500)
   return browse
 }
 

@@ -53,7 +53,7 @@ async function navigateWithSlowExtraction(page: Page): Promise<BrowsePage> {
       await route.fulfill({ status: 200, headers: sparqlJsonHeaders, body: toBody(manyClassesResponse) })
     } else if (body.includes('VALUES')) {
       // Phase 2: slow edge queries
-      await new Promise((r) => setTimeout(r, 150))
+      await new Promise((r) => setTimeout(r, 300))
       await route.fulfill({ status: 200, headers: sparqlJsonHeaders, body: toBody(noEdgesResponse) })
     } else {
       // Ping probe and label queries

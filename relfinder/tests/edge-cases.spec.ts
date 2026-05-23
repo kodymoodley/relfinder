@@ -39,7 +39,7 @@ async function connectWithSlowExtraction(page: Page): Promise<BrowsePage> {
     if (body.includes('DISTINCT') && body.includes('class')) {
       await route.fulfill({ status: 200, headers: sparqlJsonHeaders, body: toBody(manyClassesResponse) })
     } else if (body.includes('VALUES')) {
-      await new Promise((r) => setTimeout(r, 150))
+      await new Promise((r) => setTimeout(r, 300))
       await route.fulfill({ status: 200, headers: sparqlJsonHeaders, body: toBody(noEdgesResponse) })
     } else {
       await route.fulfill({ status: 200, headers: sparqlJsonHeaders, body: toBody(pingResponse) })
