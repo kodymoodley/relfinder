@@ -666,6 +666,8 @@ onUnmounted(() => {
   cy?.destroy()
   cy = null
 })
+
+defineExpose({ zoomIn, zoomOut, fitGraph, rerunLayout, toggleEdgeLabels })
 </script>
 
 <style scoped>

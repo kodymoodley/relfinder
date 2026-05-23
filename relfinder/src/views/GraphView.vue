@@ -213,6 +213,7 @@
         <i class="pi pi-bars" />
       </button>
       <GraphCanvas
+        ref="graphCanvasRef"
         :nodes="displayNodes"
         :edges="displayEdges"
         :loading="searching"
@@ -231,6 +232,8 @@
       :language="graphOptions.language"
       @update:node="selectedNode = $event"
     />
+
+    <ShortcutsModal v-model:visible="showShortcuts" />
   </div>
 </template>
 
@@ -262,6 +265,8 @@ import OptionsPanel from '@/components/graph/OptionsPanel.vue'
 import type { GraphOptions } from '@/components/graph/OptionsPanel.vue'
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
 import NodeDetail from '@/components/graph/NodeDetail.vue'
+import ShortcutsModal from '@/components/common/ShortcutsModal.vue'
+import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
 
 const router = useRouter()
 const connectionStore = useConnectionStore()
@@ -290,10 +295,22 @@ const searchError = ref('')
 const selectedNode = ref<GraphNode | null>(null)
 const sidebarCollapsed = ref(isMobile.value)
 const optionsOpen = ref(false)
+const showShortcuts = ref(false)
+const graphCanvasRef = ref<InstanceType<typeof GraphCanvas> | null>(null)
 
 watch(isMobile, (mobile) => {
   if (mobile) sidebarCollapsed.value = true
 })
+
+useKeyboardShortcuts({
+  zoomIn:       () => graphCanvasRef.value?.zoomIn(),
+  zoomOut:      () => graphCanvasRef.value?.zoomOut(),
+  fit:          () => graphCanvasRef.value?.fitGraph(),
+  layout:       () => graphCanvasRef.value?.rerunLayout(),
+  toggleLabels: () => graphCanvasRef.value?.toggleEdgeLabels(),
+  help:         () => { showShortcuts.value = true },
+})
+
 const recentOpen = ref(true)
 const recentGraphs = ref<GraphHistoryMeta[]>([])
 const entitySearchKey = ref(0)

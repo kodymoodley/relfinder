@@ -609,8 +609,7 @@ onUnmounted(() => {
   }
 })
 
-// Expose palette so parent can assign colours consistently
-defineExpose({ PALETTE })
+defineExpose({ PALETTE, zoomIn, zoomOut, fitGraph, rerunLayout, toggleEdgeLabels })
 </script>
 
 <style scoped>

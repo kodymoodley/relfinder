@@ -222,6 +222,7 @@
         <i class="pi pi-bars" />
       </button>
       <SchemaCanvas
+        ref="schemaCanvasRef"
         :nodes="displayNodes"
         :edges="schemaStore.edges"
         :extracting="schemaStore.extracting"
@@ -240,6 +241,8 @@
       @update:selected-edge="selectedEdge = $event"
       @find-paths="onFindPaths"
     />
+
+    <ShortcutsModal v-model:visible="showShortcuts" />
   </div>
 </template>
 
@@ -260,6 +263,8 @@ import { useSchemaStore } from '@/stores/schema'
 import type { SchemaNode, SchemaEdge } from '@/lib/sparql/types'
 import SchemaCanvas from '@/components/schema/SchemaCanvas.vue'
 import SchemaDetailPanel from '@/components/schema/SchemaDetailPanel.vue'
+import ShortcutsModal from '@/components/common/ShortcutsModal.vue'
+import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
 
 const router = useRouter()
 const toast = useToast()
@@ -274,6 +279,17 @@ const selectedNode = ref<SchemaNode | null>(null)
 const selectedEdge = ref<SchemaEdge | null>(null)
 const sidebarCollapsed = ref(isMobile.value)
 const optionsOpen = ref(false)
+const showShortcuts = ref(false)
+const schemaCanvasRef = ref<InstanceType<typeof SchemaCanvas> | null>(null)
+
+useKeyboardShortcuts({
+  zoomIn:       () => schemaCanvasRef.value?.zoomIn(),
+  zoomOut:      () => schemaCanvasRef.value?.zoomOut(),
+  fit:          () => schemaCanvasRef.value?.fitGraph(),
+  layout:       () => schemaCanvasRef.value?.rerunLayout(),
+  toggleLabels: () => schemaCanvasRef.value?.toggleEdgeLabels(),
+  help:         () => { showShortcuts.value = true },
+})
 
 watch(isMobile, (mobile) => {
   if (mobile) sidebarCollapsed.value = true
