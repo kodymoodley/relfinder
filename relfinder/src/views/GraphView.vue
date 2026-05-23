@@ -209,7 +209,7 @@
     </Transition>
 
     <!-- ── Graph canvas ─────────────────────────────────────────────────────── -->
-    <main class="graph-main">
+    <main id="main-content" class="graph-main">
       <button
         v-if="isMobile && sidebarCollapsed"
         class="mobile-menu-btn"

@@ -212,7 +212,7 @@
     </Transition>
 
     <!-- ── Schema canvas ──────────────────────────────────────────────────────── -->
-    <main class="browse-main">
+    <main id="main-content" class="browse-main">
       <button
         v-if="isMobile && sidebarCollapsed"
         class="mobile-menu-btn"

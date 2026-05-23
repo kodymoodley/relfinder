@@ -1,5 +1,5 @@
 <template>
-  <main class="connection-view">
+  <main id="main-content" class="connection-view">
     <div
       class="connection-card"
       v-motion
