@@ -234,12 +234,18 @@ const { attach: attachTouchSelect, detach: detachTouchSelect } = useTouchBoxSele
   () => cyContainer.value,
   () => {
     selectionMode.value = 'select'
-    if (cy) { cy.userPanningEnabled(false); cy.boxSelectionEnabled(true) }
+    if (cy) {
+      cy.userPanningEnabled(false)
+      cy.boxSelectionEnabled(true)
+    }
   },
   () => {
     // Re-enable panning but keep the selection visible so the user can crop.
     selectionMode.value = 'pan'
-    if (cy) { cy.userPanningEnabled(true); cy.boxSelectionEnabled(false) }
+    if (cy) {
+      cy.userPanningEnabled(true)
+      cy.boxSelectionEnabled(false)
+    }
   },
 )
 
@@ -944,7 +950,9 @@ defineExpose({ PALETTE, zoomIn, zoomOut, fitGraph, rerunLayout, toggleEdgeLabels
     right: auto;
     left: 50%;
     transform: translateX(-50%);
-    max-width: calc(100% - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px) - var(--rf-space-8));
+    max-width: calc(
+      100% - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px) - var(--rf-space-8)
+    );
     flex-wrap: wrap;
     justify-content: center;
   }

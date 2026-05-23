@@ -7,6 +7,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import type { Mock } from 'vitest'
 import { useTouchBoxSelect, LONG_PRESS_MS, CANCEL_MOVE_PX } from '@/composables/useTouchBoxSelect'
 import type { Core, NodeSingular } from 'cytoscape'
 
@@ -22,9 +23,9 @@ class FakeTouch {
   readonly clientY: number
   constructor(init: { identifier: number; target: EventTarget; clientX: number; clientY: number }) {
     this.identifier = init.identifier
-    this.target     = init.target
-    this.clientX    = init.clientX
-    this.clientY    = init.clientY
+    this.target = init.target
+    this.clientX = init.clientX
+    this.clientY = init.clientY
   }
 }
 
@@ -82,7 +83,9 @@ function mockNode(x: number, y: number): NodeSingular {
   const selected = { value: false }
   return {
     renderedPosition: () => ({ x, y }),
-    select: vi.fn(() => { selected.value = true }),
+    select: vi.fn(() => {
+      selected.value = true
+    }),
     _selected: selected,
   } as unknown as NodeSingular
 }
@@ -99,8 +102,8 @@ function mockCy(nodes: NodeSingular[]): Core {
 // ── Fixtures ───────────────────────────────────────────────────────────────────
 
 let container: HTMLElement
-let onEnterSelect: ReturnType<typeof vi.fn>
-let onExitSelect: ReturnType<typeof vi.fn>
+let onEnterSelect: Mock<() => void>
+let onExitSelect: Mock<() => void>
 
 beforeEach(() => {
   vi.useFakeTimers()
@@ -111,7 +114,7 @@ beforeEach(() => {
   document.body.appendChild(container)
 
   onEnterSelect = vi.fn()
-  onExitSelect  = vi.fn()
+  onExitSelect = vi.fn()
 })
 
 afterEach(() => {
@@ -123,7 +126,12 @@ afterEach(() => {
 
 describe('long-press detection', () => {
   it('calls onEnterSelect after holding still for LONG_PRESS_MS', () => {
-    const { attach } = useTouchBoxSelect(() => null, () => container, onEnterSelect, onExitSelect)
+    const { attach } = useTouchBoxSelect(
+      () => null,
+      () => container,
+      onEnterSelect,
+      onExitSelect,
+    )
     attach(container)
 
     touchStart(container, 50, 50)
@@ -134,7 +142,12 @@ describe('long-press detection', () => {
   })
 
   it('does NOT call onEnterSelect if touchend fires before the timer', () => {
-    const { attach } = useTouchBoxSelect(() => null, () => container, onEnterSelect, onExitSelect)
+    const { attach } = useTouchBoxSelect(
+      () => null,
+      () => container,
+      onEnterSelect,
+      onExitSelect,
+    )
     attach(container)
 
     touchStart(container, 50, 50)
@@ -146,7 +159,12 @@ describe('long-press detection', () => {
   })
 
   it(`does NOT call onEnterSelect if finger moves more than ${CANCEL_MOVE_PX}px before the timer`, () => {
-    const { attach } = useTouchBoxSelect(() => null, () => container, onEnterSelect, onExitSelect)
+    const { attach } = useTouchBoxSelect(
+      () => null,
+      () => container,
+      onEnterSelect,
+      onExitSelect,
+    )
     attach(container)
 
     touchStart(container, 50, 50)
@@ -157,7 +175,12 @@ describe('long-press detection', () => {
   })
 
   it('does NOT cancel if finger drifts within the allowed threshold', () => {
-    const { attach } = useTouchBoxSelect(() => null, () => container, onEnterSelect, onExitSelect)
+    const { attach } = useTouchBoxSelect(
+      () => null,
+      () => container,
+      onEnterSelect,
+      onExitSelect,
+    )
     attach(container)
 
     touchStart(container, 50, 50)
@@ -168,14 +191,17 @@ describe('long-press detection', () => {
   })
 
   it('ignores multi-touch (2+ fingers)', () => {
-    const { attach } = useTouchBoxSelect(() => null, () => container, onEnterSelect, onExitSelect)
+    const { attach } = useTouchBoxSelect(
+      () => null,
+      () => container,
+      onEnterSelect,
+      onExitSelect,
+    )
     attach(container)
 
     const t1 = makeTouch(container, 50, 50)
     const t2 = makeTouch(container, 100, 100)
-    container.dispatchEvent(
-      new FakeTouchEvent('touchstart', { bubbles: true, touches: [t1, t2] }),
-    )
+    container.dispatchEvent(new FakeTouchEvent('touchstart', { bubbles: true, touches: [t1, t2] }))
     vi.advanceTimersByTime(LONG_PRESS_MS)
 
     expect(onEnterSelect).not.toHaveBeenCalled()
@@ -186,7 +212,12 @@ describe('long-press detection', () => {
 
 describe('rubber-band overlay', () => {
   it('appends an overlay element to the container on activation', () => {
-    const { attach } = useTouchBoxSelect(() => null, () => container, onEnterSelect, onExitSelect)
+    const { attach } = useTouchBoxSelect(
+      () => null,
+      () => container,
+      onEnterSelect,
+      onExitSelect,
+    )
     attach(container)
 
     expect(container.querySelector('.touch-select-overlay')).toBeNull()
@@ -198,7 +229,12 @@ describe('rubber-band overlay', () => {
   })
 
   it('updates the overlay dimensions on touchmove during active selection', () => {
-    const { attach } = useTouchBoxSelect(() => null, () => container, onEnterSelect, onExitSelect)
+    const { attach } = useTouchBoxSelect(
+      () => null,
+      () => container,
+      onEnterSelect,
+      onExitSelect,
+    )
     attach(container)
 
     touchStart(container, 10, 20)
@@ -214,7 +250,12 @@ describe('rubber-band overlay', () => {
   })
 
   it('handles dragging up-left (negative direction) correctly', () => {
-    const { attach } = useTouchBoxSelect(() => null, () => container, onEnterSelect, onExitSelect)
+    const { attach } = useTouchBoxSelect(
+      () => null,
+      () => container,
+      onEnterSelect,
+      onExitSelect,
+    )
     attach(container)
 
     touchStart(container, 90, 80)
@@ -229,7 +270,12 @@ describe('rubber-band overlay', () => {
   })
 
   it('removes the overlay on touchend', () => {
-    const { attach } = useTouchBoxSelect(() => null, () => container, onEnterSelect, onExitSelect)
+    const { attach } = useTouchBoxSelect(
+      () => null,
+      () => container,
+      onEnterSelect,
+      onExitSelect,
+    )
     attach(container)
 
     touchStart(container, 10, 10)
@@ -241,7 +287,12 @@ describe('rubber-band overlay', () => {
   })
 
   it('removes the overlay on touchcancel', () => {
-    const { attach } = useTouchBoxSelect(() => null, () => container, onEnterSelect, onExitSelect)
+    const { attach } = useTouchBoxSelect(
+      () => null,
+      () => container,
+      onEnterSelect,
+      onExitSelect,
+    )
     attach(container)
 
     touchStart(container, 10, 10)
@@ -256,11 +307,16 @@ describe('rubber-band overlay', () => {
 
 describe('node selection', () => {
   it('selects nodes whose renderedPosition is inside the rubber-band box', () => {
-    const inside  = mockNode(50, 50)
+    const inside = mockNode(50, 50)
     const outside = mockNode(200, 200)
     const cy = mockCy([inside, outside])
 
-    const { attach } = useTouchBoxSelect(() => cy, () => container, onEnterSelect, onExitSelect)
+    const { attach } = useTouchBoxSelect(
+      () => cy,
+      () => container,
+      onEnterSelect,
+      onExitSelect,
+    )
     attach(container)
 
     // draw box from (0,0) to (100,100) — inside node at (50,50) is within it
@@ -279,7 +335,12 @@ describe('node selection', () => {
     const n3 = mockNode(150, 150)
     const cy = mockCy([n1, n2, n3])
 
-    const { attach } = useTouchBoxSelect(() => cy, () => container, onEnterSelect, onExitSelect)
+    const { attach } = useTouchBoxSelect(
+      () => cy,
+      () => container,
+      onEnterSelect,
+      onExitSelect,
+    )
     attach(container)
 
     touchStart(container, 0, 0)
@@ -296,7 +357,12 @@ describe('node selection', () => {
     const boundary = mockNode(100, 100)
     const cy = mockCy([boundary])
 
-    const { attach } = useTouchBoxSelect(() => cy, () => container, onEnterSelect, onExitSelect)
+    const { attach } = useTouchBoxSelect(
+      () => cy,
+      () => container,
+      onEnterSelect,
+      onExitSelect,
+    )
     attach(container)
 
     touchStart(container, 0, 0)
@@ -311,7 +377,12 @@ describe('node selection', () => {
     const n = mockNode(500, 500)
     const cy = mockCy([n])
 
-    const { attach } = useTouchBoxSelect(() => cy, () => container, onEnterSelect, onExitSelect)
+    const { attach } = useTouchBoxSelect(
+      () => cy,
+      () => container,
+      onEnterSelect,
+      onExitSelect,
+    )
     attach(container)
 
     touchStart(container, 0, 0)
@@ -323,7 +394,12 @@ describe('node selection', () => {
   })
 
   it('does not throw when cy is null at touchend', () => {
-    const { attach } = useTouchBoxSelect(() => null, () => container, onEnterSelect, onExitSelect)
+    const { attach } = useTouchBoxSelect(
+      () => null,
+      () => container,
+      onEnterSelect,
+      onExitSelect,
+    )
     attach(container)
 
     touchStart(container, 0, 0)
@@ -336,7 +412,12 @@ describe('node selection', () => {
 
 describe('exit callback', () => {
   it('calls onExitSelect on touchend after an active selection', () => {
-    const { attach } = useTouchBoxSelect(() => null, () => container, onEnterSelect, onExitSelect)
+    const { attach } = useTouchBoxSelect(
+      () => null,
+      () => container,
+      onEnterSelect,
+      onExitSelect,
+    )
     attach(container)
 
     touchStart(container, 0, 0)
@@ -347,7 +428,12 @@ describe('exit callback', () => {
   })
 
   it('calls onExitSelect on touchcancel after an active selection', () => {
-    const { attach } = useTouchBoxSelect(() => null, () => container, onEnterSelect, onExitSelect)
+    const { attach } = useTouchBoxSelect(
+      () => null,
+      () => container,
+      onEnterSelect,
+      onExitSelect,
+    )
     attach(container)
 
     touchStart(container, 0, 0)
@@ -358,7 +444,12 @@ describe('exit callback', () => {
   })
 
   it('does NOT call onExitSelect when selection was never activated', () => {
-    const { attach } = useTouchBoxSelect(() => null, () => container, onEnterSelect, onExitSelect)
+    const { attach } = useTouchBoxSelect(
+      () => null,
+      () => container,
+      onEnterSelect,
+      onExitSelect,
+    )
     attach(container)
 
     touchStart(container, 0, 0)
@@ -374,7 +465,10 @@ describe('exit callback', () => {
 describe('detach', () => {
   it('stops responding to touch events after detach', () => {
     const { attach, detach } = useTouchBoxSelect(
-      () => null, () => container, onEnterSelect, onExitSelect,
+      () => null,
+      () => container,
+      onEnterSelect,
+      onExitSelect,
     )
     attach(container)
     detach(container)
@@ -387,21 +481,27 @@ describe('detach', () => {
 
   it('cancels an in-flight long-press timer on detach', () => {
     const { attach, detach } = useTouchBoxSelect(
-      () => null, () => container, onEnterSelect, onExitSelect,
+      () => null,
+      () => container,
+      onEnterSelect,
+      onExitSelect,
     )
     attach(container)
 
     touchStart(container, 0, 0)
     vi.advanceTimersByTime(LONG_PRESS_MS / 2) // timer is halfway
     detach(container)
-    vi.advanceTimersByTime(LONG_PRESS_MS)     // let remaining time elapse
+    vi.advanceTimersByTime(LONG_PRESS_MS) // let remaining time elapse
 
     expect(onEnterSelect).not.toHaveBeenCalled()
   })
 
   it('removes any active overlay on detach', () => {
     const { attach, detach } = useTouchBoxSelect(
-      () => null, () => container, onEnterSelect, onExitSelect,
+      () => null,
+      () => container,
+      onEnterSelect,
+      onExitSelect,
     )
     attach(container)
 

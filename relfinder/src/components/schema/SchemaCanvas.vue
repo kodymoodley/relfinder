@@ -921,7 +921,9 @@ defineExpose({ zoomIn, zoomOut, fitGraph, rerunLayout, toggleEdgeLabels })
     right: auto;
     left: 50%;
     transform: translateX(-50%);
-    max-width: calc(100% - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px) - var(--rf-space-8));
+    max-width: calc(
+      100% - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px) - var(--rf-space-8)
+    );
     flex-wrap: wrap;
     justify-content: center;
   }

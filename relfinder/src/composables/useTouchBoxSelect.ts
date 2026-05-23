@@ -55,9 +55,9 @@ export function useTouchBoxSelect(
 
   function updateOverlay(): void {
     if (!overlay) return
-    overlay.style.left   = `${Math.min(startX, currentX)}px`
-    overlay.style.top    = `${Math.min(startY, currentY)}px`
-    overlay.style.width  = `${Math.abs(currentX - startX)}px`
+    overlay.style.left = `${Math.min(startX, currentX)}px`
+    overlay.style.top = `${Math.min(startY, currentY)}px`
+    overlay.style.width = `${Math.abs(currentX - startX)}px`
     overlay.style.height = `${Math.abs(currentY - startY)}px`
   }
 
@@ -71,9 +71,9 @@ export function useTouchBoxSelect(
   function selectNodesInBox(): void {
     const cy = getCy()
     if (!cy) return
-    const left   = Math.min(startX, currentX)
-    const top    = Math.min(startY, currentY)
-    const right  = Math.max(startX, currentX)
+    const left = Math.min(startX, currentX)
+    const top = Math.min(startY, currentY)
+    const right = Math.max(startX, currentX)
     const bottom = Math.max(startY, currentY)
     cy.nodes().each((node) => {
       const pos = node.renderedPosition()
@@ -98,10 +98,12 @@ export function useTouchBoxSelect(
     if (e.touches.length !== 1) return
     const container = getContainer()
     if (!container) return
+    const touch = e.touches[0]
+    if (!touch) return
 
     const rect = container.getBoundingClientRect()
-    startX = e.touches[0].clientX - rect.left
-    startY = e.touches[0].clientY - rect.top
+    startX = touch.clientX - rect.left
+    startY = touch.clientY - rect.top
     currentX = startX
     currentY = startY
 
@@ -119,10 +121,12 @@ export function useTouchBoxSelect(
     if (e.touches.length !== 1) return
     const container = getContainer()
     if (!container) return
+    const touch = e.touches[0]
+    if (!touch) return
 
     const rect = container.getBoundingClientRect()
-    currentX = e.touches[0].clientX - rect.left
-    currentY = e.touches[0].clientY - rect.top
+    currentX = touch.clientX - rect.left
+    currentY = touch.clientY - rect.top
 
     if (!active) {
       if (Math.hypot(currentX - startX, currentY - startY) > CANCEL_MOVE_PX) {
@@ -147,16 +151,16 @@ export function useTouchBoxSelect(
   // ── Public API ─────────────────────────────────────────────────────────────
 
   function attach(el: HTMLElement): void {
-    el.addEventListener('touchstart',  onTouchStart, { passive: true })
-    el.addEventListener('touchmove',   onTouchMove,  { passive: false })
-    el.addEventListener('touchend',    endTouch)
+    el.addEventListener('touchstart', onTouchStart, { passive: true })
+    el.addEventListener('touchmove', onTouchMove, { passive: false })
+    el.addEventListener('touchend', endTouch)
     el.addEventListener('touchcancel', endTouch)
   }
 
   function detach(el: HTMLElement): void {
-    el.removeEventListener('touchstart',  onTouchStart)
-    el.removeEventListener('touchmove',   onTouchMove)
-    el.removeEventListener('touchend',    endTouch)
+    el.removeEventListener('touchstart', onTouchStart)
+    el.removeEventListener('touchmove', onTouchMove)
+    el.removeEventListener('touchend', endTouch)
     el.removeEventListener('touchcancel', endTouch)
     cancelPress()
     removeOverlay()
