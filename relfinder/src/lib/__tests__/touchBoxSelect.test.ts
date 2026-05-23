@@ -79,23 +79,35 @@ function touchCancel(el: HTMLElement): void {
 
 // ── Mock Cytoscape node factory ────────────────────────────────────────────────
 
-function mockNode(x: number, y: number): NodeSingular {
-  const selected = { value: false }
-  return {
-    renderedPosition: () => ({ x, y }),
-    select: vi.fn(() => {
-      selected.value = true
-    }),
-    _selected: selected,
-  } as unknown as NodeSingular
+interface MockNode extends NodeSingular {
+  _isSelected: boolean
 }
 
-/** Build a minimal mock Cytoscape Core whose nodes() returns a given list. */
-function mockCy(nodes: NodeSingular[]): Core {
+function mockNode(x: number, y: number): MockNode {
+  const node = {
+    _isSelected: false,
+    renderedPosition: () => ({ x, y }),
+    selected: () => node._isSelected,
+    select: vi.fn(() => { node._isSelected = true }),
+  } as unknown as MockNode
+  return node
+}
+
+interface MockEdge {
+  source: () => MockNode
+  target: () => MockNode
+  select: ReturnType<typeof vi.fn>
+}
+
+function mockEdge(src: MockNode, tgt: MockNode): MockEdge {
+  return { source: () => src, target: () => tgt, select: vi.fn() }
+}
+
+/** Build a minimal mock Cytoscape Core with nodes and optional edges. */
+function mockCy(nodes: MockNode[], edges: MockEdge[] = []): Core {
   return {
-    nodes: () => ({
-      each: (fn: (node: NodeSingular) => void) => nodes.forEach(fn),
-    }),
+    nodes: () => ({ each: (fn: (n: MockNode) => void) => nodes.forEach(fn) }),
+    edges: () => ({ each: (fn: (e: MockEdge) => void) => edges.forEach(fn) }),
   } as unknown as Core
 }
 
@@ -405,6 +417,63 @@ describe('node selection', () => {
     touchStart(container, 0, 0)
     vi.advanceTimersByTime(LONG_PRESS_MS)
     expect(() => touchEnd(container)).not.toThrow()
+  })
+})
+
+// ── Edge selection ────────────────────────────────────────────────────────────
+
+describe('edge selection', () => {
+  it('selects an edge whose both endpoints are inside the box', () => {
+    const n1 = mockNode(20, 20)
+    const n2 = mockNode(80, 80)
+    const edge = mockEdge(n1, n2)
+    const cy = mockCy([n1, n2], [edge])
+
+    const { attach } = useTouchBoxSelect(() => cy, () => container, onEnterSelect, onExitSelect)
+    attach(container)
+
+    touchStart(container, 0, 0)
+    vi.advanceTimersByTime(LONG_PRESS_MS)
+    touchMove(container, 100, 100)
+    touchEnd(container)
+
+    expect(edge.select).toHaveBeenCalledOnce()
+  })
+
+  it('does NOT select an edge when only one endpoint is inside the box', () => {
+    const inside  = mockNode(20, 20)
+    const outside = mockNode(200, 200)
+    const edge = mockEdge(inside, outside)
+    const cy = mockCy([inside, outside], [edge])
+
+    const { attach } = useTouchBoxSelect(() => cy, () => container, onEnterSelect, onExitSelect)
+    attach(container)
+
+    touchStart(container, 0, 0)
+    vi.advanceTimersByTime(LONG_PRESS_MS)
+    touchMove(container, 100, 100)
+    touchEnd(container)
+
+    expect(inside.select).toHaveBeenCalledOnce()
+    expect(outside.select).not.toHaveBeenCalled()
+    expect(edge.select).not.toHaveBeenCalled()
+  })
+
+  it('does NOT select an edge when neither endpoint is inside the box', () => {
+    const n1 = mockNode(200, 200)
+    const n2 = mockNode(300, 300)
+    const edge = mockEdge(n1, n2)
+    const cy = mockCy([n1, n2], [edge])
+
+    const { attach } = useTouchBoxSelect(() => cy, () => container, onEnterSelect, onExitSelect)
+    attach(container)
+
+    touchStart(container, 0, 0)
+    vi.advanceTimersByTime(LONG_PRESS_MS)
+    touchMove(container, 100, 100)
+    touchEnd(container)
+
+    expect(edge.select).not.toHaveBeenCalled()
   })
 })
 

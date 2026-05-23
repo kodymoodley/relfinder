@@ -81,6 +81,13 @@ export function useTouchBoxSelect(
         node.select()
       }
     })
+    // Select edges whose both endpoints are within the box — mirrors Cytoscape's
+    // desktop box-selection so that crop retains connecting edges.
+    cy.edges().each((edge) => {
+      if (edge.source().selected() && edge.target().selected()) {
+        edge.select()
+      }
+    })
   }
 
   // ── Long-press timer ───────────────────────────────────────────────────────
