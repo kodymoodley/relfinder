@@ -208,28 +208,30 @@ describe('searchEntities', () => {
     const results = await searchEntities(CTX)
 
     expect(executeSelect).toHaveBeenCalledTimes(1)
-    // Remote path uses VALUES clause for label predicates
+    // Remote path uses FILTER(?lp IN (...)) — not VALUES, which Virtuoso rejects
     const query = vi.mocked(executeSelect).mock.calls[0]![0]!
-    expect(query).toContain('VALUES ?lp')
+    expect(query).toContain('FILTER(?lp IN')
     expect(results[0]!.label).toBe('Cillian Murphy')
   })
 
-  it('generates a FILTER clause when allowedClasses is provided', async () => {
+  it('uses a direct rdf:type triple when allowedClasses is provided — no full type scan', async () => {
     vi.mocked(executeSelect).mockResolvedValue([])
 
     await searchEntities(CTX, ['http://dbpedia.org/ontology/Actor'])
 
     const query = vi.mocked(executeSelect).mock.calls[0]![0]!
-    expect(query).toContain('FILTER (?ctype IN')
-    expect(query).toContain('<http://dbpedia.org/ontology/Actor>')
+    // Direct class triple instead of ?s a ?ctype . FILTER(?ctype IN (...))
+    expect(query).toContain('?s a <http://dbpedia.org/ontology/Actor>')
+    expect(query).not.toContain('FILTER (?ctype IN')
   })
 
-  it('omits the class FILTER clause when allowedClasses is empty — unrestricted search', async () => {
+  it('uses ?s a ?ctype when allowedClasses is empty — unrestricted search', async () => {
     vi.mocked(executeSelect).mockResolvedValue([])
 
     await searchEntities(CTX, [])
 
     const query = vi.mocked(executeSelect).mock.calls[0]![0]!
+    expect(query).toContain('?s a ?ctype')
     expect(query).not.toContain('FILTER (?ctype IN')
   })
 

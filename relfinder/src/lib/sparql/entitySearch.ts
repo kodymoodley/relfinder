@@ -113,8 +113,9 @@ export async function searchEntities(
       } LIMIT ${limit}
     `
   } else {
-    // Remote endpoint: restrict to a known set of label predicates so we don't
-    // issue a full-scan query over a potentially huge dataset.
+    // Remote endpoint: restrict to a known set of label predicates.
+    // Use FILTER(?lp IN (...)) instead of VALUES because Virtuoso rejects
+    // inline VALUES inside a WHERE block (SP030 syntax error).
     const builtinLabelProps = [
       'http://www.w3.org/2000/01/rdf-schema#label',
       'http://www.w3.org/2004/02/skos/core#prefLabel',
@@ -125,14 +126,25 @@ export async function searchEntities(
       'http://purl.org/dc/terms/title',
     ]
     const allLabelProps = [...new Set([...builtinLabelProps, ...customLabelProperties])]
-    const labelPropsValues = allLabelProps.map((p) => `<${p}>`).join('\n        ')
+    const labelPropFilter = `FILTER(?lp IN (${allLabelProps.map((p) => `<${p}>`).join(', ')}))`
+
+    // When classes are specified, bind the type directly so the engine can use
+    // the rdf:type index rather than scanning all subjects (?s a ?ctype . FILTER IN
+    // forces a full type scan on large endpoints like DBpedia).
+    let classPattern: string
+    if (allowedClasses.length === 0) {
+      classPattern = '?s a ?ctype .'
+    } else {
+      classPattern = allowedClasses
+        .map((c) => `{ ?s a <${c}> . BIND(<${c}> AS ?ctype) }`)
+        .join('\nUNION\n')
+    }
 
     query = `
       SELECT DISTINCT ?s ?ctype ?label WHERE {
-        ?s a ?ctype .
-        VALUES ?lp { ${labelPropsValues} }
+        ${classPattern}
         ?s ?lp ?label .
-        ${classFilter}
+        ${labelPropFilter}
         ${labelFilter}
         ${langFilter}
       } LIMIT ${limit}
