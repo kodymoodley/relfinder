@@ -250,8 +250,8 @@ function onLegendPointerDown(e: PointerEvent): void {
   const rect = el.getBoundingClientRect()
   _legendDragStartX = e.clientX
   _legendDragStartY = e.clientY
-  _legendElemStartLeft = legendPos.value?.left ?? (rect.left - containerRect.left)
-  _legendElemStartTop = legendPos.value?.top ?? (rect.top - containerRect.top)
+  _legendElemStartLeft = legendPos.value?.left ?? rect.left - containerRect.left
+  _legendElemStartTop = legendPos.value?.top ?? rect.top - containerRect.top
   _legendMoved = false
   el.setPointerCapture(e.pointerId)
 }
