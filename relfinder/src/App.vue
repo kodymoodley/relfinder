@@ -6,6 +6,31 @@
 </template>
 
 <script setup lang="ts">
+import { watch } from 'vue'
 import { RouterView } from 'vue-router'
 import Toast from 'primevue/toast'
+import { useSchemaStore } from '@/stores/schema'
+import { hooks } from '@/lib/search/entityCache'
+import { useSearchIndex } from '@/composables/useSearchIndex'
+import { bootstrapFromSchema } from '@/lib/search/coldStartBootstrap'
+
+const schemaStore = useSchemaStore()
+const { add } = useSearchIndex()
+
+// Forward all cache additions to the search index worker.
+hooks.onAdd = add
+
+// Seed the index once the first schema batch arrives (0 → N nodes).
+watch(
+  () => schemaStore.nodes.length,
+  (newLen, oldLen) => {
+    if (newLen > 0 && (oldLen ?? 0) === 0) {
+      bootstrapFromSchema(
+        schemaStore.nodes,
+        schemaStore.edges,
+        schemaStore.instancesCache,
+      )
+    }
+  },
+)
 </script>
