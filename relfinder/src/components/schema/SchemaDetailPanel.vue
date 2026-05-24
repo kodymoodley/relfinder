@@ -53,7 +53,11 @@
               <i class="pi pi-times" />
             </button>
           </div>
-          <p v-if="filteredInstances.length === 0" class="list-empty">No matches.</p>
+          <div v-if="instanceSearchLoading" class="spinner-row">
+            <ProgressSpinner stroke-width="4" style="width: 16px; height: 16px" />
+            <span class="spinner-status">Searching…</span>
+          </div>
+          <p v-else-if="displayedInstances.length === 0" class="list-empty">No matches.</p>
 
           <!-- Start entity chip — persists across class selections -->
           <div v-if="pendingStart" class="start-chip">
@@ -66,7 +70,7 @@
           <p v-if="pendingStart" class="start-hint">Pick a destination:</p>
           <ul class="instance-list">
             <li
-              v-for="inst in filteredInstances"
+              v-for="inst in displayedInstances"
               :key="inst.iri"
               class="instance-item"
               :class="{
@@ -241,6 +245,7 @@ import { useConnectionStore } from '@/stores/connection'
 import { useSchemaStore } from '@/stores/schema'
 import type { SchemaNode, SchemaEdge } from '@/lib/sparql/types'
 import { recordView, recordDwell } from '@/lib/search/interestModel'
+import { searchEntities } from '@/lib/sparql/entitySearch'
 
 const props = defineProps<{
   selectedNode: SchemaNode | null
@@ -262,10 +267,31 @@ const pendingStart = ref<{ iri: string; label: string; class: string } | null>(n
 const expandedInstances = ref<Set<string>>(new Set())
 const instanceSearch = ref('')
 const instanceSearchRef = ref<HTMLInputElement | null>(null)
+const instanceSearchResults = ref<Array<{ iri: string; label: string }>>([])
+const instanceSearchLoading = ref(false)
+let _searchSeq = 0
+let _instanceSearchTimer: ReturnType<typeof setTimeout> | null = null
 
 function clearInstanceSearch() {
   instanceSearch.value = ''
   nextTick(() => instanceSearchRef.value?.focus())
+}
+
+async function runInstanceSparqlSearch(query: string, classIri: string) {
+  const seq = ++_searchSeq
+  instanceSearchLoading.value = true
+  instanceSearchResults.value = []
+  const context = connectionStore.queryContext ?? { endpointUrl: '' }
+  const store = connectionStore.rdfStore ?? connectionStore.localRdfStore ?? undefined
+  try {
+    const results = await searchEntities(context, [classIri], store, 20, query, 'en')
+    if (seq !== _searchSeq) return
+    instanceSearchResults.value = results.map((r) => ({ iri: r.iri, label: r.label }))
+  } catch {
+    if (seq === _searchSeq) instanceSearchResults.value = []
+  } finally {
+    if (seq === _searchSeq) instanceSearchLoading.value = false
+  }
 }
 
 // ── Dwell tracking ────────────────────────────────────────────────────────────
@@ -326,6 +352,9 @@ watch(
   (node, prev) => {
     if (prev) commitDwell()
     instanceSearch.value = ''
+    instanceSearchResults.value = []
+    instanceSearchLoading.value = false
+    ++_searchSeq
     if (!node) return
     const context = connectionStore.queryContext ?? { endpointUrl: '' }
     const store = connectionStore.rdfStore ?? connectionStore.localRdfStore ?? undefined
@@ -398,6 +427,26 @@ const filteredInstances = computed(() => {
   const q = instanceSearch.value.trim().toLowerCase()
   if (!q) return instances.value.slice(0, 20)
   return instances.value.filter((i) => i.label.toLowerCase().includes(q)).slice(0, 20)
+})
+
+// When the local filter is empty and the search query is non-empty, show SPARQL results.
+const displayedInstances = computed(() =>
+  filteredInstances.value.length > 0 ? filteredInstances.value : instanceSearchResults.value,
+)
+
+watch(instanceSearch, (q) => {
+  if (_instanceSearchTimer) clearTimeout(_instanceSearchTimer)
+  instanceSearchResults.value = []
+  ++_searchSeq
+  if (!q.trim()) {
+    instanceSearchLoading.value = false
+    return
+  }
+  _instanceSearchTimer = setTimeout(() => {
+    if (filteredInstances.value.length === 0 && props.selectedNode) {
+      runInstanceSparqlSearch(q.trim(), props.selectedNode.iri)
+    }
+  }, 350)
 })
 
 const objectProps = computed(() => {

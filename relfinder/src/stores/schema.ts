@@ -212,6 +212,7 @@ export const useSchemaStore = defineStore('schema', () => {
           onClassProcessed(classIri) {
             _processedSet.add(classIri)
             fetchInstances(classIri, context, n3Store).catch(() => {})
+            fetchDataProps(classIri, context, n3Store).catch(() => {})
             console.log(
               '[schema] onClassProcessed',
               classIri,
@@ -303,6 +304,7 @@ export const useSchemaStore = defineStore('schema', () => {
             batchProcessed.add(classIri)
             _processedSet.add(classIri)
             fetchInstances(classIri, context, n3Store).catch(() => {})
+            fetchDataProps(classIri, context, n3Store).catch(() => {})
             if (!isFileSource) persist(endpointUrl)
           },
         },
