@@ -209,7 +209,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onUnmounted } from 'vue'
 import Drawer from 'primevue/drawer'
 import Tag from 'primevue/tag'
 import DataTable from 'primevue/datatable'
@@ -219,6 +219,7 @@ import ProgressSpinner from 'primevue/progressspinner'
 import { useConnectionStore } from '@/stores/connection'
 import { useSchemaStore } from '@/stores/schema'
 import type { SchemaNode, SchemaEdge } from '@/lib/sparql/types'
+import { recordView, recordDwell } from '@/lib/search/interestModel'
 
 const props = defineProps<{
   selectedNode: SchemaNode | null
@@ -238,6 +239,21 @@ const emit = defineEmits<{
 
 const pendingStart = ref<{ iri: string; label: string; class: string } | null>(null)
 const expandedInstances = ref<Set<string>>(new Set())
+
+// ── Dwell tracking ────────────────────────────────────────────────────────────
+
+let _dwellIri: string | null = null
+let _dwellStart: number | null = null
+
+function commitDwell() {
+  if (_dwellIri !== null && _dwellStart !== null) {
+    recordDwell(_dwellIri, Date.now() - _dwellStart)
+    _dwellIri = null
+    _dwellStart = null
+  }
+}
+
+onUnmounted(commitDwell)
 
 function toggleExpand(iri: string) {
   const next = new Set(expandedInstances.value)
@@ -271,6 +287,7 @@ watch(
 
 watch(visible, (v) => {
   if (!v) {
+    commitDwell()
     emit('update:selectedNode', null)
     emit('update:selectedEdge', null)
   }
@@ -278,13 +295,17 @@ watch(visible, (v) => {
 
 watch(
   () => props.selectedNode,
-  (node) => {
+  (node, prev) => {
+    if (prev) commitDwell()
     if (!node) return
     const context = connectionStore.queryContext ?? { endpointUrl: '' }
     const store = connectionStore.rdfStore ?? connectionStore.localRdfStore ?? undefined
     schemaStore.fetchDataProps(node.iri, context, store).catch(() => {})
     schemaStore.fetchDescription(node.iri, context, store).catch(() => {})
     schemaStore.fetchInstances(node.iri, context, store).catch(() => {})
+    recordView(node.iri)
+    _dwellIri = node.iri
+    _dwellStart = Date.now()
   },
 )
 

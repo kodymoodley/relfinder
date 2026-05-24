@@ -276,6 +276,7 @@ import OptionsPanel from '@/components/graph/OptionsPanel.vue'
 import type { GraphOptions } from '@/components/graph/OptionsPanel.vue'
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
 import NodeDetail from '@/components/graph/NodeDetail.vue'
+import { recordView } from '@/lib/search/interestModel'
 import ShortcutsModal from '@/components/common/ShortcutsModal.vue'
 import FirstRunTip from '@/components/common/FirstRunTip.vue'
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
@@ -305,6 +306,8 @@ const graph = ref<RelationshipGraph | null>(null)
 const searching = ref(false)
 const searchError = ref('')
 const selectedNode = ref<GraphNode | null>(null)
+watch(selectedNode, (node) => { if (node) recordView(node.iri) })
+
 const sidebarCollapsed = ref(isMobile.value)
 const optionsOpen = ref(false)
 const showShortcuts = ref(false)

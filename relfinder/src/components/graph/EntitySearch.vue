@@ -80,6 +80,7 @@ import { useSearchIndex } from '@/composables/useSearchIndex'
 import { weightedSumFusion } from '@/lib/search/fusion/weightedSum'
 import { snapshot } from '@/lib/search/interestModel'
 import { searchConfig } from '@/lib/search/strategyRegistry'
+import { recordSelect } from '@/lib/search/interestModel'
 
 const props = defineProps<{
   id: string
@@ -216,6 +217,7 @@ function seedCacheFromResults(results: EntitySearchResult[]): void {
 
 function onSelect(event: { value: EntitySearchResult }) {
   selectedEntity.value = event.value
+  recordSelect(event.value.iri)
   emit('select', event.value)
 }
 
