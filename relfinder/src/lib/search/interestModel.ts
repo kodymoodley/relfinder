@@ -70,7 +70,7 @@ export function computeAffinity(entry: InterestEntry): number {
 export function recordSelect(iri: string): void {
   const entry = getOrCreate(iri)
   entry.selectCount++
-  entry.dismissed = false  // an explicit selection overrides a prior dismiss
+  entry.dismissed = false // an explicit selection overrides a prior dismiss
   entry.lastSeen = Date.now()
   persist()
 }

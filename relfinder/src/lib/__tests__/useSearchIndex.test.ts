@@ -18,13 +18,10 @@ class MockWorker {
 
 let _mock: MockWorker
 
-vi.stubGlobal(
-  'Worker',
-  function MockWorkerConstructor(_url: unknown, _opts: unknown) {
-    _mock = new MockWorker()
-    return _mock
-  },
-)
+vi.stubGlobal('Worker', function MockWorkerConstructor(_url: unknown, _opts: unknown) {
+  _mock = new MockWorker()
+  return _mock
+})
 
 import { useSearchIndex, _resetWorkerForTest } from '../../composables/useSearchIndex'
 
@@ -122,8 +119,16 @@ describe('useSearchIndex', () => {
       expect(msg1.id).not.toBe(msg2.id)
 
       // Respond to second search first
-      _mock.respond({ type: 'RESULTS', id: msg2.id, results: [makeScoredEntity('http://e.org/Beta')] })
-      _mock.respond({ type: 'RESULTS', id: msg1.id, results: [makeScoredEntity('http://e.org/Alpha')] })
+      _mock.respond({
+        type: 'RESULTS',
+        id: msg2.id,
+        results: [makeScoredEntity('http://e.org/Beta')],
+      })
+      _mock.respond({
+        type: 'RESULTS',
+        id: msg1.id,
+        results: [makeScoredEntity('http://e.org/Alpha')],
+      })
 
       const [r1, r2] = await Promise.all([p1, p2])
       expect(r1[0]?.iri).toBe('http://e.org/Alpha')

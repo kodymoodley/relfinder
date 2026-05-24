@@ -70,9 +70,7 @@ describe('bootstrapFromSchema', () => {
 
   it('adds object properties with OWL_OBJECT_PROPERTY classIri', () => {
     const edges = [
-      makeEdge('http://e.org/A', 'http://e.org/B', [
-        { iri: 'http://e.org/knows', label: 'knows' },
-      ]),
+      makeEdge('http://e.org/A', 'http://e.org/B', [{ iri: 'http://e.org/knows', label: 'knows' }]),
     ]
     bootstrapFromSchema([], edges, new Map())
     vi.runAllTimers()
@@ -86,12 +84,8 @@ describe('bootstrapFromSchema', () => {
 
   it('deduplicates properties that appear on multiple edges', () => {
     const edges = [
-      makeEdge('http://e.org/A', 'http://e.org/B', [
-        { iri: 'http://e.org/rel', label: 'rel' },
-      ]),
-      makeEdge('http://e.org/B', 'http://e.org/C', [
-        { iri: 'http://e.org/rel', label: 'rel' },
-      ]),
+      makeEdge('http://e.org/A', 'http://e.org/B', [{ iri: 'http://e.org/rel', label: 'rel' }]),
+      makeEdge('http://e.org/B', 'http://e.org/C', [{ iri: 'http://e.org/rel', label: 'rel' }]),
     ]
     bootstrapFromSchema([], edges, new Map())
     vi.runAllTimers()
@@ -117,10 +111,7 @@ describe('bootstrapFromSchema', () => {
 
   it('uses "Unknown" classLabel for instances whose class is not in nodes', () => {
     const instancesCache = new Map([
-      [
-        'http://e.org/OrphanClass',
-        [{ iri: 'http://e.org/Inst', label: 'Inst' }],
-      ],
+      ['http://e.org/OrphanClass', [{ iri: 'http://e.org/Inst', label: 'Inst' }]],
     ])
     bootstrapFromSchema([], [], instancesCache)
     vi.runAllTimers()

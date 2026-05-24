@@ -1,4 +1,9 @@
-import type { CachedEntity, SearchWorkerIn, SearchWorkerOut, ScoredEntity } from '@/lib/search/types'
+import type {
+  CachedEntity,
+  SearchWorkerIn,
+  SearchWorkerOut,
+  ScoredEntity,
+} from '@/lib/search/types'
 
 // ── Module-level singleton ────────────────────────────────────────────────────
 // One Worker is shared for the entire app lifetime. The composable returns
@@ -20,10 +25,9 @@ function handleMessage(e: MessageEvent<SearchWorkerOut>): void {
 
 function ensureWorker(): Worker {
   if (_worker !== null) return _worker
-  _worker = new Worker(
-    new URL('../workers/searchIndex.worker.ts', import.meta.url),
-    { type: 'module' },
-  )
+  _worker = new Worker(new URL('../workers/searchIndex.worker.ts', import.meta.url), {
+    type: 'module',
+  })
   _worker.onmessage = handleMessage
   return _worker
 }
@@ -36,11 +40,7 @@ function ensureWorker(): Worker {
  * Resolves with raw ScoredEntity results (bm25Score populated, others zeroed);
  * callers apply ranking fusion before rendering.
  */
-function search(
-  query: string,
-  limit: number,
-  classIris?: string[],
-): Promise<ScoredEntity[]> {
+function search(query: string, limit: number, classIris?: string[]): Promise<ScoredEntity[]> {
   const trimmed = query.trim()
   if (!trimmed) return Promise.resolve([])
   return new Promise((resolve) => {

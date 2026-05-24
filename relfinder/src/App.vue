@@ -25,11 +25,7 @@ watch(
   () => schemaStore.nodes.length,
   (newLen, oldLen) => {
     if (newLen > 0 && (oldLen ?? 0) === 0) {
-      bootstrapFromSchema(
-        schemaStore.nodes,
-        schemaStore.edges,
-        schemaStore.instancesCache,
-      )
+      bootstrapFromSchema(schemaStore.nodes, schemaStore.edges, schemaStore.instancesCache)
     }
   },
 )

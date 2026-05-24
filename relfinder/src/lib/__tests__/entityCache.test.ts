@@ -188,9 +188,7 @@ describe('entityCache', () => {
   describe('initEntityCache', () => {
     it('hydrates the in-memory map from IDB on first call', async () => {
       const { openDB } = await import('idb')
-      const storedEntities: CachedEntity[] = [
-        makeEntity('http://example.org/Persisted'),
-      ]
+      const storedEntities: CachedEntity[] = [makeEntity('http://example.org/Persisted')]
       vi.mocked(openDB).mockResolvedValueOnce({
         getAll: vi.fn().mockResolvedValue(storedEntities),
         transaction: vi.fn().mockReturnValue({
@@ -282,9 +280,7 @@ describe('relevanceScoredPolicy', () => {
 
   it('returns empty array when entries fit within targetSize', () => {
     const entries = [makeEntity('http://e.org/A', { lastAccessed: now })]
-    expect(
-      relevanceScoredPolicy.selectVictims(entries, new Map(), 5),
-    ).toHaveLength(0)
+    expect(relevanceScoredPolicy.selectVictims(entries, new Map(), 5)).toHaveLength(0)
   })
 
   it('treats entities with no interest entry as low-scored (evicted first)', () => {

@@ -136,7 +136,9 @@ async function runSearch(query: string) {
   } catch {
     suggestions.value = []
     statusMessage.value = 'Search failed — check your connection'
-    statusClearTimer = setTimeout(() => { statusMessage.value = '' }, 4000)
+    statusClearTimer = setTimeout(() => {
+      statusMessage.value = ''
+    }, 4000)
   } finally {
     searching.value = false
   }
@@ -191,7 +193,9 @@ function applyStatus(query: string): void {
   const n = suggestions.value.length
   statusMessage.value =
     n === 0 ? `No results for "${query}"` : `${n} result${n === 1 ? '' : 's'} for "${query}"`
-  statusClearTimer = setTimeout(() => { statusMessage.value = '' }, 3000)
+  statusClearTimer = setTimeout(() => {
+    statusMessage.value = ''
+  }, 3000)
 }
 
 function seedCacheFromResults(results: EntitySearchResult[]): void {

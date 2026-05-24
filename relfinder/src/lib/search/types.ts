@@ -4,12 +4,12 @@
 export interface CachedEntity {
   iri: string
   label: string
-  altLabels: string[]   // skos:altLabel, foaf:name, schema:name, dc:title, etc.
-  classIri: string      // rdf:type IRI
-  classLabel: string    // local name of classIri — used for search indexing and display
-  description: string   // rdfs:comment / dcterms:description; empty string when unknown
-  addedAt: number       // Date.now() at first insertion — drives TTL policies
-  lastAccessed: number  // Date.now() on each read — drives LRU policies
+  altLabels: string[] // skos:altLabel, foaf:name, schema:name, dc:title, etc.
+  classIri: string // rdf:type IRI
+  classLabel: string // local name of classIri — used for search indexing and display
+  description: string // rdfs:comment / dcterms:description; empty string when unknown
+  addedAt: number // Date.now() at first insertion — drives TTL policies
+  lastAccessed: number // Date.now() on each read — drives LRU policies
 }
 
 // ── Interest model ────────────────────────────────────────────────────────────
@@ -17,12 +17,12 @@ export interface CachedEntity {
 /** Per-entity behavioural signals accumulated during a session. */
 export interface InterestEntry {
   iri: string
-  selectCount: number  // times chosen as E1 or E2
-  viewCount: number    // times the detail panel was opened
-  dwellMs: number      // cumulative milliseconds spent in the detail panel
-  pinned: boolean      // explicit keep signal from the user
-  dismissed: boolean   // explicit hide signal from the user
-  lastSeen: number     // Date.now() of the most recent signal update
+  selectCount: number // times chosen as E1 or E2
+  viewCount: number // times the detail panel was opened
+  dwellMs: number // cumulative milliseconds spent in the detail panel
+  pinned: boolean // explicit keep signal from the user
+  dismissed: boolean // explicit hide signal from the user
+  lastSeen: number // Date.now() of the most recent signal update
 }
 
 // ── Search result ─────────────────────────────────────────────────────────────
@@ -30,7 +30,7 @@ export interface InterestEntry {
 /** A CachedEntity decorated with scoring breakdown after ranking fusion. */
 export interface ScoredEntity extends CachedEntity {
   bm25Score: number
-  semanticScore: number  // always 0 in Phase 1; populated by embedding worker in Phase 2
+  semanticScore: number // always 0 in Phase 1; populated by embedding worker in Phase 2
   affinityScore: number
   finalScore: number
   source: 'index' | 'sparql-fallback' | 'semantic'

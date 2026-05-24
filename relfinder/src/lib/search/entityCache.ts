@@ -18,8 +18,8 @@ let _initPromise: Promise<void> | null = null
 const _entities = new Map<string, CachedEntity>()
 let _policy: EvictionPolicy = lruPolicy
 
-const _dirty = new Set<string>()    // entities modified since the last IDB flush
-const _deleted = new Set<string>()  // entities removed since the last IDB flush
+const _dirty = new Set<string>() // entities modified since the last IDB flush
+const _deleted = new Set<string>() // entities removed since the last IDB flush
 let _flushScheduled = false
 
 // ── Observability hooks ───────────────────────────────────────────────────────
@@ -78,9 +78,7 @@ const _idle: (fn: () => void) => void =
 
 async function doFlush(): Promise<void> {
   if (_db === null || (_dirty.size === 0 && _deleted.size === 0)) return
-  const toWrite = [..._dirty]
-    .filter((iri) => _entities.has(iri))
-    .map((iri) => _entities.get(iri)!)
+  const toWrite = [..._dirty].filter((iri) => _entities.has(iri)).map((iri) => _entities.get(iri)!)
   const toDelete = [..._deleted]
   _dirty.clear()
   _deleted.clear()

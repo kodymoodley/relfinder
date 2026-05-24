@@ -1,5 +1,10 @@
 import MiniSearch from 'minisearch'
-import type { CachedEntity, SearchWorkerIn, SearchWorkerOut, ScoredEntity } from '../lib/search/types'
+import type {
+  CachedEntity,
+  SearchWorkerIn,
+  SearchWorkerOut,
+  ScoredEntity,
+} from '../lib/search/types'
 
 // ── Index setup ───────────────────────────────────────────────────────────────
 

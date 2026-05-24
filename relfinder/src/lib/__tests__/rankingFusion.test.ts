@@ -71,7 +71,7 @@ describe('weightedSumFusion', () => {
     const interest = makeInterestMap([{ iri: 'http://e.org/Low', selectCount: 10 }])
     const results = [
       makeScoredEntity('http://e.org/High', 0.9),
-      makeScoredEntity('http://e.org/Low', 0.3),  // lower text score but heavily selected
+      makeScoredEntity('http://e.org/Low', 0.3), // lower text score but heavily selected
     ]
     const fused = weightedSumFusion.fuse(results, [], interest)
     // Low has bm25=0.3, affinity=1.0 → finalScore = 0.8*0.3 + 0.2*1.0 = 0.44
@@ -133,7 +133,7 @@ describe('weightedSumFusion', () => {
     const results = [makeScoredEntity('http://e.org/A', 0.5)]
     const original = [...results]
     weightedSumFusion.fuse(results, [], noInterest)
-    expect(results[0]?.finalScore).toBe(0)  // original object unchanged
+    expect(results[0]?.finalScore).toBe(0) // original object unchanged
     expect(results).toHaveLength(original.length)
   })
 })
