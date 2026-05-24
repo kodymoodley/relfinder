@@ -7,6 +7,7 @@ import { fetchClassDescription } from '@/lib/sparql/classDescription'
 import { loadSchema, saveSchema } from '@/lib/cache/schemaStorage'
 import type { PersistedSchema } from '@/lib/cache/schemaStorage'
 import type { SchemaNode, SchemaEdge, SchemaDataProp, QueryContext } from '@/lib/sparql/types'
+import { cacheAdd } from '@/lib/search/entityCache'
 
 export const useSchemaStore = defineStore('schema', () => {
   // ── Graph state ──────────────────────────────────────────────────────────────
@@ -210,6 +211,7 @@ export const useSchemaStore = defineStore('schema', () => {
           },
           onClassProcessed(classIri) {
             _processedSet.add(classIri)
+            fetchInstances(classIri, context, n3Store).catch(() => {})
             console.log(
               '[schema] onClassProcessed',
               classIri,
@@ -300,6 +302,7 @@ export const useSchemaStore = defineStore('schema', () => {
           onClassProcessed(classIri) {
             batchProcessed.add(classIri)
             _processedSet.add(classIri)
+            fetchInstances(classIri, context, n3Store).catch(() => {})
             if (!isFileSource) persist(endpointUrl)
           },
         },
@@ -417,6 +420,22 @@ export const useSchemaStore = defineStore('schema', () => {
     try {
       const items = await fetchInstancesByClass(classIri, context, n3Store, 20)
       instancesCache.value = new Map(instancesCache.value).set(classIri, items)
+      if (items.length > 0) {
+        const classLabel = nodes.value.find((n) => n.iri === classIri)?.label ?? ''
+        const now = Date.now()
+        cacheAdd(
+          items.map((inst) => ({
+            iri: inst.iri,
+            label: inst.label,
+            altLabels: [],
+            classIri,
+            classLabel,
+            description: '',
+            addedAt: now,
+            lastAccessed: now,
+          })),
+        )
+      }
     } finally {
       const next = new Set(instancesLoading.value)
       next.delete(classIri)
