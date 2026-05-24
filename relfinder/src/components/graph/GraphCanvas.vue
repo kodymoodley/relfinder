@@ -51,9 +51,14 @@
     <Transition name="legend-fade">
       <div
         v-if="hasGraph && legendEntries.length >= 2"
+        ref="legendRef"
         class="graph-legend"
+        :style="legendPos ? { left: legendPos.left + 'px', top: legendPos.top + 'px' } : {}"
         role="complementary"
         aria-label="Node class legend"
+        @pointerdown="onLegendPointerDown"
+        @pointermove="onLegendPointerMove"
+        @click.capture="onLegendClickCapture"
       >
         <button
           class="legend-toggle"
@@ -226,6 +231,48 @@ const hasSelection = ref(false)
 const cropHistory = ref<cytoscape.ElementDefinition[][]>([])
 const zoomLevel = ref(100)
 const legendCollapsed = ref(false)
+
+// ── Draggable legend ──────────────────────────────────────────────────────────
+
+const legendRef = ref<HTMLDivElement | null>(null)
+const legendPos = ref<{ left: number; top: number } | null>(null)
+
+let _legendDragStartX = 0
+let _legendDragStartY = 0
+let _legendElemStartLeft = 0
+let _legendElemStartTop = 0
+let _legendMoved = false
+
+function onLegendPointerDown(e: PointerEvent): void {
+  const el = legendRef.value
+  if (!el) return
+  const containerRect = el.parentElement!.getBoundingClientRect()
+  const rect = el.getBoundingClientRect()
+  _legendDragStartX = e.clientX
+  _legendDragStartY = e.clientY
+  _legendElemStartLeft = legendPos.value?.left ?? (rect.left - containerRect.left)
+  _legendElemStartTop = legendPos.value?.top ?? (rect.top - containerRect.top)
+  _legendMoved = false
+  el.setPointerCapture(e.pointerId)
+}
+
+function onLegendPointerMove(e: PointerEvent): void {
+  const el = legendRef.value
+  if (!el || !el.hasPointerCapture(e.pointerId)) return
+  const dx = e.clientX - _legendDragStartX
+  const dy = e.clientY - _legendDragStartY
+  if (!_legendMoved && Math.hypot(dx, dy) < 5) return
+  _legendMoved = true
+  const container = el.parentElement!
+  legendPos.value = {
+    left: Math.max(0, Math.min(_legendElemStartLeft + dx, container.clientWidth - el.offsetWidth)),
+    top: Math.max(0, Math.min(_legendElemStartTop + dy, container.clientHeight - el.offsetHeight)),
+  }
+}
+
+function onLegendClickCapture(e: MouseEvent): void {
+  if (_legendMoved) e.stopPropagation()
+}
 
 // ── Touch box-selection (long-press → drag on mobile) ─────────────────────────
 
@@ -1004,6 +1051,13 @@ defineExpose({ PALETTE, zoomIn, zoomOut, fitGraph, rerunLayout, toggleEdgeLabels
   min-width: 120px;
   max-width: 180px;
   z-index: 5;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.graph-legend:active {
+  cursor: grabbing;
 }
 
 .legend-toggle {
@@ -1014,7 +1068,7 @@ defineExpose({ PALETTE, zoomIn, zoomOut, fitGraph, rerunLayout, toggleEdgeLabels
   background: none;
   border: none;
   padding: 0;
-  cursor: pointer;
+  cursor: inherit;
   gap: var(--rf-space-2);
   min-height: 32px;
 }
