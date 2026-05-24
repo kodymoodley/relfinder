@@ -13,7 +13,7 @@ export default mergeConfig(
         provider: 'istanbul',
         include: ['src/lib/**/*.ts', 'src/stores/**/*.ts'],
         exclude: ['src/lib/__tests__/**'],
-        reporter: ['text', 'html'],
+        reporter: ['text', 'html', 'lcov'],
         reportsDirectory: './coverage',
       },
     },

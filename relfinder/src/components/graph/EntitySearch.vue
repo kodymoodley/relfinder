@@ -278,7 +278,7 @@ function onClear() {
   border: 1px solid var(--rf-border);
   border-radius: var(--rf-radius-full);
   font-size: var(--rf-text-sm);
-  min-height: 2.25rem;
+  min-height: 44px;
   transition: border-color var(--rf-duration-fast) var(--rf-ease-out);
 }
 
@@ -318,7 +318,10 @@ function onClear() {
   font-size: 0.65rem;
   display: flex;
   align-items: center;
+  justify-content: center;
   flex-shrink: 0;
+  min-width: 44px;
+  min-height: 44px;
   border-radius: var(--rf-radius-full);
   transition:
     color var(--rf-duration-fast) var(--rf-ease-out),

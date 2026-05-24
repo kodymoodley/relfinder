@@ -1,5 +1,5 @@
 <template>
-  <main class="connection-view">
+  <main id="main-content" class="connection-view">
     <div
       class="connection-card"
       v-motion
@@ -23,12 +23,14 @@
       </div>
 
       <!-- Custom tabs — avoids PrimeVue Tabs provide/inject context bug in Vue 3.5 -->
-      <div class="tab-nav" role="tablist">
+      <div class="tab-nav" role="tablist" aria-label="Connection method">
         <button
+          id="tab-sparql"
           role="tab"
           class="tab-btn"
           :class="{ 'tab-btn--active': activeTab === 'sparql' }"
           :aria-selected="activeTab === 'sparql'"
+          aria-controls="panel-connection"
           @click="activeTab = 'sparql'"
           data-testid="tab-sparql"
         >
@@ -36,10 +38,12 @@
           SPARQL Endpoint
         </button>
         <button
+          id="tab-file"
           role="tab"
           class="tab-btn"
           :class="{ 'tab-btn--active': activeTab === 'file' }"
           :aria-selected="activeTab === 'file'"
+          aria-controls="panel-connection"
           @click="activeTab = 'file'"
           data-testid="tab-file"
         >
@@ -48,7 +52,13 @@
         </button>
       </div>
 
-      <div class="tab-panel">
+      <div
+        id="panel-connection"
+        class="tab-panel"
+        role="tabpanel"
+        :aria-labelledby="activeTab === 'sparql' ? 'tab-sparql' : 'tab-file'"
+        tabindex="0"
+      >
         <SparqlForm v-if="activeTab === 'sparql'" />
         <RdfFileUpload v-else />
       </div>
@@ -75,7 +85,7 @@ const { dark, toggle: toggleDark } = useDarkMode()
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-height: 100vh;
+  min-height: 100dvh;
   padding: var(--rf-space-10) var(--rf-space-4) var(--rf-space-12);
   background: var(--rf-bg);
   background-image:

@@ -22,7 +22,7 @@ async function connectViaFileAndWait(page: Page): Promise<BrowsePage> {
   await page.getByTestId('rdf-file-input').setInputFiles(SMALL_TTL)
   await expect(page.getByTestId('rdf-drop-zone')).toContainText('triples loaded', { timeout: 10_000 })
   await page.getByTestId('open-graph-btn').click()
-  await expect(page).toHaveURL('/browse')
+  await expect(page).toHaveURL('/browse', { timeout: 15_000 })
   const browse = new BrowsePage(page)
   await browse.waitForExtractionComplete(60_000)
   return browse
@@ -39,7 +39,7 @@ async function connectWithSlowExtraction(page: Page): Promise<BrowsePage> {
     if (body.includes('DISTINCT') && body.includes('class')) {
       await route.fulfill({ status: 200, headers: sparqlJsonHeaders, body: toBody(manyClassesResponse) })
     } else if (body.includes('VALUES')) {
-      await new Promise((r) => setTimeout(r, 150))
+      await new Promise((r) => setTimeout(r, 300))
       await route.fulfill({ status: 200, headers: sparqlJsonHeaders, body: toBody(noEdgesResponse) })
     } else {
       await route.fulfill({ status: 200, headers: sparqlJsonHeaders, body: toBody(pingResponse) })

@@ -1,7 +1,11 @@
 <template>
   <div class="browse-view">
     <!-- ── Sidebar ──────────────────────────────────────────────────────────── -->
-    <aside class="sidebar" :class="{ 'sidebar--collapsed': sidebarCollapsed }">
+    <aside
+      class="sidebar"
+      :class="{ 'sidebar--collapsed': sidebarCollapsed }"
+      aria-label="Navigation sidebar"
+    >
       <div class="sidebar-header">
         <div v-show="!sidebarCollapsed" class="header-left">
           <span class="app-brand">RelFinder</span>
@@ -38,7 +42,7 @@
         </div>
       </div>
 
-      <nav v-show="!sidebarCollapsed" class="sidebar-nav">
+      <nav v-show="!sidebarCollapsed" class="sidebar-nav" aria-label="View switcher">
         <button class="view-tab view-tab--active" aria-current="page" data-testid="nav-schema">
           Schema
         </button>
@@ -93,6 +97,8 @@
         <section
           v-if="schemaStore.extracting"
           class="sidebar-section"
+          aria-live="polite"
+          aria-atomic="false"
           data-testid="extraction-progress"
         >
           <div class="progress-row">
@@ -199,15 +205,35 @@
       </div>
     </aside>
 
+    <!-- ── Mobile backdrop ──────────────────────────────────────────────────────── -->
+    <Transition name="backdrop">
+      <div
+        v-if="isMobile && !sidebarCollapsed"
+        class="sidebar-backdrop"
+        aria-hidden="true"
+        @click="sidebarCollapsed = true"
+      />
+    </Transition>
+
     <!-- ── Schema canvas ──────────────────────────────────────────────────────── -->
-    <main class="browse-main">
+    <main id="main-content" class="browse-main">
+      <button
+        v-if="isMobile && sidebarCollapsed"
+        class="mobile-menu-btn"
+        aria-label="Open menu"
+        @click="sidebarCollapsed = false"
+      >
+        <i class="pi pi-bars" />
+      </button>
       <SchemaCanvas
+        ref="schemaCanvasRef"
         :nodes="displayNodes"
         :edges="schemaStore.edges"
         :extracting="schemaStore.extracting"
         @node-click="onNodeClick"
         @edge-click="onEdgeClick"
       />
+      <FirstRunTip />
     </main>
 
     <!-- ── Detail panel ────────────────────────────────────────────────────────── -->
@@ -220,11 +246,13 @@
       @update:selected-edge="selectedEdge = $event"
       @find-paths="onFindPaths"
     />
+
+    <ShortcutsModal v-model:visible="showShortcuts" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
 import Button from 'primevue/button'
@@ -234,24 +262,46 @@ import Divider from 'primevue/divider'
 import InputNumber from 'primevue/inputnumber'
 import ToggleButton from 'primevue/togglebutton'
 import { useDarkMode } from '@/composables/useDarkMode'
+import { useBreakpoint } from '@/composables/useBreakpoint'
 import { useConnectionStore } from '@/stores/connection'
 import { useSchemaStore } from '@/stores/schema'
 import type { SchemaNode, SchemaEdge } from '@/lib/sparql/types'
 import SchemaCanvas from '@/components/schema/SchemaCanvas.vue'
 import SchemaDetailPanel from '@/components/schema/SchemaDetailPanel.vue'
+import ShortcutsModal from '@/components/common/ShortcutsModal.vue'
+import FirstRunTip from '@/components/common/FirstRunTip.vue'
+import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
 
 const router = useRouter()
 const toast = useToast()
 const connectionStore = useConnectionStore()
 const schemaStore = useSchemaStore()
 const { dark, toggle: toggleDark } = useDarkMode()
+const { isMobile } = useBreakpoint()
 
 // ── Local UI state ────────────────────────────────────────────────────────────
 
 const selectedNode = ref<SchemaNode | null>(null)
 const selectedEdge = ref<SchemaEdge | null>(null)
-const sidebarCollapsed = ref(false)
+const sidebarCollapsed = ref(isMobile.value)
 const optionsOpen = ref(false)
+const showShortcuts = ref(false)
+const schemaCanvasRef = ref<InstanceType<typeof SchemaCanvas> | null>(null)
+
+useKeyboardShortcuts({
+  zoomIn: () => schemaCanvasRef.value?.zoomIn(),
+  zoomOut: () => schemaCanvasRef.value?.zoomOut(),
+  fit: () => schemaCanvasRef.value?.fitGraph(),
+  layout: () => schemaCanvasRef.value?.rerunLayout(),
+  toggleLabels: () => schemaCanvasRef.value?.toggleEdgeLabels(),
+  help: () => {
+    showShortcuts.value = true
+  },
+})
+
+watch(isMobile, (mobile) => {
+  if (mobile) sidebarCollapsed.value = true
+})
 const classLimit = ref(10)
 const edgeLimit = ref(3)
 
@@ -337,25 +387,28 @@ function onDisconnect() {
 
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
 
+function onEscKey(e: KeyboardEvent) {
+  if (e.key === 'Escape' && isMobile.value && !sidebarCollapsed.value) {
+    sidebarCollapsed.value = true
+  }
+}
+
 onMounted(() => {
-  console.log(
-    '[browse] onMounted — connected:',
-    connectionStore.isConnected,
-    '| hasData:',
-    schemaStore.hasData,
-    '| extracting:',
-    schemaStore.extracting,
-  )
+  document.addEventListener('keydown', onEscKey)
   if (connectionStore.isConnected && !schemaStore.hasData && !schemaStore.extracting) {
     startExtraction()
   }
+})
+
+onUnmounted(() => {
+  document.removeEventListener('keydown', onEscKey)
 })
 </script>
 
 <style scoped>
 .browse-view {
   display: flex;
-  height: 100vh;
+  height: 100dvh;
   overflow: hidden;
   background: var(--rf-bg);
 }
@@ -410,6 +463,7 @@ onMounted(() => {
 
 .view-tab {
   flex: 1;
+  min-height: 44px;
   padding: var(--rf-space-2) 0;
   font-size: var(--rf-text-sm);
   font-weight: var(--rf-weight-medium);
@@ -594,5 +648,99 @@ onMounted(() => {
   flex: 1;
   position: relative;
   overflow: hidden;
+}
+
+/* ── Responsive: mobile overlay drawer ───────────────────────────────────── */
+
+@media (max-width: 767px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: min(280px, 85vw);
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    transform: translateX(-100%);
+    transition: transform var(--rf-duration-base) var(--rf-ease-out);
+    z-index: 100;
+  }
+
+  .sidebar:not(.sidebar--collapsed) {
+    transform: translateX(0);
+  }
+
+  /* On mobile the "collapsed" width shrinks to 52px on desktop — here it just
+     stays off-screen so override width to fill the drawer width. */
+  .sidebar--collapsed {
+    width: min(280px, 85vw);
+  }
+}
+
+/* ── Responsive: tablet+ — restore in-flow layout ───────────────────────── */
+
+@media (min-width: 768px) {
+  .sidebar {
+    position: relative;
+    width: 260px;
+    transform: none !important;
+    flex-shrink: 0;
+    transition: width var(--rf-duration-base) var(--rf-ease-out);
+  }
+
+  .sidebar--collapsed {
+    width: 52px;
+  }
+
+  .mobile-menu-btn {
+    display: none;
+  }
+}
+
+/* ── Backdrop ─────────────────────────────────────────────────────────────── */
+
+.sidebar-backdrop {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: min(280px, 85vw);
+  z-index: 99;
+  background: rgb(0 0 0 / 0.45);
+}
+
+.backdrop-enter-active,
+.backdrop-leave-active {
+  transition: opacity var(--rf-duration-base) var(--rf-ease-out);
+}
+
+.backdrop-enter-from,
+.backdrop-leave-to {
+  opacity: 0;
+}
+
+/* ── Mobile menu button ───────────────────────────────────────────────────── */
+
+.mobile-menu-btn {
+  position: absolute;
+  top: calc(var(--rf-space-3) + env(safe-area-inset-top, 0px));
+  left: calc(var(--rf-space-3) + env(safe-area-inset-left, 0px));
+  z-index: 50;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: var(--rf-radius-md);
+  background: var(--rf-surface);
+  color: var(--rf-text);
+  box-shadow: var(--rf-shadow-md);
+  cursor: pointer;
+  transition: background var(--rf-duration-fast) var(--rf-ease-out);
+}
+
+.mobile-menu-btn:hover {
+  background: var(--rf-surface-raised);
 }
 </style>

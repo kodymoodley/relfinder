@@ -332,14 +332,17 @@ function removeClass(idx: number) {
 .chip-remove {
   background: none;
   border: none;
-  padding: 0 0 0 var(--rf-space-1);
+  padding: 0;
   cursor: pointer;
   color: var(--rf-text-subtle);
   font-size: 0.7rem;
   line-height: 1;
   display: flex;
   align-items: center;
+  justify-content: center;
   flex-shrink: 0;
+  min-width: 44px;
+  min-height: 44px;
   opacity: 0.5;
   transition:
     color var(--rf-duration-fast) var(--rf-ease-out),
@@ -374,6 +377,7 @@ function removeClass(idx: number) {
 
 .section-toggle {
   width: 100%;
+  min-height: 44px;
   display: flex;
   align-items: center;
   gap: var(--rf-space-2);

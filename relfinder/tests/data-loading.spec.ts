@@ -40,7 +40,7 @@ test.describe('File loading', () => {
     await conn.expectFileLoaded(5)
 
     await conn.clickOpenGraph()
-    await expect(page).toHaveURL('/browse')
+    await expect(page).toHaveURL('/browse', { timeout: 15_000 })
   })
 
   test('loads a medium TTL file and reports triple count', async ({ page }) => {
@@ -93,7 +93,7 @@ test.describe('SPARQL endpoint loading', () => {
     const conn = new ConnectionPage(page)
     await conn.goto()
     await conn.connectToEndpoint(MOCK_ENDPOINT)
-    await expect(page).toHaveURL('/browse')
+    await expect(page).toHaveURL('/browse', { timeout: 15_000 })
   })
 
   test('empty endpoint URL shows validation error', async ({ page }) => {

@@ -42,8 +42,41 @@
       ref="cyContainer"
       class="cy-container"
       :class="{ hidden: !hasGraph }"
+      role="application"
+      aria-label="Relationship graph — use mouse or touch to pan, zoom, and click nodes"
       data-testid="graph-canvas"
     />
+
+    <!-- Class legend (shown when ≥ 2 distinct classes are present) -->
+    <Transition name="legend-fade">
+      <div
+        v-if="hasGraph && legendEntries.length >= 2"
+        ref="legendRef"
+        class="graph-legend"
+        :style="legendPos ? { left: legendPos.left + 'px', top: legendPos.top + 'px' } : {}"
+        role="complementary"
+        aria-label="Node class legend"
+        @pointerdown="onLegendPointerDown"
+        @pointermove="onLegendPointerMove"
+        @click.capture="onLegendClickCapture"
+      >
+        <button
+          class="legend-toggle"
+          :aria-expanded="!legendCollapsed"
+          aria-controls="graph-legend-list"
+          @click="legendCollapsed = !legendCollapsed"
+        >
+          <span class="legend-title">Legend</span>
+          <i :class="['pi', legendCollapsed ? 'pi-chevron-down' : 'pi-chevron-up']" />
+        </button>
+        <ul v-if="!legendCollapsed" id="graph-legend-list" class="legend-list">
+          <li v-for="entry in legendEntries" :key="entry.iri" class="legend-item">
+            <span class="legend-swatch" :style="{ background: entry.color }" aria-hidden="true" />
+            <span class="legend-label" :title="entry.iri">{{ entry.label }}</span>
+          </li>
+        </ul>
+      </div>
+    </Transition>
 
     <!-- Select mode indicator -->
     <Transition name="mode-badge">
@@ -73,6 +106,14 @@
         @click="zoomOut"
         aria-label="Zoom out"
       />
+      <button
+        v-tooltip.top="'Reset zoom to 100%'"
+        class="zoom-level-btn"
+        aria-label="Reset zoom to 100%"
+        @click="resetZoom"
+      >
+        {{ zoomLevel }}%
+      </button>
       <Button
         v-tooltip.top="'Fit graph to screen'"
         icon="pi pi-arrows-alt"
@@ -145,6 +186,8 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useDarkMode } from '@/composables/useDarkMode'
+import { prefersReducedMotion } from '@/composables/useReducedMotion'
+import { useTouchBoxSelect } from '@/composables/useTouchBoxSelect'
 import cytoscape from 'cytoscape'
 import type { Core, NodeSingular, Layouts } from 'cytoscape'
 import d3Force from 'cytoscape-d3-force'
@@ -177,6 +220,7 @@ const emit = defineEmits<{
 const cyContainer = ref<HTMLElement | null>(null)
 let cy: Core | null = null
 let layout: Layouts | null = null
+let resizeObserver: ResizeObserver | null = null
 
 const { dark } = useDarkMode()
 
@@ -185,6 +229,90 @@ const showEdgeLabels = ref(false)
 const selectionMode = ref<'pan' | 'select'>('pan')
 const hasSelection = ref(false)
 const cropHistory = ref<cytoscape.ElementDefinition[][]>([])
+const zoomLevel = ref(100)
+const legendCollapsed = ref(false)
+
+// ── Draggable legend ──────────────────────────────────────────────────────────
+
+const legendRef = ref<HTMLDivElement | null>(null)
+const legendPos = ref<{ left: number; top: number } | null>(null)
+
+let _legendDragStartX = 0
+let _legendDragStartY = 0
+let _legendElemStartLeft = 0
+let _legendElemStartTop = 0
+let _legendMoved = false
+
+function onLegendPointerDown(e: PointerEvent): void {
+  const el = legendRef.value
+  if (!el) return
+  const containerRect = el.parentElement!.getBoundingClientRect()
+  const rect = el.getBoundingClientRect()
+  _legendDragStartX = e.clientX
+  _legendDragStartY = e.clientY
+  _legendElemStartLeft = legendPos.value?.left ?? rect.left - containerRect.left
+  _legendElemStartTop = legendPos.value?.top ?? rect.top - containerRect.top
+  _legendMoved = false
+  el.setPointerCapture(e.pointerId)
+}
+
+function onLegendPointerMove(e: PointerEvent): void {
+  const el = legendRef.value
+  if (!el || !el.hasPointerCapture(e.pointerId)) return
+  const dx = e.clientX - _legendDragStartX
+  const dy = e.clientY - _legendDragStartY
+  if (!_legendMoved && Math.hypot(dx, dy) < 5) return
+  _legendMoved = true
+  const container = el.parentElement!
+  legendPos.value = {
+    left: Math.max(0, Math.min(_legendElemStartLeft + dx, container.clientWidth - el.offsetWidth)),
+    top: Math.max(0, Math.min(_legendElemStartTop + dy, container.clientHeight - el.offsetHeight)),
+  }
+}
+
+function onLegendClickCapture(e: MouseEvent): void {
+  if (_legendMoved) e.stopPropagation()
+}
+
+// ── Touch box-selection (long-press → drag on mobile) ─────────────────────────
+
+const { attach: attachTouchSelect, detach: detachTouchSelect } = useTouchBoxSelect(
+  () => cy,
+  () => cyContainer.value,
+  () => {
+    selectionMode.value = 'select'
+    if (cy) {
+      cy.userPanningEnabled(false)
+      cy.boxSelectionEnabled(true)
+    }
+  },
+  () => {
+    // Re-enable panning but keep the selection visible so the user can crop.
+    selectionMode.value = 'pan'
+    if (cy) {
+      cy.userPanningEnabled(true)
+      cy.boxSelectionEnabled(false)
+    }
+  },
+)
+
+// Keep a stable reference to the container so we can detach in onUnmounted
+// (template refs are nulled before onUnmounted fires in Vue 3).
+let touchSelectEl: HTMLElement | null = null
+
+const legendEntries = computed(() => {
+  const seen = new Map<string, string>()
+  for (const node of props.nodes) {
+    if (!seen.has(node.class)) {
+      seen.set(node.class, props.classColors.get(node.class) ?? '#71717a')
+    }
+  }
+  return Array.from(seen.entries()).map(([iri, color]) => ({
+    iri,
+    label: iri.split(/[#/]/).pop() ?? iri,
+    color,
+  }))
+})
 
 const LOADING_STAGES = ['Querying endpoint', 'Traversing paths', 'Collecting results']
 const elapsedSeconds = ref(0)
@@ -292,7 +420,7 @@ function initCytoscape() {
           'text-outline-width': 1.5,
           'text-outline-color': 'rgba(0,0,0,0.3)',
           'transition-property': 'width height border-width border-color',
-          'transition-duration': 120,
+          'transition-duration': prefersReducedMotion() ? 0 : 120,
           'transition-timing-function': 'ease-out',
         },
       },
@@ -367,6 +495,15 @@ function initCytoscape() {
         selector: '.no-label',
         style: { label: '' },
       },
+      {
+        selector: '.dimmed',
+        style: {
+          opacity: 0.12,
+          'transition-property': 'opacity',
+          'transition-duration': 150,
+          'transition-timing-function': 'ease-out',
+        },
+      },
     ],
     layout: { name: 'preset' },
     userPanningEnabled: true,
@@ -405,7 +542,7 @@ function initCytoscape() {
     if (cyContainer.value) cyContainer.value.style.cursor = ''
   })
 
-  // Node click → emit event to parent
+  // Node click → emit + neighbourhood highlight
   cy.on('tap', 'node', (evt) => {
     const nodeData = evt.target.data() as {
       id: string
@@ -422,6 +559,27 @@ function initCytoscape() {
       isEndpoint: nodeData.isEndpoint,
     }
     emit('nodeClick', graphNode)
+
+    // Dim everything outside the immediate neighbourhood (pan mode only)
+    if (selectionMode.value === 'pan') {
+      cy!.startBatch()
+      cy!.elements().addClass('dimmed')
+      evt.target.closedNeighborhood().removeClass('dimmed')
+      cy!.endBatch()
+    }
+  })
+
+  // Tap on background clears neighbourhood highlight
+  cy.on('tap', (evt) => {
+    if (evt.target === cy) {
+      cy!.startBatch()
+      cy!.elements().removeClass('dimmed')
+      cy!.endBatch()
+    }
+  })
+
+  cy.on('zoom', () => {
+    zoomLevel.value = Math.round(cy!.zoom() * 100)
   })
 
   hasGraph.value = true
@@ -432,7 +590,7 @@ function runLayout() {
   layout?.stop()
   layout = cy.layout({
     name: 'd3-force',
-    animate: true,
+    animate: !prefersReducedMotion(),
     // Required: tell forceLink to use the node's `id` field instead of
     // its array index (the plugin only sets this when linkId is defined).
     linkId: (d: { id: string }) => d.id,
@@ -461,6 +619,11 @@ function zoomIn() {
 function zoomOut() {
   cy?.zoom(cy.zoom() / 1.2)
 }
+function resetZoom() {
+  if (!cy) return
+  cy.zoom(1)
+  cy.center()
+}
 function fitGraph() {
   cy?.fit(undefined, 40)
 }
@@ -469,12 +632,16 @@ function rerunLayout() {
 }
 
 function restoreLabels() {
-  cy?.nodes().removeClass('no-label')
+  if (!cy) return
+  cy.startBatch()
+  cy.nodes().removeClass('no-label')
   if (showEdgeLabels.value) {
-    cy?.edges().removeClass('no-label')
+    cy.edges().removeClass('no-label')
   } else {
-    cy?.edges().addClass('no-label')
+    cy.edges().addClass('no-label')
   }
+  cy.elements().removeClass('dimmed')
+  cy.endBatch()
 }
 
 function cropToSelection() {
@@ -482,8 +649,10 @@ function cropToSelection() {
   const selected = cy.elements(':selected')
   if (selected.length === 0) return
   cropHistory.value.push(cy.elements().jsons() as cytoscape.ElementDefinition[])
+  cy.startBatch()
   cy.elements().not(':selected').remove()
   cy.elements().unselect()
+  cy.endBatch()
   hasSelection.value = false
   restoreLabels()
 }
@@ -491,8 +660,10 @@ function cropToSelection() {
 function undoCrop() {
   if (!cy || cropHistory.value.length === 0) return
   const snapshot = cropHistory.value.pop()!
+  cy.startBatch()
   cy.elements().remove()
   cy.add(snapshot)
+  cy.endBatch()
   hasSelection.value = false
   restoreLabels()
 }
@@ -550,9 +721,24 @@ watch(
 
 onMounted(() => {
   if (props.nodes.length > 0) initCytoscape()
+
+  if (cyContainer.value) {
+    resizeObserver = new ResizeObserver(() => {
+      cy?.resize()
+    })
+    resizeObserver.observe(cyContainer.value)
+    touchSelectEl = cyContainer.value
+    attachTouchSelect(touchSelectEl)
+  }
 })
 
 onUnmounted(() => {
+  if (touchSelectEl) {
+    detachTouchSelect(touchSelectEl)
+    touchSelectEl = null
+  }
+  resizeObserver?.disconnect()
+  resizeObserver = null
   layout?.stop()
   layout = null
   cy?.destroy()
@@ -563,8 +749,7 @@ onUnmounted(() => {
   }
 })
 
-// Expose palette so parent can assign colours consistently
-defineExpose({ PALETTE })
+defineExpose({ PALETTE, zoomIn, zoomOut, fitGraph, rerunLayout, toggleEdgeLabels })
 </script>
 
 <style scoped>
@@ -578,6 +763,8 @@ defineExpose({ PALETTE })
 .cy-container {
   width: 100%;
   height: 100%;
+  touch-action: none;
+  user-select: none;
   opacity: 1;
   transition: opacity var(--rf-duration-base) var(--rf-ease-out);
 }
@@ -793,8 +980,8 @@ defineExpose({ PALETTE })
 
 .canvas-toolbar {
   position: absolute;
-  bottom: var(--rf-space-4);
-  right: var(--rf-space-4);
+  bottom: calc(var(--rf-space-4) + env(safe-area-inset-bottom, 0px));
+  right: calc(var(--rf-space-4) + env(safe-area-inset-right, 0px));
   display: flex;
   align-items: center;
   gap: var(--rf-space-1);
@@ -803,5 +990,138 @@ defineExpose({ PALETTE })
   border-radius: var(--rf-radius-lg);
   padding: var(--rf-space-1);
   box-shadow: var(--rf-shadow-md);
+}
+
+@media (max-width: 767px) {
+  .canvas-toolbar {
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%);
+    gap: 2px;
+    padding: 2px;
+  }
+
+  .canvas-toolbar :deep(button) {
+    min-width: 36px;
+    min-height: 44px;
+  }
+
+  .zoom-level-btn {
+    min-width: 40px;
+  }
+}
+
+.canvas-toolbar :deep(button) {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.zoom-level-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 52px;
+  min-height: 44px;
+  padding: 0 var(--rf-space-2);
+  background: transparent;
+  border: none;
+  border-radius: var(--rf-radius-sm);
+  font-family: var(--rf-font-mono);
+  font-size: var(--rf-text-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--rf-text-muted);
+  cursor: pointer;
+  transition: color var(--rf-duration-fast) var(--rf-ease-out);
+}
+
+.zoom-level-btn:hover {
+  color: var(--rf-text);
+  background: var(--rf-surface-raised);
+}
+
+.graph-legend {
+  position: absolute;
+  top: var(--rf-space-4);
+  left: var(--rf-space-4);
+  background: var(--rf-surface);
+  border: 1px solid var(--rf-border);
+  border-radius: var(--rf-radius-md);
+  box-shadow: var(--rf-shadow-sm);
+  padding: var(--rf-space-2) var(--rf-space-3);
+  min-width: 120px;
+  max-width: 180px;
+  z-index: 5;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.graph-legend:active {
+  cursor: grabbing;
+}
+
+.legend-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: inherit;
+  gap: var(--rf-space-2);
+  min-height: 32px;
+}
+
+.legend-title {
+  font-size: var(--rf-text-xs);
+  font-weight: var(--rf-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--rf-text-subtle);
+}
+
+.legend-toggle .pi {
+  font-size: 0.6rem;
+  color: var(--rf-text-subtle);
+}
+
+.legend-list {
+  list-style: none;
+  margin: var(--rf-space-2) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--rf-space-2);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: var(--rf-space-2);
+}
+
+.legend-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.legend-label {
+  font-size: var(--rf-text-xs);
+  color: var(--rf-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.legend-fade-enter-active,
+.legend-fade-leave-active {
+  transition: opacity var(--rf-duration-base) var(--rf-ease-out);
+}
+.legend-fade-enter-from,
+.legend-fade-leave-to {
+  opacity: 0;
 }
 </style>

@@ -44,6 +44,7 @@
       v-if="parseError"
       severity="error"
       :closable="true"
+      :pt="{ root: { role: 'alert' } }"
       @close="parseError = ''"
       data-testid="parse-error-msg"
     >

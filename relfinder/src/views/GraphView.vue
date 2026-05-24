@@ -1,7 +1,11 @@
 <template>
   <div class="graph-view">
     <!-- ── Sidebar ──────────────────────────────────────────────────────────── -->
-    <aside class="sidebar" :class="{ 'sidebar--collapsed': sidebarCollapsed }">
+    <aside
+      class="sidebar"
+      :class="{ 'sidebar--collapsed': sidebarCollapsed }"
+      aria-label="Navigation sidebar"
+    >
       <div class="sidebar-header">
         <div v-show="!sidebarCollapsed" class="header-left">
           <span class="app-brand">RelFinder</span>
@@ -38,7 +42,7 @@
         </div>
       </div>
 
-      <nav v-show="!sidebarCollapsed" class="sidebar-nav">
+      <nav v-show="!sidebarCollapsed" class="sidebar-nav" aria-label="View switcher">
         <button
           class="view-tab"
           @click="router.push({ name: 'browse' })"
@@ -95,7 +99,13 @@
             data-testid="find-relationships-btn"
             @click="onFindRelationships"
           />
-          <Message v-if="searchError" severity="error" :closable="true" @close="searchError = ''">
+          <Message
+            v-if="searchError"
+            severity="error"
+            :closable="true"
+            :pt="{ root: { role: 'alert' } }"
+            @close="searchError = ''"
+          >
             {{ searchError }}
           </Message>
         </section>
@@ -192,9 +202,28 @@
       </div>
     </aside>
 
+    <!-- ── Mobile backdrop ──────────────────────────────────────────────────────── -->
+    <Transition name="backdrop">
+      <div
+        v-if="isMobile && !sidebarCollapsed"
+        class="sidebar-backdrop"
+        aria-hidden="true"
+        @click="sidebarCollapsed = true"
+      />
+    </Transition>
+
     <!-- ── Graph canvas ─────────────────────────────────────────────────────── -->
-    <main class="graph-main">
+    <main id="main-content" class="graph-main">
+      <button
+        v-if="isMobile && sidebarCollapsed"
+        class="mobile-menu-btn"
+        aria-label="Open menu"
+        @click="sidebarCollapsed = false"
+      >
+        <i class="pi pi-bars" />
+      </button>
       <GraphCanvas
+        ref="graphCanvasRef"
         :nodes="displayNodes"
         :edges="displayEdges"
         :loading="searching"
@@ -205,6 +234,7 @@
         :entity2-label="entity2?.label"
         @node-click="selectedNode = $event"
       />
+      <FirstRunTip />
     </main>
 
     <!-- ── Node detail drawer ───────────────────────────────────────────────── -->
@@ -213,14 +243,17 @@
       :language="graphOptions.language"
       @update:node="selectedNode = $event"
     />
+
+    <ShortcutsModal v-model:visible="showShortcuts" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed, onMounted, nextTick } from 'vue'
+import { ref, watch, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import { useDarkMode } from '@/composables/useDarkMode'
+import { useBreakpoint } from '@/composables/useBreakpoint'
 import Divider from 'primevue/divider'
 import Message from 'primevue/message'
 import Tag from 'primevue/tag'
@@ -243,10 +276,14 @@ import OptionsPanel from '@/components/graph/OptionsPanel.vue'
 import type { GraphOptions } from '@/components/graph/OptionsPanel.vue'
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
 import NodeDetail from '@/components/graph/NodeDetail.vue'
+import ShortcutsModal from '@/components/common/ShortcutsModal.vue'
+import FirstRunTip from '@/components/common/FirstRunTip.vue'
+import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
 
 const router = useRouter()
 const connectionStore = useConnectionStore()
 const { dark, toggle: toggleDark } = useDarkMode()
+const { isMobile } = useBreakpoint()
 
 // ── State ─────────────────────────────────────────────────────────────────────
 
@@ -268,8 +305,26 @@ const graph = ref<RelationshipGraph | null>(null)
 const searching = ref(false)
 const searchError = ref('')
 const selectedNode = ref<GraphNode | null>(null)
-const sidebarCollapsed = ref(false)
+const sidebarCollapsed = ref(isMobile.value)
 const optionsOpen = ref(false)
+const showShortcuts = ref(false)
+const graphCanvasRef = ref<InstanceType<typeof GraphCanvas> | null>(null)
+
+watch(isMobile, (mobile) => {
+  if (mobile) sidebarCollapsed.value = true
+})
+
+useKeyboardShortcuts({
+  zoomIn: () => graphCanvasRef.value?.zoomIn(),
+  zoomOut: () => graphCanvasRef.value?.zoomOut(),
+  fit: () => graphCanvasRef.value?.fitGraph(),
+  layout: () => graphCanvasRef.value?.rerunLayout(),
+  toggleLabels: () => graphCanvasRef.value?.toggleEdgeLabels(),
+  help: () => {
+    showShortcuts.value = true
+  },
+})
+
 const recentOpen = ref(true)
 const recentGraphs = ref<GraphHistoryMeta[]>([])
 const entitySearchKey = ref(0)
@@ -427,7 +482,8 @@ async function onFindRelationships() {
     )
 
     if (graph.value.nodes.length === 0) {
-      searchError.value = 'No relationships found between the selected entities.'
+      searchError.value =
+        'No relationships found. Try increasing Max Depth, or select different entities.'
     } else {
       // Persist for future sessions
       saveGraph(
@@ -444,7 +500,7 @@ async function onFindRelationships() {
     searchError.value =
       err instanceof Error
         ? `Query failed: ${err.message}`
-        : 'An unexpected error occurred. Check the browser console for details.'
+        : 'An unexpected error occurred. Try again or check your network connection.'
   } finally {
     searching.value = false
   }
@@ -457,9 +513,22 @@ function onDisconnect() {
   router.push({ name: 'connection' })
 }
 
+// ── Escape key closes mobile sidebar ─────────────────────────────────────────
+
+function onEscKey(e: KeyboardEvent) {
+  if (e.key === 'Escape' && isMobile.value && !sidebarCollapsed.value) {
+    sidebarCollapsed.value = true
+  }
+}
+
+onUnmounted(() => {
+  document.removeEventListener('keydown', onEscKey)
+})
+
 // ── Auto-run when entities are preset (from browse or examples panel) ────────
 
 onMounted(() => {
+  document.addEventListener('keydown', onEscKey)
   refreshRecent()
 
   if (!_historyExample) return
@@ -513,7 +582,7 @@ function shortIri(iri: string): string {
 <style scoped>
 .graph-view {
   display: flex;
-  height: 100vh;
+  height: 100dvh;
   overflow: hidden;
   background: var(--rf-bg);
 }
@@ -568,6 +637,7 @@ function shortIri(iri: string): string {
 
 .view-tab {
   flex: 1;
+  min-height: 44px;
   padding: var(--rf-space-2) 0;
   font-size: var(--rf-text-sm);
   font-weight: var(--rf-weight-medium);
@@ -716,6 +786,95 @@ function shortIri(iri: string): string {
   flex: 1;
   position: relative;
   overflow: hidden;
+}
+
+/* ── Responsive: mobile overlay drawer ───────────────────────────────────── */
+
+@media (max-width: 767px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: min(300px, 85vw);
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    transform: translateX(-100%);
+    transition: transform var(--rf-duration-base) var(--rf-ease-out);
+    z-index: 100;
+  }
+
+  .sidebar:not(.sidebar--collapsed) {
+    transform: translateX(0);
+  }
+
+  .sidebar--collapsed {
+    width: min(300px, 85vw);
+  }
+}
+
+/* ── Responsive: tablet+ — restore in-flow layout ───────────────────────── */
+
+@media (min-width: 768px) {
+  .sidebar {
+    position: relative;
+    width: 300px;
+    transform: none !important;
+    flex-shrink: 0;
+    transition: width var(--rf-duration-base) var(--rf-ease-out);
+  }
+
+  .sidebar--collapsed {
+    width: 52px;
+  }
+
+  .mobile-menu-btn {
+    display: none;
+  }
+}
+
+/* ── Backdrop ─────────────────────────────────────────────────────────────── */
+
+.sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 99;
+  background: rgb(0 0 0 / 0.45);
+}
+
+.backdrop-enter-active,
+.backdrop-leave-active {
+  transition: opacity var(--rf-duration-base) var(--rf-ease-out);
+}
+
+.backdrop-enter-from,
+.backdrop-leave-to {
+  opacity: 0;
+}
+
+/* ── Mobile menu button ───────────────────────────────────────────────────── */
+
+.mobile-menu-btn {
+  position: absolute;
+  top: calc(var(--rf-space-3) + env(safe-area-inset-top, 0px));
+  left: calc(var(--rf-space-3) + env(safe-area-inset-left, 0px));
+  z-index: 50;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: var(--rf-radius-md);
+  background: var(--rf-surface);
+  color: var(--rf-text);
+  box-shadow: var(--rf-shadow-md);
+  cursor: pointer;
+  transition: background var(--rf-duration-fast) var(--rf-ease-out);
+}
+
+.mobile-menu-btn:hover {
+  background: var(--rf-surface-raised);
 }
 
 /* ── Recent graphs ────────────────────────────────────────────────────────── */

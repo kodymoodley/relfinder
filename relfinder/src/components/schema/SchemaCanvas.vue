@@ -19,6 +19,8 @@
       ref="cyContainer"
       class="cy-container"
       :class="{ hidden: props.nodes.length === 0 }"
+      role="application"
+      aria-label="Schema graph — use mouse or touch to pan, zoom, and click nodes"
       data-testid="schema-canvas"
     />
 
@@ -136,6 +138,14 @@
         data-testid="zoom-out-btn"
         @click="zoomOut"
       />
+      <button
+        v-tooltip.top="'Reset zoom to 100%'"
+        class="zoom-level-btn"
+        aria-label="Reset zoom to 100%"
+        @click="resetZoom"
+      >
+        {{ zoomLevel }}%
+      </button>
       <Button
         v-tooltip.top="'Fit to screen'"
         icon="pi pi-arrows-alt"
@@ -175,6 +185,7 @@
 
 <script setup lang="ts">
 import { ref, watch, computed, onMounted, onUnmounted } from 'vue'
+import { prefersReducedMotion } from '@/composables/useReducedMotion'
 import cytoscape from 'cytoscape'
 import type { Core, Layouts } from 'cytoscape'
 import d3Force from 'cytoscape-d3-force'
@@ -207,6 +218,7 @@ const connectionStore = useConnectionStore()
 const cyContainer = ref<HTMLElement | null>(null)
 let cy: Core | null = null
 let layout: Layouts | null = null
+let resizeObserver: ResizeObserver | null = null
 let renderedNodeCount = 0
 let renderedEdgeCount = 0
 // IRI of the last node that was actually rendered — used to detect whether
@@ -216,6 +228,7 @@ let renderedEdgeCount = 0
 let lastRenderedNodeIri = ''
 
 const showEdgeLabels = ref(false)
+const zoomLevel = ref(100)
 
 // ── Tooltip state ─────────────────────────────────────────────────────────────
 
@@ -366,7 +379,7 @@ function initCytoscape() {
           'text-outline-width': 1.5,
           'text-outline-color': 'rgba(0,0,0,0.3)',
           'transition-property': 'width height border-width border-color',
-          'transition-duration': 120,
+          'transition-duration': prefersReducedMotion() ? 0 : 120,
           'transition-timing-function': 'ease-out',
         },
       },
@@ -441,10 +454,12 @@ function addNewNodes() {
   if (!cy) return
   const newNodes = props.nodes.slice(renderedNodeCount)
   if (newNodes.length === 0) return
+  cy.startBatch()
   cy.add(newNodes.map((n) => ({ data: { id: n.iri, label: n.label, iri: n.iri } })))
   renderedNodeCount = props.nodes.length
   lastRenderedNodeIri = props.nodes[renderedNodeCount - 1]?.iri ?? ''
   addNewEdges()
+  cy.endBatch()
 }
 
 // ── Incremental edge addition ─────────────────────────────────────────────────
@@ -533,6 +548,40 @@ function attachHandlers() {
     const edge = props.edges.find((ed) => ed.sourceIri === sourceIri && ed.targetIri === targetIri)
     if (edge) emit('edgeClick', edge)
   })
+
+  // Touch equivalent for hover tooltip — long-press shows, tap-off hides
+  cy.on('taphold', 'node', (e) => {
+    const rp = e.renderedPosition
+    tooltipX.value = rp.x + 16
+    tooltipY.value = rp.y + 16
+    const { iri } = e.target.data() as { iri: string }
+    hoveredNodeIri.value = iri
+    hoveredEdge.value = null
+    tooltipVisible.value = true
+    if (!schemaStore.dataPropsCache.has(iri) && !schemaStore.dataPropsLoading.has(iri)) {
+      const context = connectionStore.queryContext ?? { endpointUrl: '' }
+      const store = connectionStore.rdfStore ?? undefined
+      schemaStore.fetchDataProps(iri, context, store).catch(() => {})
+    }
+  })
+
+  cy.on('taphold', 'edge', (e) => {
+    const rp = e.renderedPosition
+    tooltipX.value = rp.x + 16
+    tooltipY.value = rp.y + 16
+    const { sourceIri, targetIri } = e.target.data() as { sourceIri: string; targetIri: string }
+    hoveredEdge.value = { sourceIri, targetIri }
+    hoveredNodeIri.value = null
+    tooltipVisible.value = true
+  })
+
+  cy.on('tap', (e) => {
+    if (e.target === cy) tooltipVisible.value = false
+  })
+
+  cy.on('zoom', () => {
+    zoomLevel.value = Math.round(cy!.zoom() * 100)
+  })
 }
 
 // ── Layout ────────────────────────────────────────────────────────────────────
@@ -542,7 +591,7 @@ function runLayout() {
   layout?.stop()
   layout = cy.layout({
     name: 'd3-force',
-    animate: true,
+    animate: !prefersReducedMotion(),
     linkId: (d: { id: string }) => d.id,
     linkDistance: 150,
     manyBodyStrength: -800,
@@ -554,7 +603,7 @@ function runLayout() {
   } as Parameters<Core['layout']>[0])
   layout.run()
   // Fit once after nodes have spread out; subsequent zoom/pan is user-controlled
-  setTimeout(() => cy?.fit(undefined, 40), 800)
+  setTimeout(() => cy?.fit(undefined, 40), prefersReducedMotion() ? 0 : 800)
 }
 
 // ── Toolbar actions ───────────────────────────────────────────────────────────
@@ -564,6 +613,11 @@ function zoomIn() {
 }
 function zoomOut() {
   cy?.zoom(cy.zoom() / 1.2)
+}
+function resetZoom() {
+  if (!cy) return
+  cy.zoom(1)
+  cy.center()
 }
 function fitGraph() {
   cy?.fit(undefined, 40)
@@ -614,14 +668,25 @@ watch(
 
 onMounted(() => {
   if (props.nodes.length > 0) initCytoscape()
+
+  if (cyContainer.value) {
+    resizeObserver = new ResizeObserver(() => {
+      cy?.resize()
+    })
+    resizeObserver.observe(cyContainer.value)
+  }
 })
 
 onUnmounted(() => {
+  resizeObserver?.disconnect()
+  resizeObserver = null
   layout?.stop()
   layout = null
   cy?.destroy()
   cy = null
 })
+
+defineExpose({ zoomIn, zoomOut, fitGraph, rerunLayout, toggleEdgeLabels })
 </script>
 
 <style scoped>
@@ -635,6 +700,8 @@ onUnmounted(() => {
 .cy-container {
   width: 100%;
   height: 100%;
+  touch-action: none;
+  user-select: none;
 }
 
 .cy-container.hidden {
@@ -837,8 +904,8 @@ onUnmounted(() => {
 
 .canvas-toolbar {
   position: absolute;
-  bottom: var(--rf-space-4);
-  right: var(--rf-space-4);
+  bottom: calc(var(--rf-space-4) + env(safe-area-inset-bottom, 0px));
+  right: calc(var(--rf-space-4) + env(safe-area-inset-right, 0px));
   display: flex;
   align-items: center;
   gap: var(--rf-space-1);
@@ -847,5 +914,52 @@ onUnmounted(() => {
   border-radius: var(--rf-radius-lg);
   padding: var(--rf-space-1);
   box-shadow: var(--rf-shadow-md);
+}
+
+@media (max-width: 767px) {
+  .canvas-toolbar {
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%);
+    gap: 2px;
+    padding: 2px;
+  }
+
+  .canvas-toolbar :deep(button) {
+    min-width: 36px;
+    min-height: 44px;
+  }
+
+  .zoom-level-btn {
+    min-width: 40px;
+  }
+}
+
+.canvas-toolbar :deep(button) {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.zoom-level-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 52px;
+  min-height: 44px;
+  padding: 0 var(--rf-space-2);
+  background: transparent;
+  border: none;
+  border-radius: var(--rf-radius-sm);
+  font-family: var(--rf-font-mono);
+  font-size: var(--rf-text-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--rf-text-muted);
+  cursor: pointer;
+  transition: color var(--rf-duration-fast) var(--rf-ease-out);
+}
+
+.zoom-level-btn:hover {
+  color: var(--rf-text);
+  background: var(--rf-surface-raised);
 }
 </style>
