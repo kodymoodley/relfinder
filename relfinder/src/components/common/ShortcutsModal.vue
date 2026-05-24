@@ -52,10 +52,6 @@ const SHORTCUT_GROUPS = [
   padding: var(--rf-space-5) var(--rf-space-6);
 }
 
-:deep(.p-dialog-header) {
-  padding-top: var(--rf-space-5);
-  padding-left: var(--rf-space-6);
-}
 
 .shortcut-group {
   display: flex;
@@ -106,5 +102,12 @@ const SHORTCUT_GROUPS = [
 .shortcut-desc {
   font-size: var(--rf-text-sm);
   color: var(--rf-text-muted);
+}
+</style>
+
+<style>
+.shortcuts-dialog .p-dialog-header {
+  padding-top: var(--rf-space-5);
+  padding-left: var(--rf-space-6);
 }
 </style>

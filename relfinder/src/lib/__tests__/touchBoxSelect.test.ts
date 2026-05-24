@@ -88,7 +88,9 @@ function mockNode(x: number, y: number): MockNode {
     _isSelected: false,
     renderedPosition: () => ({ x, y }),
     selected: () => node._isSelected,
-    select: vi.fn(() => { node._isSelected = true }),
+    select: vi.fn(() => {
+      node._isSelected = true
+    }),
   } as unknown as MockNode
   return node
 }
@@ -429,7 +431,12 @@ describe('edge selection', () => {
     const edge = mockEdge(n1, n2)
     const cy = mockCy([n1, n2], [edge])
 
-    const { attach } = useTouchBoxSelect(() => cy, () => container, onEnterSelect, onExitSelect)
+    const { attach } = useTouchBoxSelect(
+      () => cy,
+      () => container,
+      onEnterSelect,
+      onExitSelect,
+    )
     attach(container)
 
     touchStart(container, 0, 0)
@@ -441,12 +448,17 @@ describe('edge selection', () => {
   })
 
   it('does NOT select an edge when only one endpoint is inside the box', () => {
-    const inside  = mockNode(20, 20)
+    const inside = mockNode(20, 20)
     const outside = mockNode(200, 200)
     const edge = mockEdge(inside, outside)
     const cy = mockCy([inside, outside], [edge])
 
-    const { attach } = useTouchBoxSelect(() => cy, () => container, onEnterSelect, onExitSelect)
+    const { attach } = useTouchBoxSelect(
+      () => cy,
+      () => container,
+      onEnterSelect,
+      onExitSelect,
+    )
     attach(container)
 
     touchStart(container, 0, 0)
@@ -465,7 +477,12 @@ describe('edge selection', () => {
     const edge = mockEdge(n1, n2)
     const cy = mockCy([n1, n2], [edge])
 
-    const { attach } = useTouchBoxSelect(() => cy, () => container, onEnterSelect, onExitSelect)
+    const { attach } = useTouchBoxSelect(
+      () => cy,
+      () => container,
+      onEnterSelect,
+      onExitSelect,
+    )
     attach(container)
 
     touchStart(container, 0, 0)
