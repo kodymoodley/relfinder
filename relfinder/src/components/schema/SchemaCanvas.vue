@@ -539,11 +539,13 @@ function attachHandlers() {
   })
 
   cy.on('tap', 'node', (e) => {
+    tooltipVisible.value = false
     const { iri, label } = e.target.data() as { iri: string; label: string }
     emit('nodeClick', { iri, label })
   })
 
   cy.on('tap', 'edge', (e) => {
+    tooltipVisible.value = false
     const { sourceIri, targetIri } = e.target.data() as { sourceIri: string; targetIri: string }
     const edge = props.edges.find((ed) => ed.sourceIri === sourceIri && ed.targetIri === targetIri)
     if (edge) emit('edgeClick', edge)
