@@ -34,6 +34,27 @@
         </div>
         <p v-else-if="instances.length === 0" class="list-empty">No instances found.</p>
         <template v-else>
+          <!-- Search filter -->
+          <div class="instance-search-wrap">
+            <i class="pi pi-search instance-search-icon" />
+            <input
+              ref="instanceSearchRef"
+              v-model="instanceSearch"
+              class="instance-search-input"
+              placeholder="Filter instances…"
+              autocomplete="off"
+            />
+            <button
+              v-if="instanceSearch"
+              class="instance-search-clear"
+              aria-label="Clear filter"
+              @click="instanceSearch = ''; nextTick(() => instanceSearchRef?.focus())"
+            >
+              <i class="pi pi-times" />
+            </button>
+          </div>
+          <p v-if="filteredInstances.length === 0" class="list-empty">No matches.</p>
+
           <!-- Start entity chip — persists across class selections -->
           <div v-if="pendingStart" class="start-chip">
             <span class="start-dot" />
@@ -45,7 +66,7 @@
           <p v-if="pendingStart" class="start-hint">Pick a destination:</p>
           <ul class="instance-list">
             <li
-              v-for="inst in instances.slice(0, 20)"
+              v-for="inst in filteredInstances"
               :key="inst.iri"
               class="instance-item"
               :class="{
@@ -209,7 +230,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onUnmounted } from 'vue'
+import { ref, computed, watch, onUnmounted, nextTick } from 'vue'
 import Drawer from 'primevue/drawer'
 import Tag from 'primevue/tag'
 import DataTable from 'primevue/datatable'
@@ -239,6 +260,8 @@ const emit = defineEmits<{
 
 const pendingStart = ref<{ iri: string; label: string; class: string } | null>(null)
 const expandedInstances = ref<Set<string>>(new Set())
+const instanceSearch = ref('')
+const instanceSearchRef = ref<HTMLInputElement | null>(null)
 
 // ── Dwell tracking ────────────────────────────────────────────────────────────
 
@@ -297,6 +320,7 @@ watch(
   () => props.selectedNode,
   (node, prev) => {
     if (prev) commitDwell()
+    instanceSearch.value = ''
     if (!node) return
     const context = connectionStore.queryContext ?? { endpointUrl: '' }
     const store = connectionStore.rdfStore ?? connectionStore.localRdfStore ?? undefined
@@ -364,6 +388,12 @@ const loadingInstances = computed(() =>
 const instances = computed(() =>
   props.selectedNode ? (schemaStore.instancesCache.get(props.selectedNode.iri) ?? []) : [],
 )
+
+const filteredInstances = computed(() => {
+  const q = instanceSearch.value.trim().toLowerCase()
+  if (!q) return instances.value.slice(0, 20)
+  return instances.value.filter((i) => i.label.toLowerCase().includes(q)).slice(0, 20)
+})
 
 const objectProps = computed(() => {
   if (!props.selectedNode) return []
@@ -762,5 +792,64 @@ const incoming = computed(() => {
   font-size: var(--rf-text-xs);
   color: var(--rf-text-muted);
   font-style: italic;
+}
+
+.instance-search-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--rf-space-2);
+  padding: var(--rf-space-1) var(--rf-space-3);
+  background: var(--rf-surface-alt);
+  border: 1px solid var(--rf-border);
+  border-radius: var(--rf-radius-md);
+  margin-bottom: var(--rf-space-2);
+  transition: border-color var(--rf-duration-fast) var(--rf-ease-out);
+}
+
+.instance-search-wrap:focus-within {
+  border-color: var(--rf-primary);
+}
+
+.instance-search-icon {
+  color: var(--rf-text-subtle);
+  font-size: 0.7rem;
+  flex-shrink: 0;
+}
+
+.instance-search-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: var(--rf-text-xs);
+  color: var(--rf-text);
+  caret-color: var(--rf-primary);
+}
+
+.instance-search-input::placeholder {
+  color: var(--rf-text-subtle);
+}
+
+.instance-search-clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--rf-text-subtle);
+  padding: 2px;
+  border-radius: var(--rf-radius-sm);
+  line-height: 1;
+  flex-shrink: 0;
+  transition: color var(--rf-duration-fast) var(--rf-ease-out);
+}
+
+.instance-search-clear:hover {
+  color: var(--rf-text);
+}
+
+.instance-search-clear .pi {
+  font-size: 0.6rem;
 }
 </style>
