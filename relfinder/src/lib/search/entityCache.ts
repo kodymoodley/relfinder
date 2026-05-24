@@ -137,7 +137,6 @@ export function cacheAdd(
   interest: Map<string, InterestEntry> = new Map(),
 ): void {
   if (entities.length === 0) return
-  const now = Date.now()
   const added: CachedEntity[] = []
   for (const entity of entities) {
     const existing = _entities.get(entity.iri)
