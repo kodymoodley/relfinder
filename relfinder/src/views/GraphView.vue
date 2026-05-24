@@ -306,7 +306,9 @@ const graph = ref<RelationshipGraph | null>(null)
 const searching = ref(false)
 const searchError = ref('')
 const selectedNode = ref<GraphNode | null>(null)
-watch(selectedNode, (node) => { if (node) recordView(node.iri) })
+watch(selectedNode, (node) => {
+  if (node) recordView(node.iri)
+})
 
 const sidebarCollapsed = ref(isMobile.value)
 const optionsOpen = ref(false)

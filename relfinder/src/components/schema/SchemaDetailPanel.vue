@@ -48,7 +48,7 @@
               v-if="instanceSearch"
               class="instance-search-clear"
               aria-label="Clear filter"
-              @click="instanceSearch = ''; nextTick(() => instanceSearchRef?.focus())"
+              @click="clearInstanceSearch"
             >
               <i class="pi pi-times" />
             </button>
@@ -262,6 +262,11 @@ const pendingStart = ref<{ iri: string; label: string; class: string } | null>(n
 const expandedInstances = ref<Set<string>>(new Set())
 const instanceSearch = ref('')
 const instanceSearchRef = ref<HTMLInputElement | null>(null)
+
+function clearInstanceSearch() {
+  instanceSearch.value = ''
+  nextTick(() => instanceSearchRef.value?.focus())
+}
 
 // ── Dwell tracking ────────────────────────────────────────────────────────────
 
