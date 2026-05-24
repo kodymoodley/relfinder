@@ -75,6 +75,11 @@ import { searchEntities } from '@/lib/sparql/entitySearch'
 import type { EntitySearchResult } from '@/lib/sparql/types'
 import { shortIri } from '@/lib/utils/iri'
 import { cacheGet, cacheSet } from '@/lib/cache/queryCache'
+import { cacheAdd } from '@/lib/search/entityCache'
+import { useSearchIndex } from '@/composables/useSearchIndex'
+import { weightedSumFusion } from '@/lib/search/fusion/weightedSum'
+import { snapshot } from '@/lib/search/interestModel'
+import { searchConfig } from '@/lib/search/strategyRegistry'
 
 const props = defineProps<{
   id: string
@@ -93,6 +98,7 @@ const emit = defineEmits<{
 }>()
 
 const connectionStore = useConnectionStore()
+const { search: searchIndex } = useSearchIndex()
 
 // Separate refs: inputText drives the AutoComplete input; selectedEntity drives
 // the chip. Using v-if on the AutoComplete means these never conflict.
@@ -122,47 +128,86 @@ async function runSearch(query: string) {
   }
 
   try {
-    const context = connectionStore.queryContext
-    const store = connectionStore.rdfStore ?? undefined
-    const effectiveContext = context ?? { endpointUrl: '' }
-    const lang = props.language ?? 'en'
-    const classes = props.allowedClasses ?? []
-    const cacheKey = `search:${effectiveContext.endpointUrl}:${lang}:${classes.join(',')}:${query}`
-
-    const cached = cacheGet<EntitySearchResult[]>(cacheKey)
-    if (cached) {
-      suggestions.value = cached
+    if (searchConfig.indexEnabled) {
+      await runLocalSearch(query)
     } else {
-      const results = await searchEntities(
-        effectiveContext,
-        classes,
-        store,
-        50,
-        query,
-        lang,
-        props.customLabelProperties ?? [],
-      )
-      cacheSet(cacheKey, results)
-      suggestions.value = results
+      await runSparqlSearch(query)
     }
-
-    if (suggestions.value.length === 0) {
-      statusMessage.value = `No results for "${query}"`
-    } else {
-      statusMessage.value = `${suggestions.value.length} result${suggestions.value.length === 1 ? '' : 's'} for "${query}"`
-    }
-    statusClearTimer = setTimeout(() => {
-      statusMessage.value = ''
-    }, 3000)
   } catch {
     suggestions.value = []
     statusMessage.value = 'Search failed — check your connection'
-    statusClearTimer = setTimeout(() => {
-      statusMessage.value = ''
-    }, 4000)
+    statusClearTimer = setTimeout(() => { statusMessage.value = '' }, 4000)
   } finally {
     searching.value = false
   }
+}
+
+async function runLocalSearch(query: string): Promise<void> {
+  const classes = props.allowedClasses ?? []
+  const raw = await searchIndex(query, 50, classes.length > 0 ? classes : undefined)
+  const fused = weightedSumFusion.fuse(raw, [], snapshot())
+  suggestions.value = fused.map((e) => ({ iri: e.iri, label: e.label, class: e.classIri }))
+
+  if (suggestions.value.length === 0 && classes.length > 0) {
+    // No local hits for a class-scoped search — fall back to a targeted SPARQL query
+    // so the user always gets results while the cache warms up.
+    await runSparqlSearch(query)
+    if (suggestions.value.length > 0) seedCacheFromResults(suggestions.value)
+    return
+  }
+
+  applyStatus(query)
+}
+
+async function runSparqlSearch(query: string): Promise<void> {
+  const context = connectionStore.queryContext
+  const store = connectionStore.rdfStore ?? undefined
+  const effectiveContext = context ?? { endpointUrl: '' }
+  const lang = props.language ?? 'en'
+  const classes = props.allowedClasses ?? []
+  const cacheKey = `search:${effectiveContext.endpointUrl}:${lang}:${classes.join(',')}:${query}`
+
+  const cached = cacheGet<EntitySearchResult[]>(cacheKey)
+  if (cached) {
+    suggestions.value = cached
+  } else {
+    const results = await searchEntities(
+      effectiveContext,
+      classes,
+      store,
+      50,
+      query,
+      lang,
+      props.customLabelProperties ?? [],
+    )
+    cacheSet(cacheKey, results)
+    suggestions.value = results
+  }
+
+  applyStatus(query)
+}
+
+function applyStatus(query: string): void {
+  const n = suggestions.value.length
+  statusMessage.value =
+    n === 0 ? `No results for "${query}"` : `${n} result${n === 1 ? '' : 's'} for "${query}"`
+  statusClearTimer = setTimeout(() => { statusMessage.value = '' }, 3000)
+}
+
+function seedCacheFromResults(results: EntitySearchResult[]): void {
+  const now = Date.now()
+  cacheAdd(
+    results.map((r) => ({
+      iri: r.iri,
+      label: r.label,
+      altLabels: [],
+      classIri: r.class,
+      classLabel: shortIri(r.class),
+      description: '',
+      addedAt: now,
+      lastAccessed: now,
+    })),
+  )
 }
 
 function onSelect(event: { value: EntitySearchResult }) {
