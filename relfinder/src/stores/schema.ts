@@ -65,11 +65,11 @@ export const useSchemaStore = defineStore('schema', () => {
   let _edgeLimit = 10
 
   function setDataPropsStatus(classIri: string, msg: string) {
-    dataPropsStatus.value = new Map(dataPropsStatus.value).set(classIri, msg)
+    dataPropsStatus.value.set(classIri, msg)
   }
 
   function setDescriptionStatus(classIri: string, msg: string) {
-    descriptionStatus.value = new Map(descriptionStatus.value).set(classIri, msg)
+    descriptionStatus.value.set(classIri, msg)
   }
 
   /** Snapshot current reactive state into the localStorage schema entry. */
@@ -142,8 +142,8 @@ export const useSchemaStore = defineStore('schema', () => {
       // Fresh start
       nodes.value = []
       edges.value = []
-      dataPropsCache.value = new Map()
-      descriptionCache.value = new Map()
+      dataPropsCache.value.clear()
+      descriptionCache.value.clear()
       progress.value = { completed: 0, total: 0 }
       lastBatchSize.value = 0
     }
@@ -164,7 +164,7 @@ export const useSchemaStore = defineStore('schema', () => {
         },
         {
           onDescriptionsLoaded(map) {
-            descriptionCache.value = new Map([...descriptionCache.value, ...map])
+            for (const [k, v] of map) descriptionCache.value.set(k, v)
           },
           onClassesLoaded(incoming) {
             lastBatchSize.value = incoming.length
@@ -174,7 +174,7 @@ export const useSchemaStore = defineStore('schema', () => {
             if (!isFileSource) persist(endpointUrl)
           },
           onEdgesLoaded(incoming) {
-            edges.value = [...edges.value, ...incoming]
+            edges.value.push(...incoming)
           },
           onProgress(completed, total) {
             progress.value = { completed, total }
@@ -238,17 +238,17 @@ export const useSchemaStore = defineStore('schema', () => {
         },
         {
           onDescriptionsLoaded(map) {
-            descriptionCache.value = new Map([...descriptionCache.value, ...map])
+            for (const [k, v] of map) descriptionCache.value.set(k, v)
           },
           onClassesLoaded(incoming) {
             lastBatchSize.value = incoming.length
-            nodes.value = [...nodes.value, ...incoming]
+            nodes.value.push(...incoming)
             progress.value = { completed: _processedSet.size, total: nodes.value.length }
             statusMessage.value = ''
             if (!isFileSource) persist(endpointUrl)
           },
           onEdgesLoaded(incoming) {
-            edges.value = [...edges.value, ...incoming]
+            edges.value.push(...incoming)
           },
           onProgress(completed, total) {
             progress.value = { completed, total }
@@ -291,14 +291,14 @@ export const useSchemaStore = defineStore('schema', () => {
     progress.value = { completed: 0, total: 0 }
     statusMessage.value = ''
     lastBatchSize.value = 0
-    dataPropsCache.value = new Map()
-    dataPropsLoading.value = new Set()
-    dataPropsStatus.value = new Map()
-    descriptionCache.value = new Map()
-    descriptionLoading.value = new Set()
-    descriptionStatus.value = new Map()
-    instancesLoading.value = new Set()
-    entityPropsLoading.value = new Set()
+    dataPropsCache.value.clear()
+    dataPropsLoading.value.clear()
+    dataPropsStatus.value.clear()
+    descriptionCache.value.clear()
+    descriptionLoading.value.clear()
+    descriptionStatus.value.clear()
+    instancesLoading.value.clear()
+    entityPropsLoading.value.clear()
     _processedSet.clear()
     _context = null
     _n3Store = undefined
@@ -314,21 +314,17 @@ export const useSchemaStore = defineStore('schema', () => {
     if (dataPropsCache.value.has(classIri)) return
     if (dataPropsLoading.value.has(classIri)) return
 
-    dataPropsLoading.value = new Set(dataPropsLoading.value).add(classIri)
+    dataPropsLoading.value.add(classIri)
     setDataPropsStatus(classIri, 'Querying endpoint…')
 
     try {
       const props = await fetchSchemaDataProperties(classIri, context, n3Store, 50, (msg) =>
         setDataPropsStatus(classIri, msg),
       )
-      dataPropsCache.value = new Map(dataPropsCache.value).set(classIri, props)
+      dataPropsCache.value.set(classIri, props)
     } finally {
-      const next = new Set(dataPropsLoading.value)
-      next.delete(classIri)
-      dataPropsLoading.value = next
-      const s = new Map(dataPropsStatus.value)
-      s.delete(classIri)
-      dataPropsStatus.value = s
+      dataPropsLoading.value.delete(classIri)
+      dataPropsStatus.value.delete(classIri)
     }
   }
 
@@ -342,19 +338,15 @@ export const useSchemaStore = defineStore('schema', () => {
     if (descriptionCache.value.has(classIri)) return
     if (descriptionLoading.value.has(classIri)) return
 
-    descriptionLoading.value = new Set(descriptionLoading.value).add(classIri)
+    descriptionLoading.value.add(classIri)
     setDescriptionStatus(classIri, 'Fetching description…')
 
     try {
       const text = await fetchClassDescription(classIri, context, n3Store)
-      descriptionCache.value = new Map(descriptionCache.value).set(classIri, text)
+      descriptionCache.value.set(classIri, text)
     } finally {
-      const next = new Set(descriptionLoading.value)
-      next.delete(classIri)
-      descriptionLoading.value = next
-      const s = new Map(descriptionStatus.value)
-      s.delete(classIri)
-      descriptionStatus.value = s
+      descriptionLoading.value.delete(classIri)
+      descriptionStatus.value.delete(classIri)
     }
   }
 
@@ -368,11 +360,11 @@ export const useSchemaStore = defineStore('schema', () => {
     if (instancesCache.value.has(classIri)) return
     if (instancesLoading.value.has(classIri)) return
 
-    instancesLoading.value = new Set(instancesLoading.value).add(classIri)
+    instancesLoading.value.add(classIri)
 
     try {
       const items = await fetchInstancesByClass(classIri, context, n3Store, 20)
-      instancesCache.value = new Map(instancesCache.value).set(classIri, items)
+      instancesCache.value.set(classIri, items)
       if (items.length > 0) {
         const classLabel = nodes.value.find((n) => n.iri === classIri)?.label ?? ''
         const now = Date.now()
@@ -390,9 +382,7 @@ export const useSchemaStore = defineStore('schema', () => {
         )
       }
     } finally {
-      const next = new Set(instancesLoading.value)
-      next.delete(classIri)
-      instancesLoading.value = next
+      instancesLoading.value.delete(classIri)
     }
   }
 
@@ -404,7 +394,7 @@ export const useSchemaStore = defineStore('schema', () => {
     const knownIris = new Set(existing.map((i) => i.iri))
     const novel = incoming.filter((i) => !knownIris.has(i.iri))
     if (novel.length === 0) return
-    instancesCache.value = new Map(instancesCache.value).set(classIri, [...existing, ...novel])
+    instancesCache.value.set(classIri, [...existing, ...novel])
     const classLabel = nodes.value.find((n) => n.iri === classIri)?.label ?? ''
     const now = Date.now()
     cacheAdd(
@@ -431,15 +421,13 @@ export const useSchemaStore = defineStore('schema', () => {
     if (entityPropsCache.value.has(entityIri)) return
     if (entityPropsLoading.value.has(entityIri)) return
 
-    entityPropsLoading.value = new Set(entityPropsLoading.value).add(entityIri)
+    entityPropsLoading.value.add(entityIri)
 
     try {
       const props = await fetchEntityProps(entityIri, context, n3Store)
-      entityPropsCache.value = new Map(entityPropsCache.value).set(entityIri, props)
+      entityPropsCache.value.set(entityIri, props)
     } finally {
-      const next = new Set(entityPropsLoading.value)
-      next.delete(entityIri)
-      entityPropsLoading.value = next
+      entityPropsLoading.value.delete(entityIri)
     }
   }
 
