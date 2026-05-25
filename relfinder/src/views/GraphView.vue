@@ -68,6 +68,7 @@
             :language="graphOptions.language"
             :custom-label-properties="graphOptions.customLabelProperties"
             :initial-entity="presetEntity1"
+            instances-only
             @select="entity1 = $event"
           />
         </section>
@@ -83,6 +84,7 @@
             :language="graphOptions.language"
             :custom-label-properties="graphOptions.customLabelProperties"
             :initial-entity="presetEntity2"
+            instances-only
             @select="entity2 = $event"
           />
         </section>

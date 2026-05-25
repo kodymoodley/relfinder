@@ -1,6 +1,6 @@
 import type { SchemaNode, SchemaEdge } from '@/lib/sparql/types'
 import type { CachedEntity } from './types'
-import { cacheHas, cacheAdd } from './entityCache'
+import { cacheHas, cacheAdd, cacheAll } from './entityCache'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -99,6 +99,11 @@ export function bootstrapFromSchema(
     }
   }
 
-  if (entities.length === 0) return
-  processInChunks(entities)
+  if (entities.length > 0) processInChunks(entities)
+
+  // Re-seed any entities already in the IDB-rehydrated cache (e.g. SPARQL-fetched
+  // instances from previous sessions). The search worker starts empty on every page
+  // load; these entities are in _entities but never passed through hooks.onAdd.
+  const existing = cacheAll()
+  if (existing.length > 0) processInChunks(existing)
 }

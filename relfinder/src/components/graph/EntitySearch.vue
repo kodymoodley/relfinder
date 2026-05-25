@@ -82,6 +82,26 @@ import { snapshot } from '@/lib/search/interestModel'
 import { searchConfig } from '@/lib/search/strategyRegistry'
 import { recordSelect } from '@/lib/search/interestModel'
 
+// RDF/OWL meta-types — entities typed as these are schema-level constructs,
+// not domain instances, and should be excluded from the Paths entity picker.
+const META_CLASS_IRIS = new Set([
+  'http://www.w3.org/2002/07/owl#Class',
+  'http://www.w3.org/2000/01/rdf-schema#Class',
+  'http://www.w3.org/1999/02/22-rdf-syntax-ns#Property',
+  'http://www.w3.org/2002/07/owl#ObjectProperty',
+  'http://www.w3.org/2002/07/owl#DatatypeProperty',
+  'http://www.w3.org/2002/07/owl#AnnotationProperty',
+  'http://www.w3.org/2002/07/owl#TransitiveProperty',
+  'http://www.w3.org/2002/07/owl#SymmetricProperty',
+  'http://www.w3.org/2002/07/owl#AsymmetricProperty',
+  'http://www.w3.org/2002/07/owl#ReflexiveProperty',
+  'http://www.w3.org/2002/07/owl#IrreflexiveProperty',
+  'http://www.w3.org/2002/07/owl#FunctionalProperty',
+  'http://www.w3.org/2002/07/owl#InverseFunctionalProperty',
+  'http://www.w3.org/2002/07/owl#Restriction',
+  'http://www.w3.org/2002/07/owl#Ontology',
+])
+
 const props = defineProps<{
   id: string
   label: string
@@ -90,6 +110,8 @@ const props = defineProps<{
   allowedClasses?: string[]
   language?: string
   customLabelProperties?: string[]
+  /** When true, schema-level constructs (classes, properties) are excluded from results. */
+  instancesOnly?: boolean
   /** Pre-fills the selection; when set the field is shown in a locked/disabled state. */
   initialEntity?: EntitySearchResult | null
 }>()
@@ -145,11 +167,18 @@ async function runSearch(query: string) {
   }
 }
 
+function filterInstances(results: EntitySearchResult[]): EntitySearchResult[] {
+  if (!props.instancesOnly) return results
+  return results.filter((r) => !META_CLASS_IRIS.has(r.class))
+}
+
 async function runLocalSearch(query: string): Promise<void> {
   const classes = props.allowedClasses ?? []
   const raw = await searchIndex(query, 50, classes.length > 0 ? classes : undefined)
   const fused = weightedSumFusion.fuse(raw, [], snapshot())
-  suggestions.value = fused.map((e) => ({ iri: e.iri, label: e.label, class: e.classIri }))
+  suggestions.value = filterInstances(
+    fused.map((e) => ({ iri: e.iri, label: e.label, class: e.classIri })),
+  )
 
   if (suggestions.value.length === 0 && classes.length > 0) {
     // No local hits for a class-scoped search — fall back to a targeted SPARQL query
@@ -174,14 +203,16 @@ async function runSparqlSearch(query: string): Promise<void> {
   if (cached) {
     suggestions.value = cached
   } else {
-    const results = await searchEntities(
-      effectiveContext,
-      classes,
-      store,
-      50,
-      query,
-      lang,
-      props.customLabelProperties ?? [],
+    const results = filterInstances(
+      await searchEntities(
+        effectiveContext,
+        classes,
+        store,
+        50,
+        query,
+        lang,
+        props.customLabelProperties ?? [],
+      ),
     )
     cacheSet(cacheKey, results)
     suggestions.value = results
