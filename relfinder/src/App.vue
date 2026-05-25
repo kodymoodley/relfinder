@@ -1,7 +1,12 @@
 <template>
   <a href="#main-content" class="skip-link">Skip to main content</a>
   <!-- RouterView fills the full viewport; each view manages its own layout -->
-  <RouterView />
+  <!-- keep-alive preserves GraphView state (selected entities, graph result) across tab switches -->
+  <RouterView v-slot="{ Component }">
+    <keep-alive include="GraphView">
+      <component :is="Component" />
+    </keep-alive>
+  </RouterView>
   <Toast position="bottom-right" />
   <CommandPalette v-model:visible="paletteVisible" />
 </template>

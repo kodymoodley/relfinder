@@ -251,7 +251,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, watch, computed, onMounted, onUnmounted, onActivated, onDeactivated, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import { useDarkMode } from '@/composables/useDarkMode'
@@ -528,9 +528,11 @@ function onEscKey(e: KeyboardEvent) {
   }
 }
 
-onUnmounted(() => {
-  document.removeEventListener('keydown', onEscKey)
-})
+// With <keep-alive>, use onActivated/onDeactivated for the keyboard listener
+// so Esc is only captured while the graph view is actually visible.
+onActivated(() => document.addEventListener('keydown', onEscKey))
+onDeactivated(() => document.removeEventListener('keydown', onEscKey))
+onUnmounted(() => document.removeEventListener('keydown', onEscKey))
 
 // ── Auto-run when entities are preset (from browse or examples panel) ────────
 
