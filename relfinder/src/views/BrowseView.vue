@@ -261,8 +261,7 @@ import ProgressBar from 'primevue/progressbar'
 import Divider from 'primevue/divider'
 import InputNumber from 'primevue/inputnumber'
 import ToggleButton from 'primevue/togglebutton'
-import { useDarkMode } from '@/composables/useDarkMode'
-import { useBreakpoint } from '@/composables/useBreakpoint'
+import { useSidebar } from '@/composables/useSidebar'
 import { useConnectionStore } from '@/stores/connection'
 import { useSchemaStore } from '@/stores/schema'
 import type { SchemaNode, SchemaEdge } from '@/lib/sparql/types'
@@ -278,15 +277,13 @@ const router = useRouter()
 const toast = useToast()
 const connectionStore = useConnectionStore()
 const schemaStore = useSchemaStore()
-const { dark, toggle: toggleDark } = useDarkMode()
-const { isMobile } = useBreakpoint()
+const { sidebarCollapsed, dark, toggleDark, isMobile, onEscKey } = useSidebar()
 const { paletteNodeIri, palettePropertyIri, graphPreset } = storeToRefs(useNavigationStore())
 
 // ── Local UI state ────────────────────────────────────────────────────────────
 
 const selectedNode = ref<SchemaNode | null>(null)
 const selectedEdge = ref<SchemaEdge | null>(null)
-const sidebarCollapsed = ref(isMobile.value)
 const optionsOpen = ref(false)
 const showShortcuts = ref(false)
 const schemaCanvasRef = ref<InstanceType<typeof SchemaCanvas> | null>(null)
@@ -302,9 +299,6 @@ useKeyboardShortcuts({
   },
 })
 
-watch(isMobile, (mobile) => {
-  if (mobile) sidebarCollapsed.value = true
-})
 const classLimit = ref(10)
 const edgeLimit = ref(3)
 
@@ -381,14 +375,6 @@ function onDisconnect() {
   schemaStore.clear()
   connectionStore.disconnect()
   router.push({ name: 'connection' })
-}
-
-// ── Lifecycle ─────────────────────────────────────────────────────────────────
-
-function onEscKey(e: KeyboardEvent) {
-  if (e.key === 'Escape' && isMobile.value && !sidebarCollapsed.value) {
-    sidebarCollapsed.value = true
-  }
 }
 
 // ── Palette selection (from command palette Ctrl+K) ───────────────────────────

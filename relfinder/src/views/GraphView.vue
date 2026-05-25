@@ -263,8 +263,7 @@ import {
 } from 'vue'
 import { useRouter } from 'vue-router'
 import Button from 'primevue/button'
-import { useDarkMode } from '@/composables/useDarkMode'
-import { useBreakpoint } from '@/composables/useBreakpoint'
+import { useSidebar } from '@/composables/useSidebar'
 import Divider from 'primevue/divider'
 import Message from 'primevue/message'
 import Tag from 'primevue/tag'
@@ -297,8 +296,7 @@ import { useNavigationStore } from '@/stores/navigation'
 
 const router = useRouter()
 const connectionStore = useConnectionStore()
-const { dark, toggle: toggleDark } = useDarkMode()
-const { isMobile } = useBreakpoint()
+const { sidebarCollapsed, dark, toggleDark, isMobile, onEscKey } = useSidebar()
 const { palettePreviewEntity, graphPreset } = storeToRefs(useNavigationStore())
 
 // ── State ─────────────────────────────────────────────────────────────────────
@@ -366,14 +364,9 @@ watch(
   { immediate: true },
 )
 
-const sidebarCollapsed = ref(isMobile.value)
 const optionsOpen = ref(false)
 const showShortcuts = ref(false)
 const graphCanvasRef = ref<InstanceType<typeof GraphCanvas> | null>(null)
-
-watch(isMobile, (mobile) => {
-  if (mobile) sidebarCollapsed.value = true
-})
 
 useKeyboardShortcuts({
   zoomIn: () => graphCanvasRef.value?.zoomIn(),
@@ -569,14 +562,6 @@ async function onFindRelationships() {
 function onDisconnect() {
   connectionStore.disconnect()
   router.push({ name: 'connection' })
-}
-
-// ── Escape key closes mobile sidebar ─────────────────────────────────────────
-
-function onEscKey(e: KeyboardEvent) {
-  if (e.key === 'Escape' && isMobile.value && !sidebarCollapsed.value) {
-    sidebarCollapsed.value = true
-  }
 }
 
 // With <keep-alive>, use onActivated/onDeactivated for the keyboard listener
