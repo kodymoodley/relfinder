@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import type { CachedEntity } from '../search/types'
+import type { CachedEntity, InterestEntry } from '../search/types'
 import { lruPolicy } from '../search/eviction/lru'
 
 // ── IDB mock (hoisted before any module imports) ──────────────────────────────
@@ -39,7 +39,6 @@ function makeEntity(iri: string, overrides: Partial<CachedEntity> = {}): CachedE
     ...overrides,
   }
 }
-
 
 // ── entityCache module ────────────────────────────────────────────────────────
 
