@@ -117,15 +117,6 @@ export const useSchemaStore = defineStore('schema', () => {
     const isFileSource = n3Store !== undefined
     const endpointUrl = isFileSource ? '' : context.endpointUrl || '__file__'
 
-    console.log(
-      '[schema] start() called — force:',
-      force,
-      'current nodes:',
-      nodes.value.length,
-      'extracting:',
-      extracting.value,
-    )
-
     // ── Try to restore from persistent storage ──────────────────────────────
     const saved = force || isFileSource ? null : loadSchema(endpointUrl)
     const canResume =
@@ -142,24 +133,9 @@ export const useSchemaStore = defineStore('schema', () => {
       }
       lastBatchSize.value = saved.nodes.length
 
-      console.log(
-        '[schema] cache check — saved:',
-        !!saved,
-        'canResume:',
-        canResume,
-        `processed ${_processedSet.size}/${saved.nodes.length}`,
-      )
-
       if (_processedSet.size >= saved.nodes.length) {
-        console.log('[schema] FULLY CACHED — returning early, no extraction')
         return
       }
-
-      console.log(
-        '[schema] PARTIAL CACHE — resuming Phase 2 for',
-        saved.nodes.length - _processedSet.size,
-        'remaining classes',
-      )
 
       progress.value = { completed: _processedSet.size, total: saved.nodes.length }
     } else {
@@ -199,12 +175,6 @@ export const useSchemaStore = defineStore('schema', () => {
           },
           onEdgesLoaded(incoming) {
             edges.value = [...edges.value, ...incoming]
-            console.log(
-              '[schema] onEdgesLoaded — total edges now:',
-              edges.value.length,
-              '| extracting:',
-              extracting.value,
-            )
           },
           onProgress(completed, total) {
             progress.value = { completed, total }
@@ -213,20 +183,11 @@ export const useSchemaStore = defineStore('schema', () => {
             _processedSet.add(classIri)
             fetchInstances(classIri, context, n3Store).catch(() => {})
             fetchDataProps(classIri, context, n3Store).catch(() => {})
-            console.log(
-              '[schema] onClassProcessed',
-              classIri,
-              '| processed:',
-              _processedSet.size,
-              '| extracting:',
-              extracting.value,
-            )
             if (!isFileSource) persist(endpointUrl)
           },
         },
         abortController.signal,
       )
-      console.log('[schema] extractSchema returned — setting extracting=false')
     } catch (err) {
       if ((err as Error)?.name !== 'AbortError') {
         extractError.value =
@@ -235,14 +196,6 @@ export const useSchemaStore = defineStore('schema', () => {
             : 'An unexpected error occurred.'
       }
     } finally {
-      console.log(
-        '[schema] finally — extracting was:',
-        extracting.value,
-        '| edges:',
-        edges.value.length,
-        '| nodes:',
-        nodes.value.length,
-      )
       extracting.value = false
       statusMessage.value = ''
     }
@@ -324,14 +277,12 @@ export const useSchemaStore = defineStore('schema', () => {
   }
 
   function cancel() {
-    console.log('[schema] cancel() called')
     abortController?.abort()
     extracting.value = false
     statusMessage.value = ''
   }
 
   function clear() {
-    console.log('[schema] clear() called — nodes before clear:', nodes.value.length)
     abortController?.abort()
     nodes.value = []
     edges.value = []
