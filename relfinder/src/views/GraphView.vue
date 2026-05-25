@@ -251,20 +251,13 @@
 </template>
 
 <script setup lang="ts">
-import {
-  ref,
-  watch,
-  onMounted,
-  onUnmounted,
-  onActivated,
-  onDeactivated,
-  nextTick,
-} from 'vue'
+import { ref, watch, onMounted, onUnmounted, onActivated, onDeactivated, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import { useSidebar } from '@/composables/useSidebar'
 import { useClassColors } from '@/composables/useClassColors'
 import { useGraphFilters } from '@/composables/useGraphFilters'
+import { useRecentGraphs } from '@/composables/useRecentGraphs'
 import Divider from 'primevue/divider'
 import Message from 'primevue/message'
 import Tag from 'primevue/tag'
@@ -272,13 +265,7 @@ import { useConnectionStore } from '@/stores/connection'
 import { findRelationships } from '@/lib/sparql/entitySearch'
 import { fetchNeighbourhoodStore } from '@/lib/sparql/subgraphStrategy'
 import { cacheGet } from '@/lib/cache/queryCache'
-import {
-  saveGraph,
-  loadGraph,
-  lookupGraph,
-  listRecentGraphs,
-  deleteGraphEntry,
-} from '@/lib/cache/graphStorage'
+import { saveGraph, loadGraph, lookupGraph } from '@/lib/cache/graphStorage'
 import type { GraphHistoryMeta } from '@/lib/cache/graphStorage'
 import { QueryCyclesStrategy } from '@/lib/sparql/types'
 import { RDF_TYPE, SKOS_SUBJECT } from '@/lib/sparql/queryBuilder'
@@ -380,8 +367,8 @@ useKeyboardShortcuts({
   },
 })
 
-const recentOpen = ref(true)
-const recentGraphs = ref<GraphHistoryMeta[]>([])
+const { recentOpen, recentGraphs, endpointKey, refreshRecent, onDeleteRecent } =
+  useRecentGraphs(connectionStore)
 
 const graphOptions = ref<GraphOptions>({
   maxDistance: 2,
@@ -401,14 +388,6 @@ const { displayClasses, displayNodes, displayEdges, availableLanguages } = useGr
 )
 
 // ── Recent graphs ─────────────────────────────────────────────────────────────
-
-function endpointKey(): string {
-  return connectionStore.queryContext?.endpointUrl ?? '__file__'
-}
-
-function refreshRecent() {
-  recentGraphs.value = listRecentGraphs(endpointKey())
-}
 
 async function onLoadRecent(entry: GraphHistoryMeta) {
   // Seed EntitySearch chips via initial-entity (unlocked after nextTick)
@@ -434,11 +413,6 @@ async function onLoadRecent(entry: GraphHistoryMeta) {
   graph.value = restored
   selectedNode.value = null
   searchError.value = ''
-  refreshRecent()
-}
-
-function onDeleteRecent(id: string) {
-  deleteGraphEntry(id)
   refreshRecent()
 }
 
