@@ -2,6 +2,7 @@ import { fileURLToPath } from 'node:url'
 import { test, expect } from '@playwright/test'
 import {
   twoClassesResponse,
+  noEdgesResponse,
   pingResponse,
   sparqlJsonHeaders,
   toBody,
@@ -40,7 +41,7 @@ test.describe('File loading', () => {
     await conn.expectFileLoaded(5)
 
     await conn.clickOpenGraph()
-    await expect(page).toHaveURL('/browse', { timeout: 15_000 })
+    await expect(page).toHaveURL('/browse')
   })
 
   test('loads a medium TTL file and reports triple count', async ({ page }) => {
@@ -93,7 +94,7 @@ test.describe('SPARQL endpoint loading', () => {
     const conn = new ConnectionPage(page)
     await conn.goto()
     await conn.connectToEndpoint(MOCK_ENDPOINT)
-    await expect(page).toHaveURL('/browse', { timeout: 15_000 })
+    await expect(page).toHaveURL('/browse')
   })
 
   test('empty endpoint URL shows validation error', async ({ page }) => {
@@ -165,7 +166,7 @@ test.describe('Real endpoint smoke', () => {
   test.skip(!!process.env.CI, 'Skipped in CI — real network required')
 
   test('DBpedia: connectivity probe with LIMIT 1', async ({ page }) => {
-    test.setTimeout(30_000)
+    test.setTimeout(60_000)
     // Intercept and constrain — only let SELECT * LIMIT 1 through
     await page.route('https://dbpedia.org/sparql**', async (route) => {
       const url = route.request().url()
