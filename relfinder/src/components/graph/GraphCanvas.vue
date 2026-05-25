@@ -246,6 +246,11 @@ let _legendMoved = false
 function onLegendPointerDown(e: PointerEvent): void {
   const el = legendRef.value
   if (!el) return
+  // Don't capture the pointer when the user clicks the collapse toggle — doing
+  // so redirects pointerup (and the synthesised click) to the legend element,
+  // which means the button's click handler never fires.
+  const toggle = el.querySelector('.legend-toggle')
+  if (toggle?.contains(e.target as Node)) return
   const containerRect = el.parentElement!.getBoundingClientRect()
   const rect = el.getBoundingClientRect()
   _legendDragStartX = e.clientX
@@ -1051,13 +1056,9 @@ defineExpose({ PALETTE, zoomIn, zoomOut, fitGraph, rerunLayout, toggleEdgeLabels
   min-width: 120px;
   max-width: 180px;
   z-index: 5;
-  cursor: grab;
+  cursor: move;
   touch-action: none;
   user-select: none;
-}
-
-.graph-legend:active {
-  cursor: grabbing;
 }
 
 .legend-toggle {
@@ -1068,7 +1069,7 @@ defineExpose({ PALETTE, zoomIn, zoomOut, fitGraph, rerunLayout, toggleEdgeLabels
   background: none;
   border: none;
   padding: 0;
-  cursor: inherit;
+  cursor: pointer;
   gap: var(--rf-space-2);
   min-height: 32px;
 }
