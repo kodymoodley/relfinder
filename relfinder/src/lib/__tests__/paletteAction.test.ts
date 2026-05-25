@@ -23,14 +23,14 @@ import {
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
 const alice = { iri: 'http://e.org/Alice', label: 'Alice', class: 'http://e.org/Person' }
-const bob   = { iri: 'http://e.org/Bob',   label: 'Bob',   class: 'http://e.org/Person' }
+const bob = { iri: 'http://e.org/Bob', label: 'Bob', class: 'http://e.org/Person' }
 
 const preset = (e1 = alice, e2 = bob) => ({ entity1: e1, entity2: e2 })
 
 beforeEach(() => {
-  graphPreset.value        = null
+  graphPreset.value = null
   palettePreviewEntity.value = null
-  paletteNodeIri.value     = null
+  paletteNodeIri.value = null
   palettePropertyIri.value = null
 })
 
@@ -48,7 +48,7 @@ describe('graphPreset', () => {
   })
 
   it('notifies a watcher when set', async () => {
-    const seen: typeof graphPreset.value[] = []
+    const seen: (typeof graphPreset.value)[] = []
     const stop = watch(graphPreset, (v) => seen.push(v))
 
     graphPreset.value = preset()
@@ -66,8 +66,14 @@ describe('graphPreset', () => {
   it('{ immediate: true } watcher sees a pre-set value on "mount"', async () => {
     graphPreset.value = preset() // set before "mount"
 
-    const applied: typeof graphPreset.value[] = []
-    const stop = watch(graphPreset, (v) => applied.push(v), { immediate: true })
+    const applied: Array<NonNullable<typeof graphPreset.value>> = []
+    const stop = watch(
+      graphPreset,
+      (v) => {
+        if (v) applied.push(v)
+      },
+      { immediate: true },
+    )
     await nextTick()
 
     expect(applied[0]?.entity1.iri).toBe(alice.iri)
@@ -80,7 +86,12 @@ describe('graphPreset', () => {
 
     const stop = watch(
       graphPreset,
-      (v) => { if (v) { graphPreset.value = null; applyLog.push(v.entity1.iri) } },
+      (v) => {
+        if (v) {
+          graphPreset.value = null
+          applyLog.push(v.entity1.iri)
+        }
+      },
       { immediate: true },
     )
 
@@ -101,7 +112,12 @@ describe('graphPreset', () => {
 
     const stop1 = watch(
       graphPreset,
-      (v) => { if (v) { graphPreset.value = null; applyCount++ } },
+      (v) => {
+        if (v) {
+          graphPreset.value = null
+          applyCount++
+        }
+      },
       { immediate: true },
     )
     graphPreset.value = preset()
@@ -116,7 +132,12 @@ describe('graphPreset', () => {
     stop1()
     const stop2 = watch(
       graphPreset,
-      (v) => { if (v) { graphPreset.value = null; applyCount++ } },
+      (v) => {
+        if (v) {
+          graphPreset.value = null
+          applyCount++
+        }
+      },
       { immediate: true },
     )
     await nextTick()
@@ -129,12 +150,11 @@ describe('graphPreset', () => {
     const carol = { iri: 'http://e.org/Carol', label: 'Carol', class: 'http://e.org/Person' }
     const applied: string[] = []
 
-    const stop = watch(
-      graphPreset,
-      (v) => { if (v) applied.push(v.entity1.iri) },
-    )
+    const stop = watch(graphPreset, (v) => {
+      if (v) applied.push(v.entity1.iri)
+    })
 
-    graphPreset.value = preset(alice, bob)   // immediately overwritten
+    graphPreset.value = preset(alice, bob) // immediately overwritten
     graphPreset.value = preset(carol, bob)
     await nextTick()
 
@@ -176,7 +196,7 @@ describe('graphPreset', () => {
 
 describe('signal independence', () => {
   it('setting graphPreset does not affect palettePreviewEntity', async () => {
-    const changes: typeof palettePreviewEntity.value[] = []
+    const changes: (typeof palettePreviewEntity.value)[] = []
     const stop = watch(palettePreviewEntity, (v) => changes.push(v))
 
     graphPreset.value = preset()
@@ -187,7 +207,7 @@ describe('signal independence', () => {
   })
 
   it('setting palettePreviewEntity does not affect graphPreset', async () => {
-    const changes: typeof graphPreset.value[] = []
+    const changes: (typeof graphPreset.value)[] = []
     const stop = watch(graphPreset, (v) => changes.push(v))
 
     palettePreviewEntity.value = alice
@@ -198,7 +218,7 @@ describe('signal independence', () => {
   })
 
   it('setting paletteNodeIri does not affect graphPreset', async () => {
-    const changes: typeof graphPreset.value[] = []
+    const changes: (typeof graphPreset.value)[] = []
     const stop = watch(graphPreset, (v) => changes.push(v))
 
     paletteNodeIri.value = 'http://e.org/Person'
@@ -209,10 +229,10 @@ describe('signal independence', () => {
   })
 
   it('all four signals can be set concurrently without cross-contamination', async () => {
-    graphPreset.value          = preset()
+    graphPreset.value = preset()
     palettePreviewEntity.value = alice
-    paletteNodeIri.value       = 'http://e.org/Person'
-    palettePropertyIri.value   = 'http://e.org/knows'
+    paletteNodeIri.value = 'http://e.org/Person'
+    palettePropertyIri.value = 'http://e.org/knows'
 
     expect(graphPreset.value?.entity1.iri).toBe(alice.iri)
     expect(palettePreviewEntity.value?.iri).toBe(alice.iri)
@@ -231,8 +251,14 @@ describe('palettePreviewEntity', () => {
   it('{ immediate: true } watcher picks up a value set before "mount"', async () => {
     palettePreviewEntity.value = alice
 
-    const seen: typeof palettePreviewEntity.value[] = []
-    const stop = watch(palettePreviewEntity, (v) => seen.push(v), { immediate: true })
+    const seen: Array<NonNullable<typeof palettePreviewEntity.value>> = []
+    const stop = watch(
+      palettePreviewEntity,
+      (v) => {
+        if (v) seen.push(v)
+      },
+      { immediate: true },
+    )
     await nextTick()
 
     expect(seen[0]?.iri).toBe(alice.iri)

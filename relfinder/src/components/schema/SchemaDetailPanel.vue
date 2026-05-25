@@ -78,8 +78,14 @@
           <!-- Start entity chip — shared with CommandPalette via pathStartEntity -->
           <div v-if="pathStartEntity" class="start-chip">
             <span class="start-dot" />
-            <span class="start-chip-label" :title="pathStartEntity.iri">{{ pathStartEntity.label }}</span>
-            <button class="start-chip-clear" aria-label="Clear start" @click="pathStartEntity = null">
+            <span class="start-chip-label" :title="pathStartEntity.iri">{{
+              pathStartEntity.label
+            }}</span>
+            <button
+              class="start-chip-clear"
+              aria-label="Clear start"
+              @click="pathStartEntity = null"
+            >
               <i class="pi pi-times" />
             </button>
           </div>

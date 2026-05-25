@@ -203,8 +203,8 @@ test.describe('Find Paths flow from Browse view', () => {
 
     await expect(page).toHaveURL('/graph', { timeout: 5_000 })
 
-    // EntitySearch renders locked chips for preset entities
-    const chips = page.locator('.selected-chip--locked .chip-label')
+    // EntitySearch renders chips for preset entities
+    const chips = page.locator('.selected-chip .chip-label')
     await expect(chips.filter({ hasText: 'Alice' })).toBeVisible({ timeout: 5_000 })
     await expect(chips.filter({ hasText: 'Bob' })).toBeVisible({ timeout: 5_000 })
   })

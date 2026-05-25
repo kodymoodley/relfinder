@@ -46,17 +46,22 @@
                 <span
                   class="palette-label"
                   :class="{ 'palette-label--start': pathStartEntity?.iri === result.iri }"
-                >{{ result.label }}</span>
+                  >{{ result.label }}</span
+                >
                 <button
                   v-if="!pathStartEntity"
                   class="palette-inst-action"
                   @click.stop="onSetStart(result)"
-                >Set as start</button>
+                >
+                  Set as start
+                </button>
                 <button
                   v-else-if="pathStartEntity.iri !== result.iri"
                   class="palette-inst-action palette-inst-action--path"
                   @click.stop="onFindPath(result)"
-                >Find path →</button>
+                >
+                  Find path →
+                </button>
               </template>
             </li>
           </ul>
@@ -80,7 +85,12 @@ import { useSearchIndex } from '@/composables/useSearchIndex'
 import { weightedSumFusion } from '@/lib/search/fusion/weightedSum'
 import { snapshot } from '@/lib/search/interestModel'
 import type { ScoredEntity } from '@/lib/search/types'
-import { paletteNodeIri, palettePropertyIri, palettePreviewEntity, graphPreset } from '@/lib/paletteAction'
+import {
+  paletteNodeIri,
+  palettePropertyIri,
+  palettePreviewEntity,
+  graphPreset,
+} from '@/lib/paletteAction'
 import { pathStartEntity } from '@/lib/pathStart'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -125,6 +135,8 @@ function close() {
   visible.value = false
 }
 
+let _escHandler: ((e: KeyboardEvent) => void) | null = null
+
 watch(visible, async (open) => {
   if (open) {
     query.value = ''
@@ -132,6 +144,20 @@ watch(visible, async (open) => {
     activeIndex.value = -1
     await nextTick()
     inputRef.value?.focus()
+    _escHandler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        // Stop propagation before the event reaches PrimeVue Drawer's document
+        // listener, which would otherwise close both the palette and the drawer.
+        e.stopImmediatePropagation()
+        close()
+      }
+    }
+    document.addEventListener('keydown', _escHandler, { capture: true })
+  } else {
+    if (_escHandler) {
+      document.removeEventListener('keydown', _escHandler, { capture: true })
+      _escHandler = null
+    }
   }
 })
 

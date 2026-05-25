@@ -314,6 +314,8 @@ const presetEntity1 = ref<EntitySearchResult | null>(_historyExample?.entity1 ??
 const presetEntity2 = ref<EntitySearchResult | null>(_historyExample?.entity2 ?? null)
 const entity1 = ref<EntitySearchResult | null>(presetEntity1.value)
 const entity2 = ref<EntitySearchResult | null>(presetEntity2.value)
+const entity1SearchKey = ref(0)
+const entity2SearchKey = ref(0)
 const graph = ref<RelationshipGraph | null>(null)
 const searching = ref(false)
 const searchError = ref('')
@@ -329,7 +331,13 @@ watch(
   (entity) => {
     if (!entity) return
     palettePreviewEntity.value = null
-    selectedNode.value = { id: -1, iri: entity.iri, label: entity.label, class: entity.class, isEndpoint: false }
+    selectedNode.value = {
+      id: -1,
+      iri: entity.iri,
+      label: entity.label,
+      class: entity.class,
+      isEndpoint: false,
+    }
   },
   { immediate: true },
 )
@@ -377,8 +385,6 @@ useKeyboardShortcuts({
 
 const recentOpen = ref(true)
 const recentGraphs = ref<GraphHistoryMeta[]>([])
-const entity1SearchKey = ref(0)
-const entity2SearchKey = ref(0)
 
 const graphOptions = ref<GraphOptions>({
   maxDistance: 2,

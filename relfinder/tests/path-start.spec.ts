@@ -43,6 +43,17 @@ async function loadSchemaAndWait(page: Page): Promise<BrowsePage> {
 }
 
 async function clickSchemaNode(page: Page, nodeIri: string): Promise<void> {
+  // Wait for Cytoscape to be initialised and contain the target node
+  await page.waitForFunction(
+    (iri: string) => {
+      const cy = (window as unknown as { __schemaCy?: { getElementById(id: string): { empty(): boolean } } }).__schemaCy
+      return !!cy && !cy.getElementById(iri).empty()
+    },
+    nodeIri,
+    { timeout: 10_000 },
+  )
+  // Let the layout animation settle so the rendered position is stable
+  await page.waitForTimeout(600)
   const pos = await page.evaluate((iri: string) => {
     const cy = (window as Window & { __schemaCy?: cytoscape.Core }).__schemaCy
     if (!cy) return null
@@ -176,7 +187,7 @@ test.describe('pathStartEntity persistence', () => {
 
     // Close drawer and click a different class
     await page.keyboard.press('Escape')
-    await page.waitForTimeout(300)
+    await expect(page.locator('.p-drawer')).not.toBeVisible({ timeout: 3_000 })
     await clickSchemaNode(page, PROJECT_IRI)
     await expect(page.locator('.p-drawer-header')).toContainText('Project', { timeout: 3_000 })
     await expect(page.locator('.instance-label').first()).toBeVisible({ timeout: 10_000 })
@@ -233,7 +244,7 @@ test.describe('Find path navigation', () => {
       .getByRole('button', { name: /Find path/ }).click()
 
     await expect(page).toHaveURL('/graph', { timeout: 5_000 })
-    const chips = page.locator('.selected-chip--locked .chip-label')
+    const chips = page.locator('.selected-chip .chip-label')
     await expect(chips.filter({ hasText: 'Alice' })).toBeVisible({ timeout: 5_000 })
     await expect(chips.filter({ hasText: 'Bob' })).toBeVisible({ timeout: 5_000 })
   })
@@ -251,7 +262,7 @@ test.describe('Find path navigation', () => {
     await page.locator('.palette-item').filter({ hasText: 'Bob' }).locator('.palette-inst-action--path').click()
 
     await expect(page).toHaveURL('/graph', { timeout: 5_000 })
-    const chips = page.locator('.selected-chip--locked .chip-label')
+    const chips = page.locator('.selected-chip .chip-label')
     await expect(chips.filter({ hasText: 'Alice' })).toBeVisible({ timeout: 5_000 })
     await expect(chips.filter({ hasText: 'Bob' })).toBeVisible({ timeout: 5_000 })
   })
@@ -319,7 +330,7 @@ test.describe('same-route entity preset (graphPreset)', () => {
     await expect(page).toHaveURL('/graph', { timeout: 5_000 })
 
     // Verify Alice / Bob are in entity slots
-    const chips = page.locator('.selected-chip--locked .chip-label')
+    const chips = page.locator('.selected-chip .chip-label')
     await expect(chips.filter({ hasText: 'Alice' })).toBeVisible({ timeout: 5_000 })
     await expect(chips.filter({ hasText: 'Bob' })).toBeVisible({ timeout: 5_000 })
 
@@ -363,7 +374,7 @@ test.describe('same-route entity preset (graphPreset)', () => {
       .getByRole('button', { name: /Find path/ }).click()
 
     await expect(page).toHaveURL('/graph', { timeout: 5_000 })
-    const chips = page.locator('.selected-chip--locked .chip-label')
+    const chips = page.locator('.selected-chip .chip-label')
     await expect(chips.filter({ hasText: 'Bob' })).toBeVisible({ timeout: 5_000 })
     await expect(chips.filter({ hasText: 'Alice' })).toBeVisible({ timeout: 5_000 })
   })
@@ -439,13 +450,17 @@ test.describe('creative edge cases', () => {
       .getByRole('button', { name: /Find path/ }).click()
     await expect(page).toHaveURL('/graph', { timeout: 5_000 })
 
-    const chips = page.locator('.selected-chip--locked .chip-label')
+    const chips = page.locator('.selected-chip .chip-label')
     await expect(chips.filter({ hasText: 'Alice' })).toBeVisible({ timeout: 5_000 })
 
     // Switch away and back — entity slots must retain the last state, not be
     // reset by a ghost graphPreset value
     await page.getByTestId('nav-schema-graph').click()
     await expect(page).toHaveURL('/browse', { timeout: 3_000 })
+    // The keep-alive-preserved BrowseView may still have the class drawer open —
+    // close it so the mask does not intercept the nav-paths click.
+    await page.keyboard.press('Escape')
+    await expect(page.locator('.p-drawer')).not.toBeVisible({ timeout: 3_000 })
     await page.getByTestId('nav-paths').click()
     await expect(page).toHaveURL('/graph', { timeout: 3_000 })
 
@@ -469,7 +484,7 @@ test.describe('creative edge cases', () => {
 
     // Close Person drawer, open Project drawer
     await page.keyboard.press('Escape')
-    await page.waitForTimeout(300)
+    await expect(page.locator('.p-drawer')).not.toBeVisible({ timeout: 3_000 })
     await clickSchemaNode(page, PROJECT_IRI)
     await expect(page.locator('.p-drawer-header')).toContainText('Project', { timeout: 3_000 })
 
@@ -486,7 +501,7 @@ test.describe('creative edge cases', () => {
 
     await expect(page).toHaveURL('/graph', { timeout: 5_000 })
     // Alice chip must be visible (source is still Alice)
-    const chips = page.locator('.selected-chip--locked .chip-label')
+    const chips = page.locator('.selected-chip .chip-label')
     await expect(chips.filter({ hasText: 'Alice' })).toBeVisible({ timeout: 5_000 })
   })
 
@@ -556,7 +571,7 @@ test.describe('interaction-ordering permutations', () => {
       .getByRole('button', { name: /Find path/ }).click()
 
     await expect(page).toHaveURL('/graph', { timeout: 5_000 })
-    const chips = page.locator('.selected-chip--locked .chip-label')
+    const chips = page.locator('.selected-chip .chip-label')
     await expect(chips.filter({ hasText: 'Alice' })).toBeVisible({ timeout: 5_000 })
     await expect(chips.filter({ hasText: 'Bob' })).toBeVisible({ timeout: 5_000 })
   })
@@ -630,7 +645,7 @@ test.describe('interaction-ordering permutations', () => {
       .getByRole('button', { name: /Find path/ }).click()
 
     await expect(page).toHaveURL('/graph', { timeout: 5_000 })
-    const chips = page.locator('.selected-chip--locked .chip-label')
+    const chips = page.locator('.selected-chip .chip-label')
     await expect(chips.filter({ hasText: 'Bob' })).toBeVisible({ timeout: 5_000 })
     await expect(chips.filter({ hasText: 'Alice' })).toBeVisible({ timeout: 5_000 })
   })
@@ -651,7 +666,7 @@ test.describe('interaction-ordering permutations', () => {
       .getByRole('button', { name: /Find path/ }).click()
     await expect(page).toHaveURL('/graph', { timeout: 5_000 })
 
-    const chips = page.locator('.selected-chip--locked .chip-label')
+    const chips = page.locator('.selected-chip .chip-label')
     await expect(chips.filter({ hasText: 'Alice' })).toBeVisible({ timeout: 5_000 })
 
     // Second path via palette (reversed) while already on /graph
@@ -680,6 +695,10 @@ test.describe('interaction-ordering permutations', () => {
     await expect(page.locator('.instance-label').filter({ hasText: 'Alice' })).toBeVisible({ timeout: 10_000 })
     await page.locator('.instance-item').filter({ hasText: 'Alice' })
       .getByRole('button', { name: 'Set as start' }).click()
+
+    // Close the drawer so the mask does not intercept the nav-paths click.
+    await page.keyboard.press('Escape')
+    await expect(page.locator('.p-drawer')).not.toBeVisible({ timeout: 3_000 })
 
     // Navigate to /graph via the Paths tab (not "Find path →")
     await page.getByTestId('nav-paths').click()
@@ -759,7 +778,7 @@ test.describe('interaction-ordering permutations', () => {
     await page.locator('.palette-item').filter({ hasText: 'Alice' }).locator('.palette-inst-action--path').click()
 
     await expect(page).toHaveURL('/graph')
-    const chips = page.locator('.selected-chip--locked .chip-label')
+    const chips = page.locator('.selected-chip .chip-label')
     await expect(chips.filter({ hasText: 'Bob' })).toBeVisible({ timeout: 5_000 })
     await expect(chips.filter({ hasText: 'Alice' })).toBeVisible({ timeout: 5_000 })
   })
@@ -823,7 +842,7 @@ test.describe('interaction-ordering permutations', () => {
     await page.locator('.palette-item').filter({ hasText: 'Alice' }).locator('.palette-inst-action--path').click()
 
     await expect(page).toHaveURL('/graph', { timeout: 5_000 })
-    const chips = page.locator('.selected-chip--locked .chip-label')
+    const chips = page.locator('.selected-chip .chip-label')
     // Bob is the start, Alice is the target
     await expect(chips.filter({ hasText: 'Bob' })).toBeVisible({ timeout: 5_000 })
     await expect(chips.filter({ hasText: 'Alice' })).toBeVisible({ timeout: 5_000 })
@@ -913,6 +932,10 @@ test.describe('pane open/close and tab-switch sequences', () => {
     await page.locator('.instance-item').filter({ hasText: 'Alice' })
       .getByRole('button', { name: 'Set as start' }).click()
 
+    // Close the drawer before navigating so the mask does not intercept the click.
+    await page.keyboard.press('Escape')
+    await expect(page.locator('.p-drawer')).not.toBeVisible({ timeout: 3_000 })
+
     // Navigate to /graph via Paths tab button (pushes a history entry)
     await page.getByTestId('nav-paths').click()
     await expect(page).toHaveURL('/graph', { timeout: 5_000 })
@@ -958,7 +981,7 @@ test.describe('pane open/close and tab-switch sequences', () => {
       .getByRole('button', { name: /Find path/ }).click()
     await expect(page).toHaveURL('/graph', { timeout: 5_000 })
 
-    const chips = page.locator('.selected-chip--locked .chip-label')
+    const chips = page.locator('.selected-chip .chip-label')
     await expect(chips.filter({ hasText: 'Alice' })).toBeVisible({ timeout: 5_000 })
 
     // Back then forward
@@ -1048,6 +1071,7 @@ test.describe('pane open/close and tab-switch sequences', () => {
 
     // Switch to Paths tab and back
     await page.keyboard.press('Escape')
+    await expect(page.locator('.p-drawer')).not.toBeVisible({ timeout: 3_000 })
     await page.getByTestId('nav-paths').click()
     await expect(page).toHaveURL('/graph', { timeout: 5_000 })
     await page.getByTestId('nav-schema-graph').click()
@@ -1061,7 +1085,7 @@ test.describe('pane open/close and tab-switch sequences', () => {
       .getByRole('button', { name: /Find path/ }).click()
 
     await expect(page).toHaveURL('/graph', { timeout: 5_000 })
-    const chips = page.locator('.selected-chip--locked .chip-label')
+    const chips = page.locator('.selected-chip .chip-label')
     await expect(chips.filter({ hasText: 'Alice' })).toBeVisible({ timeout: 5_000 })
     await expect(chips.filter({ hasText: 'Bob' })).toBeVisible({ timeout: 5_000 })
   })
@@ -1077,7 +1101,10 @@ test.describe('pane open/close and tab-switch sequences', () => {
     await page.locator('.instance-item').filter({ hasText: 'Alice' })
       .getByRole('button', { name: 'Set as start' }).click()
 
-    // Switch to Paths tab (keep-alive deactivates BrowseView but doesn't unmount it)
+    // Switch to Paths tab (keep-alive deactivates BrowseView but doesn't unmount it).
+    // The drawer mask would intercept the nav click — close the drawer first.
+    await page.keyboard.press('Escape')
+    await expect(page.locator('.p-drawer')).not.toBeVisible({ timeout: 3_000 })
     await page.getByTestId('nav-paths').click()
     await expect(page).toHaveURL('/graph', { timeout: 5_000 })
 

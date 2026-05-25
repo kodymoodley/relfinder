@@ -5,7 +5,7 @@ import { pathStartEntity } from '../pathStart'
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const alice = { iri: 'http://e.org/Alice', label: 'Alice', class: 'http://e.org/Person' }
-const bob   = { iri: 'http://e.org/Bob',   label: 'Bob',   class: 'http://e.org/Person' }
+const bob = { iri: 'http://e.org/Bob', label: 'Bob', class: 'http://e.org/Person' }
 
 beforeEach(() => {
   pathStartEntity.value = null
@@ -41,7 +41,9 @@ describe('pathStartEntity', () => {
 
   it('a write from "ComponentA" is immediately visible to "ComponentB"', () => {
     // Simulated write from CommandPalette
-    const writeFromPalette = () => { pathStartEntity.value = alice }
+    const writeFromPalette = () => {
+      pathStartEntity.value = alice
+    }
 
     // Simulated read from SchemaDetailPanel
     const readFromPanel = () => pathStartEntity.value
@@ -63,7 +65,7 @@ describe('pathStartEntity', () => {
   // ── Reactivity ────────────────────────────────────────────────────────────
 
   it('notifies a watcher when set', async () => {
-    const seen: typeof pathStartEntity.value[] = []
+    const seen: (typeof pathStartEntity.value)[] = []
     const stop = watch(pathStartEntity, (v) => seen.push(v))
 
     pathStartEntity.value = alice
@@ -78,8 +80,8 @@ describe('pathStartEntity', () => {
     pathStartEntity.value = alice
     await nextTick()
 
-    const seen: typeof pathStartEntity.value[] = []
-    const stop = watch(pathStartEntity, (v) => seen.push(v))
+    const seen: Array<{ iri: string; label: string; class: string } | null> = []
+    const stop = watch(pathStartEntity, (v) => seen.push(v ?? null))
 
     pathStartEntity.value = null
     await nextTick()
@@ -109,8 +111,14 @@ describe('pathStartEntity', () => {
   it('an immediate watcher reads the current value at setup time', async () => {
     pathStartEntity.value = alice
 
-    const seen: typeof pathStartEntity.value[] = []
-    const stop = watch(pathStartEntity, (v) => seen.push(v), { immediate: true })
+    const seen: Array<NonNullable<typeof pathStartEntity.value>> = []
+    const stop = watch(
+      pathStartEntity,
+      (v) => {
+        if (v) seen.push(v)
+      },
+      { immediate: true },
+    )
     await nextTick()
 
     // Fired once synchronously with the current value
@@ -119,11 +127,11 @@ describe('pathStartEntity', () => {
   })
 
   it('coalesces rapid successive writes — watcher fires once with the final value', async () => {
-    const seen: typeof pathStartEntity.value[] = []
+    const seen: (typeof pathStartEntity.value)[] = []
     const stop = watch(pathStartEntity, (v) => seen.push(v))
 
     pathStartEntity.value = alice
-    pathStartEntity.value = bob   // overwrites before watcher flush
+    pathStartEntity.value = bob // overwrites before watcher flush
     await nextTick()
 
     expect(seen).toHaveLength(1)
@@ -151,7 +159,7 @@ describe('pathStartEntity', () => {
     const nonNullFirings: number[] = []
 
     const stop = watch(pathStartEntity, (v) => {
-      if (!v) return        // guard: ignore the null-back write
+      if (!v) return // guard: ignore the null-back write
       nonNullFirings.push(1)
       pathStartEntity.value = null
     })
