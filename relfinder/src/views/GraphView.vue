@@ -254,7 +254,6 @@
 import {
   ref,
   watch,
-  computed,
   onMounted,
   onUnmounted,
   onActivated,
@@ -265,11 +264,12 @@ import { useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import { useSidebar } from '@/composables/useSidebar'
 import { useClassColors } from '@/composables/useClassColors'
+import { useGraphFilters } from '@/composables/useGraphFilters'
 import Divider from 'primevue/divider'
 import Message from 'primevue/message'
 import Tag from 'primevue/tag'
 import { useConnectionStore } from '@/stores/connection'
-import { findRelationships, refreshGraphLabels } from '@/lib/sparql/entitySearch'
+import { findRelationships } from '@/lib/sparql/entitySearch'
 import { fetchNeighbourhoodStore } from '@/lib/sparql/subgraphStrategy'
 import { cacheGet } from '@/lib/cache/queryCache'
 import {
@@ -395,36 +395,10 @@ const graphOptions = ref<GraphOptions>({
 })
 
 const { classColors } = useClassColors(graph)
-
-// ── Client-side display filtering ─────────────────────────────────────────────
-
-const displayClasses = computed(() => {
-  if (!graph.value) return []
-  return graph.value.classes.filter((c) => !graphOptions.value.hiddenClasses.includes(c))
-})
-
-const displayNodes = computed(() => {
-  if (!graph.value) return []
-  const hidden = graphOptions.value.hiddenClasses
-  if (hidden.length === 0) return graph.value.nodes
-  return graph.value.nodes.filter((n) => !hidden.includes(n.class))
-})
-
-const displayEdges = computed(() => {
-  if (!graph.value) return []
-  if (graphOptions.value.hiddenClasses.length === 0) return graph.value.edges
-  const visibleIds = new Set(displayNodes.value.map((n) => n.id))
-  return graph.value.edges.filter((e) => visibleIds.has(e.sid) && visibleIds.has(e.tid))
-})
-
-const availableLanguages = computed(() => {
-  if (!graph.value) return []
-  const langs = new Set<string>()
-  for (const entries of graph.value.allLabels.values()) {
-    for (const entry of entries) langs.add(entry.lang)
-  }
-  return [...langs].sort()
-})
+const { displayClasses, displayNodes, displayEdges, availableLanguages } = useGraphFilters(
+  graph,
+  graphOptions,
+)
 
 // ── Recent graphs ─────────────────────────────────────────────────────────────
 
@@ -602,17 +576,6 @@ onMounted(() => {
   // 3. Full query
   onFindRelationships()
 })
-
-// ── Re-run on options change ──────────────────────────────────────────────────
-
-// Language-only change: re-apply labels from the stored allLabels map — no
-// network calls needed since all language tags were fetched up front.
-watch(
-  () => graphOptions.value.language,
-  (lang) => {
-    if (graph.value) refreshGraphLabels(graph.value, lang)
-  },
-)
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
