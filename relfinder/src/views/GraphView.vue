@@ -258,14 +258,13 @@ import { useSidebar } from '@/composables/useSidebar'
 import { useClassColors } from '@/composables/useClassColors'
 import { useGraphFilters } from '@/composables/useGraphFilters'
 import { useRecentGraphs } from '@/composables/useRecentGraphs'
+import { useRelationshipSearch } from '@/composables/useRelationshipSearch'
 import Divider from 'primevue/divider'
 import Message from 'primevue/message'
 import Tag from 'primevue/tag'
 import { useConnectionStore } from '@/stores/connection'
-import { findRelationships } from '@/lib/sparql/entitySearch'
-import { fetchNeighbourhoodStore } from '@/lib/sparql/subgraphStrategy'
 import { cacheGet } from '@/lib/cache/queryCache'
-import { saveGraph, loadGraph, lookupGraph } from '@/lib/cache/graphStorage'
+import { loadGraph, lookupGraph } from '@/lib/cache/graphStorage'
 import type { GraphHistoryMeta } from '@/lib/cache/graphStorage'
 import { QueryCyclesStrategy } from '@/lib/sparql/types'
 import { RDF_TYPE, SKOS_SUBJECT } from '@/lib/sparql/queryBuilder'
@@ -305,9 +304,6 @@ const entity1 = ref<EntitySearchResult | null>(presetEntity1.value)
 const entity2 = ref<EntitySearchResult | null>(presetEntity2.value)
 const entity1SearchKey = ref(0)
 const entity2SearchKey = ref(0)
-const graph = ref<RelationshipGraph | null>(null)
-const searching = ref(false)
-const searchError = ref('')
 const selectedNode = ref<GraphNode | null>(null)
 watch(selectedNode, (node) => {
   if (node) recordView(node.iri)
@@ -381,6 +377,17 @@ const graphOptions = ref<GraphOptions>({
   ..._historyExample?.options,
 })
 
+const { graph, searching, searchError, onFindRelationships } = useRelationshipSearch(
+  entity1,
+  entity2,
+  graphOptions,
+  connectionStore,
+  endpointKey,
+  () => {
+    selectedNode.value = null
+  },
+  refreshRecent,
+)
 const { classColors } = useClassColors(graph)
 const { displayClasses, displayNodes, displayEdges, availableLanguages } = useGraphFilters(
   graph,
@@ -414,71 +421,6 @@ async function onLoadRecent(entry: GraphHistoryMeta) {
   selectedNode.value = null
   searchError.value = ''
   refreshRecent()
-}
-
-// ── Find relationships ────────────────────────────────────────────────────────
-
-async function onFindRelationships() {
-  if (!entity1.value || !entity2.value) return
-
-  searching.value = true
-  searchError.value = ''
-  graph.value = null
-  selectedNode.value = null
-
-  try {
-    const context = connectionStore.queryContext
-    const effectiveContext = context ?? { endpointUrl: '' }
-
-    // Resolve which N3 store to use for local query execution.
-    // Wait for any in-progress probe/fetch to settle first.
-    await connectionStore.waitForSubgraph()
-    let store: import('n3').Store | undefined
-    if (connectionStore.isFileSource) {
-      store = connectionStore.rdfStore ?? undefined
-    } else if (connectionStore.localRdfStore) {
-      store = connectionStore.localRdfStore
-    } else if (context) {
-      // Large endpoint (> 50 000 triples) — fetch 2-hop neighbourhoods on demand.
-      store = await fetchNeighbourhoodStore(entity1.value.iri, entity2.value.iri, context)
-    }
-
-    graph.value = await findRelationships(
-      entity1.value.iri,
-      entity2.value.iri,
-      graphOptions.value.maxDistance,
-      effectiveContext,
-      {
-        ignoredProperties: graphOptions.value.ignoredProperties,
-        avoidCycles: graphOptions.value.avoidCycles,
-        language: graphOptions.value.language,
-        store,
-      },
-    )
-
-    if (graph.value.nodes.length === 0) {
-      searchError.value =
-        'No relationships found. Try increasing Max Depth, or select different entities.'
-    } else {
-      // Persist for future sessions
-      saveGraph(
-        endpointKey(),
-        entity1.value,
-        entity2.value,
-        graphOptions.value.maxDistance,
-        graphOptions.value.ignoredProperties,
-        graph.value,
-      )
-      refreshRecent()
-    }
-  } catch (err) {
-    searchError.value =
-      err instanceof Error
-        ? `Query failed: ${err.message}`
-        : 'An unexpected error occurred. Try again or check your network connection.'
-  } finally {
-    searching.value = false
-  }
 }
 
 // ── Disconnect ────────────────────────────────────────────────────────────────
