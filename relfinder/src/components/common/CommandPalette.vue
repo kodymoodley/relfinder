@@ -25,11 +25,34 @@
               :class="['palette-item', { 'palette-item--active': i === activeIndex }]"
               role="option"
               :aria-selected="i === activeIndex"
-              @click="onSelect(result)"
               @pointermove="activeIndex = i"
+              @click="!isInstance(result) && onSelect(result)"
             >
-              <span class="palette-label">{{ result.label }}</span>
-              <Tag :value="result.typeLabel" :severity="result.severity" class="palette-tag" />
+              <!-- Class / Property: full-row clickable -->
+              <template v-if="!isInstance(result)">
+                <span class="palette-label">{{ result.label }}</span>
+                <Tag :value="result.typeLabel" :severity="result.severity" class="palette-tag" />
+              </template>
+
+              <!-- Instance: split left (info → graph) / right (E1 · E2) -->
+              <template v-else>
+                <button class="palette-info-btn" @click.stop="onSelect(result)">
+                  <span class="palette-label">{{ result.label }}</span>
+                  <Tag :value="result.typeLabel" severity="success" class="palette-tag" />
+                </button>
+                <div class="palette-slots">
+                  <button
+                    class="palette-slot-btn"
+                    title="Set as Entity 1 (source)"
+                    @click.stop="onSetSlot(result, 1)"
+                  >E1</button>
+                  <button
+                    class="palette-slot-btn"
+                    title="Set as Entity 2 (target)"
+                    @click.stop="onSetSlot(result, 2)"
+                  >E2</button>
+                </div>
+              </template>
             </li>
           </ul>
 
@@ -52,6 +75,7 @@ import { useSearchIndex } from '@/composables/useSearchIndex'
 import { weightedSumFusion } from '@/lib/search/fusion/weightedSum'
 import { snapshot } from '@/lib/search/interestModel'
 import type { ScoredEntity } from '@/lib/search/types'
+import { paletteNodeIri, palettePropertyIri } from '@/lib/paletteAction'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -176,21 +200,35 @@ function scrollActiveIntoView() {
 
 // ── Selection / navigation ────────────────────────────────────────────────────
 
+function isInstance(result: PaletteResult): boolean {
+  return result.classIri !== OWL_CLASS && result.classIri !== OWL_OBJECT_PROPERTY
+}
+
 function onSelect(result: PaletteResult) {
   close()
-  if (result.classIri === OWL_CLASS || result.classIri === OWL_OBJECT_PROPERTY) {
+  if (result.classIri === OWL_CLASS) {
+    paletteNodeIri.value = result.iri
+    router.push({ name: 'browse' })
+  } else if (result.classIri === OWL_OBJECT_PROPERTY) {
+    palettePropertyIri.value = result.iri
     router.push({ name: 'browse' })
   } else {
-    router.push({
-      name: 'graph',
-      state: {
-        example: {
-          entity1: { iri: result.iri, label: result.label, class: result.classIri },
-          entity2: null,
-        },
-      },
-    })
+    // Primary action for instances: open in graph as entity 1
+    onSetSlot(result, 1)
   }
+}
+
+function onSetSlot(result: PaletteResult, slot: 1 | 2) {
+  close()
+  router.push({
+    name: 'graph',
+    state: {
+      example: {
+        entity1: slot === 1 ? { iri: result.iri, label: result.label, class: result.classIri } : null,
+        entity2: slot === 2 ? { iri: result.iri, label: result.label, class: result.classIri } : null,
+      },
+    },
+  })
 }
 </script>
 
@@ -277,6 +315,48 @@ function onSelect(result: PaletteResult) {
 
 .palette-item--active {
   background: var(--rf-surface-raised);
+}
+
+/* Instance split-row layout ------------------------------------------------ */
+
+.palette-info-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--rf-space-3);
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+}
+
+.palette-slots {
+  display: flex;
+  gap: var(--rf-space-1);
+  flex-shrink: 0;
+}
+
+.palette-slot-btn {
+  font-size: var(--rf-text-xs);
+  font-weight: 600;
+  color: var(--rf-text-subtle);
+  background: var(--rf-surface-raised);
+  border: 1px solid var(--rf-border);
+  border-radius: var(--rf-radius-sm);
+  padding: 2px var(--rf-space-2);
+  cursor: pointer;
+  transition:
+    color var(--rf-duration-fast) var(--rf-ease-out),
+    background var(--rf-duration-fast) var(--rf-ease-out),
+    border-color var(--rf-duration-fast) var(--rf-ease-out);
+}
+
+.palette-slot-btn:hover {
+  color: var(--rf-primary);
+  border-color: var(--rf-primary);
+  background: color-mix(in srgb, var(--rf-primary) 8%, transparent);
 }
 
 .palette-label {

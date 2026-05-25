@@ -24,7 +24,9 @@ function processInChunks(entities: CachedEntity[]): void {
     offset += CHUNK_SIZE
     if (offset < entities.length) _idle(next)
   }
-  _idle(next)
+  // Run the first chunk synchronously so the search index is immediately usable,
+  // then idle-schedule any remaining chunks to avoid blocking the main thread.
+  next()
 }
 
 // ── Public API ────────────────────────────────────────────────────────────────

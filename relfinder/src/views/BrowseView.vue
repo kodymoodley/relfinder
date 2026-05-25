@@ -252,7 +252,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
 import Button from 'primevue/button'
@@ -271,6 +271,7 @@ import SchemaDetailPanel from '@/components/schema/SchemaDetailPanel.vue'
 import ShortcutsModal from '@/components/common/ShortcutsModal.vue'
 import FirstRunTip from '@/components/common/FirstRunTip.vue'
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
+import { paletteNodeIri, palettePropertyIri } from '@/lib/paletteAction'
 
 const router = useRouter()
 const toast = useToast()
@@ -392,6 +393,56 @@ function onEscKey(e: KeyboardEvent) {
     sidebarCollapsed.value = true
   }
 }
+
+// ── Palette selection (from command palette Ctrl+K) ───────────────────────────
+// Reactive refs are written by CommandPalette and cleared here after consumption.
+// This works for both cross-route navigation (component mounts fresh) and
+// same-route navigation (onMounted doesn't re-fire) without history.state hacks.
+
+watch(
+  paletteNodeIri,
+  async (iri) => {
+    if (!iri) return
+    paletteNodeIri.value = null
+    await nextTick()
+    const node = schemaStore.nodes.find((n) => n.iri === iri)
+    if (node) {
+      selectedNode.value = node
+      return
+    }
+    const stop = watch(
+      () => schemaStore.nodes,
+      (nodes) => {
+        const n = nodes.find((n) => n.iri === iri)
+        if (n) { selectedNode.value = n; stop() }
+      },
+    )
+  },
+  { immediate: true },
+)
+
+watch(
+  palettePropertyIri,
+  async (iri) => {
+    if (!iri) return
+    palettePropertyIri.value = null
+    await nextTick()
+    const edge = schemaStore.edges.find((e) => e.props.some((p) => p.iri === iri))
+    if (edge) {
+      selectedNode.value = null
+      selectedEdge.value = edge
+      return
+    }
+    const stop = watch(
+      () => schemaStore.edges,
+      (edges) => {
+        const e = edges.find((e) => e.props.some((p) => p.iri === iri))
+        if (e) { selectedNode.value = null; selectedEdge.value = e; stop() }
+      },
+    )
+  },
+  { immediate: true },
+)
 
 onMounted(() => {
   document.addEventListener('keydown', onEscKey)
