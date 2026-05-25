@@ -34,7 +34,7 @@
                 <Tag :value="result.typeLabel" :severity="result.severity" class="palette-tag" />
               </template>
 
-              <!-- Instance: [info icon] [label] [Set as start | Find path →] -->
+              <!-- Instance: [info icon] [label] [type tag] [Set as start | Find path →] -->
               <template v-else>
                 <button
                   class="palette-inst-info"
@@ -48,6 +48,7 @@
                   :class="{ 'palette-label--start': pathStartEntity?.iri === result.iri }"
                   >{{ result.label }}</span
                 >
+                <Tag :value="result.typeLabel" :severity="result.severity" class="palette-tag" />
                 <button
                   v-if="!pathStartEntity"
                   class="palette-inst-action"
