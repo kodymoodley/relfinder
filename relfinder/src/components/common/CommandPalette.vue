@@ -45,12 +45,16 @@
                     class="palette-slot-btn"
                     title="Set as Entity 1 (source)"
                     @click.stop="onSetSlot(result, 1)"
-                  >E1</button>
+                  >
+                    E1
+                  </button>
                   <button
                     class="palette-slot-btn"
                     title="Set as Entity 2 (target)"
                     @click.stop="onSetSlot(result, 2)"
-                  >E2</button>
+                  >
+                    E2
+                  </button>
                 </div>
               </template>
             </li>
@@ -224,8 +228,10 @@ function onSetSlot(result: PaletteResult, slot: 1 | 2) {
     name: 'graph',
     state: {
       example: {
-        entity1: slot === 1 ? { iri: result.iri, label: result.label, class: result.classIri } : null,
-        entity2: slot === 2 ? { iri: result.iri, label: result.label, class: result.classIri } : null,
+        entity1:
+          slot === 1 ? { iri: result.iri, label: result.label, class: result.classIri } : null,
+        entity2:
+          slot === 2 ? { iri: result.iri, label: result.label, class: result.classIri } : null,
       },
     },
   })

@@ -251,7 +251,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed, onMounted, onUnmounted, onActivated, onDeactivated, nextTick } from 'vue'
+import {
+  ref,
+  watch,
+  computed,
+  onMounted,
+  onUnmounted,
+  onActivated,
+  onDeactivated,
+  nextTick,
+} from 'vue'
 import { useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import { useDarkMode } from '@/composables/useDarkMode'

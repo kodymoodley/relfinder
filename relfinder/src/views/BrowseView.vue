@@ -414,7 +414,10 @@ watch(
       () => schemaStore.nodes,
       (nodes) => {
         const n = nodes.find((n) => n.iri === iri)
-        if (n) { selectedNode.value = n; stop() }
+        if (n) {
+          selectedNode.value = n
+          stop()
+        }
       },
     )
   },
@@ -437,7 +440,11 @@ watch(
       () => schemaStore.edges,
       (edges) => {
         const e = edges.find((e) => e.props.some((p) => p.iri === iri))
-        if (e) { selectedNode.value = null; selectedEdge.value = e; stop() }
+        if (e) {
+          selectedNode.value = null
+          selectedEdge.value = e
+          stop()
+        }
       },
     )
   },

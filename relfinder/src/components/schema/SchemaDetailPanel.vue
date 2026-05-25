@@ -50,7 +50,13 @@
                 :key="searchMode"
                 class="search-source-badge"
                 :class="`search-source-badge--${searchMode}`"
-                :title="searchMode === 'live' ? 'Results from SPARQL endpoint' : searchMode === 'querying' ? 'Querying endpoint…' : 'Results from local cache'"
+                :title="
+                  searchMode === 'live'
+                    ? 'Results from SPARQL endpoint'
+                    : searchMode === 'querying'
+                      ? 'Querying endpoint…'
+                      : 'Results from local cache'
+                "
               >
                 <span class="search-source-dot" />
                 <span v-if="searchMode === 'live'" class="search-source-text">endpoint</span>
@@ -65,7 +71,9 @@
               <i class="pi pi-times" />
             </button>
           </div>
-          <p v-if="!instanceSearchLoading && displayedInstances.length === 0" class="list-empty">No matches.</p>
+          <p v-if="!instanceSearchLoading && displayedInstances.length === 0" class="list-empty">
+            No matches.
+          </p>
 
           <!-- Start entity chip — persists across class selections -->
           <div v-if="pendingStart" class="start-chip">
@@ -290,7 +298,7 @@ async function runInstanceSparqlSearch(query: string, classIri: string) {
   instanceSearchLoading.value = true
   instanceSearchResults.value = []
   const context = connectionStore.queryContext ?? { endpointUrl: '' }
-  const store = connectionStore.rdfStore ?? (connectionStore as any).localRdfStore ?? undefined
+  const store = connectionStore.rdfStore ?? connectionStore.localRdfStore ?? undefined
   try {
     const results = await searchEntities(context, [classIri], store, 20, query, 'en')
     if (seq !== _searchSeq) return
@@ -970,13 +978,22 @@ const incoming = computed(() => {
 }
 
 @keyframes source-pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.25; transform: scale(0.65); }
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.25;
+    transform: scale(0.65);
+  }
 }
 
 .source-badge-enter-active,
 .source-badge-leave-active {
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
 }
 
 .source-badge-enter-from,
