@@ -34,7 +34,7 @@
                 <Tag :value="result.typeLabel" :severity="result.severity" class="palette-tag" />
               </template>
 
-              <!-- Instance: [info icon] [label] [Set as target] -->
+              <!-- Instance: [info icon] [label] [Set as start | Find path →] -->
               <template v-else>
                 <button
                   class="palette-inst-info"
@@ -43,10 +43,20 @@
                 >
                   <i class="pi pi-info-circle" />
                 </button>
-                <span class="palette-label">{{ result.label }}</span>
-                <button class="palette-inst-action" @click.stop="onSetSlot(result, 2)">
-                  Set as target
-                </button>
+                <span
+                  class="palette-label"
+                  :class="{ 'palette-label--start': pathStartEntity?.iri === result.iri }"
+                >{{ result.label }}</span>
+                <button
+                  v-if="!pathStartEntity"
+                  class="palette-inst-action"
+                  @click.stop="onSetStart(result)"
+                >Set as start</button>
+                <button
+                  v-else-if="pathStartEntity.iri !== result.iri"
+                  class="palette-inst-action palette-inst-action--path"
+                  @click.stop="onFindPath(result)"
+                >Find path →</button>
               </template>
             </li>
           </ul>
@@ -70,7 +80,8 @@ import { useSearchIndex } from '@/composables/useSearchIndex'
 import { weightedSumFusion } from '@/lib/search/fusion/weightedSum'
 import { snapshot } from '@/lib/search/interestModel'
 import type { ScoredEntity } from '@/lib/search/types'
-import { paletteNodeIri, palettePropertyIri } from '@/lib/paletteAction'
+import { paletteNodeIri, palettePropertyIri, palettePreviewEntity, graphPreset } from '@/lib/paletteAction'
+import { pathStartEntity } from '@/lib/pathStart'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -208,24 +219,25 @@ function onSelect(result: PaletteResult) {
     palettePropertyIri.value = result.iri
     router.push({ name: 'browse' })
   } else {
-    // Primary action for instances: open in graph as entity 1
-    onSetSlot(result, 1)
+    // Primary action for instances (ⓘ click): open NodeDetail in GraphView
+    palettePreviewEntity.value = { iri: result.iri, label: result.label, class: result.classIri }
+    router.push({ name: 'graph' })
   }
 }
 
-function onSetSlot(result: PaletteResult, slot: 1 | 2) {
+function onSetStart(result: PaletteResult) {
+  pathStartEntity.value = { iri: result.iri, label: result.label, class: result.classIri }
+}
+
+function onFindPath(result: PaletteResult) {
+  const start = pathStartEntity.value!
+  pathStartEntity.value = null
+  graphPreset.value = {
+    entity1: { iri: start.iri, label: start.label, class: start.class },
+    entity2: { iri: result.iri, label: result.label, class: result.classIri },
+  }
   close()
-  router.push({
-    name: 'graph',
-    state: {
-      example: {
-        entity1:
-          slot === 1 ? { iri: result.iri, label: result.label, class: result.classIri } : null,
-        entity2:
-          slot === 2 ? { iri: result.iri, label: result.label, class: result.classIri } : null,
-      },
-    },
-  })
+  router.push({ name: 'graph' })
 }
 </script>
 
@@ -356,6 +368,15 @@ function onSetSlot(result: PaletteResult, slot: 1 | 2) {
 .palette-inst-action:hover {
   color: var(--rf-primary);
   background: color-mix(in srgb, var(--rf-primary) 8%, transparent);
+}
+
+.palette-inst-action--path {
+  color: var(--rf-primary);
+}
+
+.palette-label--start {
+  font-weight: var(--rf-weight-semibold);
+  color: var(--rf-primary);
 }
 
 .palette-label {

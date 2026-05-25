@@ -75,22 +75,22 @@
             No matches.
           </p>
 
-          <!-- Start entity chip — persists across class selections -->
-          <div v-if="pendingStart" class="start-chip">
+          <!-- Start entity chip — shared with CommandPalette via pathStartEntity -->
+          <div v-if="pathStartEntity" class="start-chip">
             <span class="start-dot" />
-            <span class="start-chip-label" :title="pendingStart.iri">{{ pendingStart.label }}</span>
-            <button class="start-chip-clear" aria-label="Clear start" @click="pendingStart = null">
+            <span class="start-chip-label" :title="pathStartEntity.iri">{{ pathStartEntity.label }}</span>
+            <button class="start-chip-clear" aria-label="Clear start" @click="pathStartEntity = null">
               <i class="pi pi-times" />
             </button>
           </div>
-          <p v-if="pendingStart" class="start-hint">Pick a destination:</p>
+          <p v-if="pathStartEntity" class="start-hint">Pick a destination:</p>
           <ul class="instance-list">
             <li
               v-for="inst in displayedInstances"
               :key="inst.iri"
               class="instance-item"
               :class="{
-                'instance-item--start': pendingStart?.iri === inst.iri,
+                'instance-item--start': pathStartEntity?.iri === inst.iri,
                 'instance-item--expanded': expandedInstances.has(inst.iri),
               }"
             >
@@ -109,13 +109,13 @@
                 </button>
                 <span class="instance-label" :title="inst.iri">{{ inst.label }}</span>
                 <Button
-                  v-if="!pendingStart"
+                  v-if="!pathStartEntity"
                   size="small"
                   text
                   label="Set as start"
                   class="set-start-btn"
                   @click="
-                    pendingStart = {
+                    pathStartEntity = {
                       iri: inst.iri,
                       label: inst.label,
                       class: props.selectedNode!.iri,
@@ -123,18 +123,12 @@
                   "
                 />
                 <Button
-                  v-else-if="pendingStart.iri !== inst.iri"
+                  v-else-if="pathStartEntity.iri !== inst.iri"
                   size="small"
                   text
                   label="Find path →"
                   class="find-path-btn"
-                  @click="
-                    emit('find-paths', pendingStart!, {
-                      iri: inst.iri,
-                      label: inst.label,
-                      class: props.selectedNode!.iri,
-                    })
-                  "
+                  @click="doFindPath(inst)"
                 />
               </div>
               <div v-if="expandedInstances.has(inst.iri)" class="instance-detail">
@@ -251,6 +245,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onUnmounted, nextTick } from 'vue'
+import { pathStartEntity } from '@/lib/pathStart'
 import Drawer from 'primevue/drawer'
 import Tag from 'primevue/tag'
 import DataTable from 'primevue/datatable'
@@ -279,7 +274,6 @@ const emit = defineEmits<{
   ]
 }>()
 
-const pendingStart = ref<{ iri: string; label: string; class: string } | null>(null)
 const expandedInstances = ref<Set<string>>(new Set())
 const instanceSearch = ref('')
 const instanceSearchRef = ref<HTMLInputElement | null>(null)
@@ -287,6 +281,12 @@ const instanceSearchResults = ref<Array<{ iri: string; label: string }>>([])
 const instanceSearchLoading = ref(false)
 let _searchSeq = 0
 let _instanceSearchTimer: ReturnType<typeof setTimeout> | null = null
+
+function doFindPath(inst: { iri: string; label: string }) {
+  const start = pathStartEntity.value!
+  pathStartEntity.value = null
+  emit('find-paths', start, { iri: inst.iri, label: inst.label, class: props.selectedNode!.iri })
+}
 
 function clearInstanceSearch() {
   instanceSearch.value = ''

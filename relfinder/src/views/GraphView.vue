@@ -59,7 +59,7 @@
         <!-- Entity selection -->
         <section class="sidebar-section" data-testid="entity1-search">
           <EntitySearch
-            :key="`e1-${entitySearchKey}`"
+            :key="`e1-${entity1SearchKey}`"
             id="entity1"
             label="Source"
             placeholder="Search…"
@@ -75,7 +75,7 @@
 
         <section class="sidebar-section" data-testid="entity2-search">
           <EntitySearch
-            :key="`e2-${entitySearchKey}`"
+            :key="`e2-${entity2SearchKey}`"
             id="entity2"
             label="Target"
             placeholder="Search…"
@@ -291,6 +291,7 @@ import { recordView } from '@/lib/search/interestModel'
 import ShortcutsModal from '@/components/common/ShortcutsModal.vue'
 import FirstRunTip from '@/components/common/FirstRunTip.vue'
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
+import { palettePreviewEntity, graphPreset } from '@/lib/paletteAction'
 
 const router = useRouter()
 const connectionStore = useConnectionStore()
@@ -321,6 +322,39 @@ watch(selectedNode, (node) => {
   if (node) recordView(node.iri)
 })
 
+// Open NodeDetail for an instance selected via the command palette (ⓘ button).
+// Works whether GraphView is freshly mounted or activated from the keep-alive cache.
+watch(
+  palettePreviewEntity,
+  (entity) => {
+    if (!entity) return
+    palettePreviewEntity.value = null
+    selectedNode.value = { id: -1, iri: entity.iri, label: entity.label, class: entity.class, isEndpoint: false }
+  },
+  { immediate: true },
+)
+
+// Apply entity presets from the command palette or class pane "Find path →" flow.
+// Using a reactive signal (not history.state) so this fires even when GraphView is
+// already the active view and router.push triggers a same-route navigation.
+watch(
+  graphPreset,
+  async (preset) => {
+    if (!preset) return
+    graphPreset.value = null
+    presetEntity1.value = preset.entity1
+    entity1.value = preset.entity1
+    entity1SearchKey.value++
+    presetEntity2.value = preset.entity2
+    entity2.value = preset.entity2
+    entity2SearchKey.value++
+    await nextTick()
+    presetEntity1.value = null
+    presetEntity2.value = null
+  },
+  { immediate: true },
+)
+
 const sidebarCollapsed = ref(isMobile.value)
 const optionsOpen = ref(false)
 const showShortcuts = ref(false)
@@ -343,7 +377,8 @@ useKeyboardShortcuts({
 
 const recentOpen = ref(true)
 const recentGraphs = ref<GraphHistoryMeta[]>([])
-const entitySearchKey = ref(0)
+const entity1SearchKey = ref(0)
+const entity2SearchKey = ref(0)
 
 const graphOptions = ref<GraphOptions>({
   maxDistance: 2,
@@ -432,7 +467,8 @@ async function onLoadRecent(entry: GraphHistoryMeta) {
   presetEntity2.value = entry.entity2
   entity1.value = entry.entity1
   entity2.value = entry.entity2
-  entitySearchKey.value++
+  entity1SearchKey.value++
+  entity2SearchKey.value++
 
   // Unlock chips so the user can still change entities
   await nextTick()
@@ -539,7 +575,28 @@ function onEscKey(e: KeyboardEvent) {
 
 // With <keep-alive>, use onActivated/onDeactivated for the keyboard listener
 // so Esc is only captured while the graph view is actually visible.
-onActivated(() => document.addEventListener('keydown', onEscKey))
+// Also re-read history.state.example so palette/browse entity presets work
+// when this view is activated from the keep-alive cache (onMounted doesn't re-fire).
+onActivated(async () => {
+  document.addEventListener('keydown', onEscKey)
+  const ex = (history.state as Record<string, unknown>)?.example as
+    | { entity1: EntitySearchResult | null; entity2: EntitySearchResult | null }
+    | undefined
+  if (!ex) return
+  if (ex.entity1) {
+    presetEntity1.value = ex.entity1
+    entity1.value = ex.entity1
+    entity1SearchKey.value++
+  }
+  if (ex.entity2) {
+    presetEntity2.value = ex.entity2
+    entity2.value = ex.entity2
+    entity2SearchKey.value++
+  }
+  await nextTick()
+  presetEntity1.value = null
+  presetEntity2.value = null
+})
 onDeactivated(() => document.removeEventListener('keydown', onEscKey))
 onUnmounted(() => document.removeEventListener('keydown', onEscKey))
 

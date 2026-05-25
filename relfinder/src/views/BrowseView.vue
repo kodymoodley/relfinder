@@ -271,7 +271,7 @@ import SchemaDetailPanel from '@/components/schema/SchemaDetailPanel.vue'
 import ShortcutsModal from '@/components/common/ShortcutsModal.vue'
 import FirstRunTip from '@/components/common/FirstRunTip.vue'
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
-import { paletteNodeIri, palettePropertyIri } from '@/lib/paletteAction'
+import { paletteNodeIri, palettePropertyIri, graphPreset } from '@/lib/paletteAction'
 
 const router = useRouter()
 const toast = useToast()
@@ -351,16 +351,11 @@ function onFindPaths(
   start: { iri: string; label: string; class: string },
   end: { iri: string; label: string; class: string },
 ) {
-  // Spread into plain objects — history.pushState cannot clone Vue Proxy objects.
-  router.push({
-    name: 'graph',
-    state: {
-      example: {
-        entity1: { iri: start.iri, label: start.label },
-        entity2: { iri: end.iri, label: end.label },
-      },
-    },
-  })
+  graphPreset.value = {
+    entity1: { iri: start.iri, label: start.label, class: start.class },
+    entity2: { iri: end.iri, label: end.label, class: end.class },
+  }
+  router.push({ name: 'graph' })
 }
 
 // ── Load more ─────────────────────────────────────────────────────────────────

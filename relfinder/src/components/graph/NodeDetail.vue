@@ -79,7 +79,10 @@ const dataProps = ref<DataProperty[]>([])
 const loadingProps = ref(false)
 const propsError = ref('')
 
-// Open/close drawer when node prop changes
+// Open/close drawer when node prop changes.
+// immediate:true handles the case where GraphView mounts with a node already
+// selected (e.g. from a command-palette preview), where there is no null→node
+// transition for the watcher to detect.
 watch(
   () => props.node,
   async (node) => {
@@ -113,6 +116,7 @@ watch(
       loadingProps.value = false
     }
   },
+  { immediate: true },
 )
 
 // When the drawer is closed by the user, clear the selected node
