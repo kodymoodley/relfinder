@@ -1,5 +1,5 @@
 import { openDB, type IDBPDatabase } from 'idb'
-import type { CachedEntity, EvictionPolicy, InterestEntry } from './types'
+import type { CachedEntity, InterestEntry } from './types'
 import { lruPolicy } from './eviction/lru'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -16,7 +16,6 @@ export const CACHE_MAX = 5_000
 let _db: IDBPDatabase | null = null
 let _initPromise: Promise<void> | null = null
 const _entities = new Map<string, CachedEntity>()
-let _policy: EvictionPolicy = lruPolicy
 
 const _dirty = new Set<string>() // entities modified since the last IDB flush
 const _deleted = new Set<string>() // entities removed since the last IDB flush
@@ -107,7 +106,7 @@ function scheduleFlush(): void {
 
 function evictIfNeeded(interest: Map<string, InterestEntry>): void {
   if (_entities.size <= CACHE_MAX) return
-  const victims = _policy.selectVictims([..._entities.values()], interest, CACHE_MAX)
+  const victims = lruPolicy.selectVictims([..._entities.values()], interest, CACHE_MAX)
   for (const iri of victims) {
     _entities.delete(iri)
     _dirty.delete(iri)
@@ -117,11 +116,6 @@ function evictIfNeeded(interest: Map<string, InterestEntry>): void {
 }
 
 // ── Public API ────────────────────────────────────────────────────────────────
-
-/** Replaces the active eviction policy. Takes effect on the next eviction. */
-export function setEvictionPolicy(policy: EvictionPolicy): void {
-  _policy = policy
-}
 
 /**
  * Adds or updates entities in the cache. Existing entries retain their original
@@ -215,7 +209,6 @@ export function _resetForTest(): void {
   _flushScheduled = false
   _db = null
   _initPromise = null
-  _policy = lruPolicy
   hooks.onAdd = null
   hooks.onEvict = null
 }
