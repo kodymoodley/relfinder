@@ -445,6 +445,31 @@ export const useSchemaStore = defineStore('schema', () => {
     }
   }
 
+  // ── Merge search results into instances cache ─────────────────────────────
+
+  function mergeInstances(classIri: string, incoming: Array<{ iri: string; label: string }>) {
+    if (incoming.length === 0) return
+    const existing = instancesCache.value.get(classIri) ?? []
+    const knownIris = new Set(existing.map((i) => i.iri))
+    const novel = incoming.filter((i) => !knownIris.has(i.iri))
+    if (novel.length === 0) return
+    instancesCache.value = new Map(instancesCache.value).set(classIri, [...existing, ...novel])
+    const classLabel = nodes.value.find((n) => n.iri === classIri)?.label ?? ''
+    const now = Date.now()
+    cacheAdd(
+      novel.map((inst) => ({
+        iri: inst.iri,
+        label: inst.label,
+        altLabels: [],
+        classIri,
+        classLabel,
+        description: '',
+        addedAt: now,
+        lastAccessed: now,
+      })),
+    )
+  }
+
   // ── Per-instance entity properties ───────────────────────────────────────
 
   async function fetchEntityPropsForInstance(
@@ -501,6 +526,7 @@ export const useSchemaStore = defineStore('schema', () => {
     instancesCache,
     instancesLoading,
     fetchInstances,
+    mergeInstances,
     // entity props
     entityPropsCache,
     entityPropsLoading,

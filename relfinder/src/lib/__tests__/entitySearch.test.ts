@@ -214,15 +214,29 @@ describe('searchEntities', () => {
     expect(results[0]!.label).toBe('Cillian Murphy')
   })
 
-  it('uses a direct rdf:type triple when allowedClasses is provided — no full type scan', async () => {
-    vi.mocked(executeSelect).mockResolvedValue([])
+  it('single-class path omits ?ctype from query and injects class from argument', async () => {
+    vi.mocked(executeSelect).mockResolvedValue([
+      {
+        s: namedNode('http://dbpedia.org/resource/Brad_Pitt'),
+        label: literal('Brad Pitt', 'en'),
+        // no ctype binding — single-class path does not SELECT ?ctype
+      },
+    ])
 
-    await searchEntities(CTX, ['http://dbpedia.org/ontology/Actor'])
+    const results = await searchEntities(
+      CTX,
+      ['http://dbpedia.org/ontology/Actor'],
+      undefined,
+      20,
+      'brad',
+    )
 
     const query = vi.mocked(executeSelect).mock.calls[0]![0]!
-    // Direct class triple instead of ?s a ?ctype . FILTER(?ctype IN (...))
     expect(query).toContain('?s a <http://dbpedia.org/ontology/Actor>')
-    expect(query).not.toContain('FILTER (?ctype IN')
+    expect(query).not.toContain('?ctype')
+    expect(results).toHaveLength(1)
+    expect(results[0]!.label).toBe('Brad Pitt')
+    expect(results[0]!.class).toBe('http://dbpedia.org/ontology/Actor')
   })
 
   it('uses ?s a ?ctype when allowedClasses is empty — unrestricted search', async () => {

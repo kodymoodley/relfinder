@@ -128,9 +128,35 @@ export async function searchEntities(
     const allLabelProps = [...new Set([...builtinLabelProps, ...customLabelProperties])]
     const labelPropFilter = `FILTER(?lp IN (${allLabelProps.map((p) => `<${p}>`).join(', ')}))`
 
-    // When classes are specified, bind the type directly so the engine can use
-    // the rdf:type index rather than scanning all subjects (?s a ?ctype . FILTER IN
-    // forces a full type scan on large endpoints like DBpedia).
+    // Single-class fast path: omit ?ctype from SELECT entirely so that Virtuoso's
+    // failure to propagate BIND-inside-subgroup variables cannot silently drop all
+    // results. The class IRI is injected from allowedClasses[0] directly.
+    if (allowedClasses.length === 1) {
+      const rows = await runSelect(
+        `SELECT DISTINCT ?s ?label WHERE {
+          ?s a <${allowedClasses[0]}> .
+          ?s ?lp ?label .
+          ${labelPropFilter}
+          ${labelFilter}
+          ${langFilter}
+        } LIMIT ${limit}`,
+        context,
+      )
+      const seen = new Set<string>()
+      return rows
+        .filter((b) => b['s'] && b['label'])
+        .reduce<EntitySearchResult[]>((acc, b) => {
+          const iri = b['s']!.value
+          if (!seen.has(iri)) {
+            seen.add(iri)
+            acc.push({ iri, label: b['label']!.value, class: allowedClasses[0]! })
+          }
+          return acc
+        }, [])
+    }
+
+    // Multi-class or unrestricted: bind the type so the engine can use the
+    // rdf:type index rather than a full subject scan.
     let classPattern: string
     if (allowedClasses.length === 0) {
       classPattern = '?s a ?ctype .'
