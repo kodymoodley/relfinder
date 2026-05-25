@@ -264,6 +264,7 @@ import {
 import { useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import { useSidebar } from '@/composables/useSidebar'
+import { useClassColors } from '@/composables/useClassColors'
 import Divider from 'primevue/divider'
 import Message from 'primevue/message'
 import Tag from 'primevue/tag'
@@ -393,20 +394,7 @@ const graphOptions = ref<GraphOptions>({
   ..._historyExample?.options,
 })
 
-// ── Class colour assignment ───────────────────────────────────────────────────
-
-const PALETTE = [
-  '#06b6d4', // cyan
-  '#10b981', // emerald
-  '#a78bfa', // violet
-  '#facc15', // yellow
-  '#f472b6', // pink
-  '#f87171', // red
-  '#60a5fa', // blue
-  '#a3e635', // lime
-]
-
-const classColors = ref(new Map<string, string>())
+const { classColors } = useClassColors(graph)
 
 // ── Client-side display filtering ─────────────────────────────────────────────
 
@@ -437,18 +425,6 @@ const availableLanguages = computed(() => {
   }
   return [...langs].sort()
 })
-
-watch(
-  () => graph.value?.classes,
-  (classes) => {
-    if (!classes) return
-    const map = new Map<string, string>()
-    classes.forEach((cls, idx) => {
-      map.set(cls, PALETTE[idx % PALETTE.length] ?? '#94a3b8')
-    })
-    classColors.value = map
-  },
-)
 
 // ── Recent graphs ─────────────────────────────────────────────────────────────
 
