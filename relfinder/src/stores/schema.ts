@@ -56,7 +56,7 @@ export const useSchemaStore = defineStore('schema', () => {
 
   // ── Internal helpers ─────────────────────────────────────────────────────────
 
-  // Module-level so both start() and loadMore() share the same processed set.
+  // Shared across start() and loadMore() calls within the same store instance.
   let abortController: AbortController | null = null
   const _processedSet = new Set<string>()
   let _context: QueryContext | null = null
@@ -224,8 +224,6 @@ export const useSchemaStore = defineStore('schema', () => {
     progress.value = { completed: 0, total: 0 }
     statusMessage.value = 'Discovering more classes…'
 
-    const batchProcessed = new Set<string>()
-
     try {
       await extractSchema(
         context,
@@ -254,7 +252,6 @@ export const useSchemaStore = defineStore('schema', () => {
             progress.value = { completed, total }
           },
           onClassProcessed(classIri) {
-            batchProcessed.add(classIri)
             _processedSet.add(classIri)
             fetchInstances(classIri, context, n3Store).catch(() => {})
             fetchDataProps(classIri, context, n3Store).catch(() => {})

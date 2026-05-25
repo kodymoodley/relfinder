@@ -15,7 +15,7 @@
 
 import type { Store } from 'n3'
 import { executeSelect, executeSelectOnStore } from './engine'
-import { getQueries } from './queryBuilder'
+import { getQueries, RDF_TYPE, SKOS_SUBJECT } from './queryBuilder'
 import { buildRelationshipsGraph, mergeEdgeDuplicates, applyLabelsAndTypes } from './graphBuilder'
 import { shortIri } from '../utils/iri'
 import { cacheGet, cacheSet } from '../cache/queryCache'
@@ -612,10 +612,7 @@ export async function findRelationships(
     entity1IRI: entity1,
     entity2IRI: entity2,
     ignoredObjects: options.ignoredObjects ?? [],
-    ignoredProperties: options.ignoredProperties ?? [
-      'http://www.w3.org/1999/02/22-rdf-syntax-ns#type',
-      'http://www.w3.org/2004/02/skos/core#subject',
-    ],
+    ignoredProperties: options.ignoredProperties ?? [RDF_TYPE, SKOS_SUBJECT],
     avoidCycles: options.avoidCycles ?? QueryCyclesStrategy.NO_INTERMEDIATE_DUPLICATES,
     maxDistance,
     allowedObjectProperties: options.allowedObjectProperties ?? [],

@@ -281,6 +281,7 @@ import {
 } from '@/lib/cache/graphStorage'
 import type { GraphHistoryMeta } from '@/lib/cache/graphStorage'
 import { QueryCyclesStrategy } from '@/lib/sparql/types'
+import { RDF_TYPE, SKOS_SUBJECT } from '@/lib/sparql/queryBuilder'
 import type { EntitySearchResult, RelationshipGraph, GraphNode } from '@/lib/sparql/types'
 import EntitySearch from '@/components/graph/EntitySearch.vue'
 import OptionsPanel from '@/components/graph/OptionsPanel.vue'
@@ -388,10 +389,7 @@ const recentGraphs = ref<GraphHistoryMeta[]>([])
 
 const graphOptions = ref<GraphOptions>({
   maxDistance: 2,
-  ignoredProperties: [
-    'http://www.w3.org/1999/02/22-rdf-syntax-ns#type',
-    'http://www.w3.org/2004/02/skos/core#subject',
-  ],
+  ignoredProperties: [RDF_TYPE, SKOS_SUBJECT],
   avoidCycles: QueryCyclesStrategy.NO_INTERMEDIATE_DUPLICATES,
   allowedClasses: [],
   hiddenClasses: [],

@@ -35,9 +35,6 @@ export const searchConfig = {
   /** Whether the prefetch worker is allowed to issue background SPARQL calls. */
   prefetchEnabled: true,
 
-  /** Phase 2 — disabled until A/B evidence warrants enabling. */
-  semanticEnabled: false,
-
   eviction: 'lru' as EvictionPolicyName,
   fusion: 'weighted-sum' as FusionStrategyName,
 

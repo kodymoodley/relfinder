@@ -26,8 +26,7 @@ import type {
   SchemaDataProp,
 } from './types'
 import { DESCRIPTION_PROPERTIES } from './classDescription'
-
-const RDF_TYPE = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type'
+import { RDF_TYPE } from './queryBuilder'
 
 function runSelect(query: string, context: QueryContext, store?: Store, signal?: AbortSignal) {
   return store ? executeSelectOnStore(query, store) : executeSelect(query, context, signal)
