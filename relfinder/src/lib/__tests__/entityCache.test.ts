@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import type { CachedEntity, InterestEntry } from '../search/types'
+import type { CachedEntity } from '../search/types'
 import { lruPolicy } from '../search/eviction/lru'
 
 // ── IDB mock (hoisted before any module imports) ──────────────────────────────
@@ -40,24 +40,6 @@ function makeEntity(iri: string, overrides: Partial<CachedEntity> = {}): CachedE
   }
 }
 
-function makeInterest(
-  iri: string,
-  overrides: Partial<InterestEntry> = {},
-): [string, InterestEntry] {
-  return [
-    iri,
-    {
-      iri,
-      selectCount: 0,
-      viewCount: 0,
-      dwellMs: 0,
-      pinned: false,
-      dismissed: false,
-      lastSeen: Date.now(),
-      ...overrides,
-    },
-  ]
-}
 
 // ── entityCache module ────────────────────────────────────────────────────────
 
@@ -270,4 +252,3 @@ describe('lruPolicy', () => {
     expect(entries).toEqual(original)
   })
 })
-
