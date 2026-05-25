@@ -8,7 +8,6 @@ import type { SchemaNode, SchemaEdge } from '../sparql/types'
 vi.mock('../search/entityCache', () => ({
   cacheAdd: vi.fn(),
   cacheHas: vi.fn(() => false),
-  cacheAll: vi.fn(() => []),
 }))
 
 import { bootstrapFromSchema } from '../search/coldStartBootstrap'

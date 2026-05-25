@@ -34,28 +34,19 @@
                 <Tag :value="result.typeLabel" :severity="result.severity" class="palette-tag" />
               </template>
 
-              <!-- Instance: split left (info → graph) / right (E1 · E2) -->
+              <!-- Instance: [info icon] [label] [Set as target] -->
               <template v-else>
-                <button class="palette-info-btn" @click.stop="onSelect(result)">
-                  <span class="palette-label">{{ result.label }}</span>
-                  <Tag :value="result.typeLabel" severity="success" class="palette-tag" />
+                <button
+                  class="palette-inst-info"
+                  :title="result.iri"
+                  @click.stop="onSelect(result)"
+                >
+                  <i class="pi pi-info-circle" />
                 </button>
-                <div class="palette-slots">
-                  <button
-                    class="palette-slot-btn"
-                    title="Set as Entity 1 (source)"
-                    @click.stop="onSetSlot(result, 1)"
-                  >
-                    E1
-                  </button>
-                  <button
-                    class="palette-slot-btn"
-                    title="Set as Entity 2 (target)"
-                    @click.stop="onSetSlot(result, 2)"
-                  >
-                    E2
-                  </button>
-                </div>
+                <span class="palette-label">{{ result.label }}</span>
+                <button class="palette-inst-action" @click.stop="onSetSlot(result, 2)">
+                  Set as target
+                </button>
               </template>
             </li>
           </ul>
@@ -323,45 +314,47 @@ function onSetSlot(result: PaletteResult, slot: 1 | 2) {
   background: var(--rf-surface-raised);
 }
 
-/* Instance split-row layout ------------------------------------------------ */
+/* Instance row layout (mirrors SchemaDetailPanel .instance-row) ------------ */
 
-.palette-info-btn {
+.palette-inst-info {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
-  gap: var(--rf-space-3);
-  flex: 1;
-  min-width: 0;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
   background: none;
   border: none;
-  padding: 0;
-  cursor: pointer;
-  text-align: left;
-}
-
-.palette-slots {
-  display: flex;
-  gap: var(--rf-space-1);
-  flex-shrink: 0;
-}
-
-.palette-slot-btn {
-  font-size: var(--rf-text-xs);
-  font-weight: 600;
-  color: var(--rf-text-subtle);
-  background: var(--rf-surface-raised);
-  border: 1px solid var(--rf-border);
   border-radius: var(--rf-radius-sm);
-  padding: 2px var(--rf-space-2);
+  color: var(--rf-text-subtle);
   cursor: pointer;
   transition:
     color var(--rf-duration-fast) var(--rf-ease-out),
-    background var(--rf-duration-fast) var(--rf-ease-out),
-    border-color var(--rf-duration-fast) var(--rf-ease-out);
+    background var(--rf-duration-fast) var(--rf-ease-out);
 }
 
-.palette-slot-btn:hover {
+.palette-inst-info:hover {
   color: var(--rf-primary);
-  border-color: var(--rf-primary);
+  background: color-mix(in srgb, var(--rf-primary) 8%, transparent);
+}
+
+.palette-inst-action {
+  flex-shrink: 0;
+  font-size: var(--rf-text-xs);
+  color: var(--rf-text-subtle);
+  background: none;
+  border: none;
+  padding: 2px var(--rf-space-2);
+  border-radius: var(--rf-radius-sm);
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    color var(--rf-duration-fast) var(--rf-ease-out),
+    background var(--rf-duration-fast) var(--rf-ease-out);
+}
+
+.palette-inst-action:hover {
+  color: var(--rf-primary);
   background: color-mix(in srgb, var(--rf-primary) 8%, transparent);
 }
 
