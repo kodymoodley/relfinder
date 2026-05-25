@@ -271,7 +271,8 @@ import SchemaDetailPanel from '@/components/schema/SchemaDetailPanel.vue'
 import ShortcutsModal from '@/components/common/ShortcutsModal.vue'
 import FirstRunTip from '@/components/common/FirstRunTip.vue'
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
-import { paletteNodeIri, palettePropertyIri, graphPreset } from '@/lib/paletteAction'
+import { storeToRefs } from 'pinia'
+import { useNavigationStore } from '@/stores/navigation'
 
 const router = useRouter()
 const toast = useToast()
@@ -279,6 +280,7 @@ const connectionStore = useConnectionStore()
 const schemaStore = useSchemaStore()
 const { dark, toggle: toggleDark } = useDarkMode()
 const { isMobile } = useBreakpoint()
+const { paletteNodeIri, palettePropertyIri, graphPreset } = storeToRefs(useNavigationStore())
 
 // ── Local UI state ────────────────────────────────────────────────────────────
 

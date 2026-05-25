@@ -80,19 +80,17 @@
 
 <script setup lang="ts">
 import { ref, watch, nextTick } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 import Tag from 'primevue/tag'
 import { useSearchIndex } from '@/composables/useSearchIndex'
 import { weightedSumFusion } from '@/lib/search/fusion/weightedSum'
 import { snapshot } from '@/lib/search/interestModel'
 import type { ScoredEntity } from '@/lib/search/types'
-import {
-  paletteNodeIri,
-  palettePropertyIri,
-  palettePreviewEntity,
-  graphPreset,
-} from '@/lib/paletteAction'
-import { pathStartEntity } from '@/lib/pathStart'
+import { useNavigationStore } from '@/stores/navigation'
+
+const { paletteNodeIri, palettePropertyIri, palettePreviewEntity, graphPreset, pathStartEntity } =
+  storeToRefs(useNavigationStore())
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 

@@ -292,12 +292,14 @@ import { recordView } from '@/lib/search/interestModel'
 import ShortcutsModal from '@/components/common/ShortcutsModal.vue'
 import FirstRunTip from '@/components/common/FirstRunTip.vue'
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
-import { palettePreviewEntity, graphPreset } from '@/lib/paletteAction'
+import { storeToRefs } from 'pinia'
+import { useNavigationStore } from '@/stores/navigation'
 
 const router = useRouter()
 const connectionStore = useConnectionStore()
 const { dark, toggle: toggleDark } = useDarkMode()
 const { isMobile } = useBreakpoint()
+const { palettePreviewEntity, graphPreset } = storeToRefs(useNavigationStore())
 
 // ── State ─────────────────────────────────────────────────────────────────────
 

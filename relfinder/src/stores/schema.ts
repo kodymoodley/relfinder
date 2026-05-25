@@ -168,7 +168,7 @@ export const useSchemaStore = defineStore('schema', () => {
           },
           onClassesLoaded(incoming) {
             lastBatchSize.value = incoming.length
-            nodes.value = incoming
+            nodes.value = [...incoming]
             progress.value = { completed: _processedSet.size, total: incoming.length }
             statusMessage.value = ''
             if (!isFileSource) persist(endpointUrl)

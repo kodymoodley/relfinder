@@ -1,37 +1,41 @@
 /**
- * Tests for the reactive one-shot signals in paletteAction.ts.
+ * Tests for the reactive one-shot signals in the navigation store.
  *
  * These signals are the mechanism that lets CommandPalette, BrowseView, and
- * GraphView coordinate without coupling through Pinia or history.state.  The
- * core contract being verified:
+ * GraphView coordinate without coupling through history.state. The core
+ * contract being verified:
  *
- *   - Each signal is a singleton ref — all importers share the same instance.
+ *   - Each signal is a store ref — all consumers share the same instance.
  *   - Signals are consumed (set to null) by the reader after processing.
  *   - A watcher with { immediate: true } picks up a pre-set value on mount
  *     (critical for the "already-on-the-route" same-route navigation case).
  *   - Setting one signal never disturbs the others.
  */
 import { describe, it, expect, beforeEach } from 'vitest'
-import { watch, nextTick } from 'vue'
-import {
-  graphPreset,
-  palettePreviewEntity,
-  paletteNodeIri,
-  palettePropertyIri,
-} from '../paletteAction'
+import { watch, nextTick, type Ref } from 'vue'
+import { createPinia, setActivePinia, storeToRefs } from 'pinia'
+import { useNavigationStore } from '@/stores/navigation'
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
 const alice = { iri: 'http://e.org/Alice', label: 'Alice', class: 'http://e.org/Person' }
 const bob = { iri: 'http://e.org/Bob', label: 'Bob', class: 'http://e.org/Person' }
 
-const preset = (e1 = alice, e2 = bob) => ({ entity1: e1, entity2: e2 })
+type Entity = typeof alice
+type Preset = { entity1: Entity; entity2: Entity }
+
+const preset = (e1: Entity = alice, e2: Entity = bob): Preset => ({ entity1: e1, entity2: e2 })
+
+let graphPreset: Ref<Preset | null>
+let palettePreviewEntity: Ref<Entity | null>
+let paletteNodeIri: Ref<string | null>
+let palettePropertyIri: Ref<string | null>
+let pathStartEntity: Ref<Entity | null>
 
 beforeEach(() => {
-  graphPreset.value = null
-  palettePreviewEntity.value = null
-  paletteNodeIri.value = null
-  palettePropertyIri.value = null
+  setActivePinia(createPinia())
+  ;({ graphPreset, palettePreviewEntity, paletteNodeIri, palettePropertyIri, pathStartEntity } =
+    storeToRefs(useNavigationStore()))
 })
 
 // ── graphPreset ───────────────────────────────────────────────────────────────
@@ -266,16 +270,13 @@ describe('palettePreviewEntity', () => {
   })
 
   it('consuming the preview entity (setting null) does not affect pathStartEntity', async () => {
-    // palettePreviewEntity and pathStartEntity are independent modules
-    // This is documented behaviour: viewing an entity info pane must not
-    // disturb a pending "Set as start" selection.
-    const { pathStartEntity } = await import('../pathStart')
+    // palettePreviewEntity and pathStartEntity are independent store properties.
+    // Viewing an entity info pane must not disturb a pending "Set as start" selection.
     pathStartEntity.value = alice
 
     palettePreviewEntity.value = bob
     palettePreviewEntity.value = null // consumed by GraphView
 
     expect(pathStartEntity.value?.iri).toBe(alice.iri) // unaffected
-    pathStartEntity.value = null // cleanup
   })
 })

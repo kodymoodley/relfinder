@@ -1,14 +1,20 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { watch, nextTick } from 'vue'
-import { pathStartEntity } from '../pathStart'
+import { watch, nextTick, type Ref } from 'vue'
+import { createPinia, setActivePinia, storeToRefs } from 'pinia'
+import { useNavigationStore } from '@/stores/navigation'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const alice = { iri: 'http://e.org/Alice', label: 'Alice', class: 'http://e.org/Person' }
 const bob = { iri: 'http://e.org/Bob', label: 'Bob', class: 'http://e.org/Person' }
 
+type Entity = typeof alice
+
+let pathStartEntity: Ref<Entity | null>
+
 beforeEach(() => {
-  pathStartEntity.value = null
+  setActivePinia(createPinia())
+  pathStartEntity = storeToRefs(useNavigationStore()).pathStartEntity
 })
 
 // ── Basic state contract ──────────────────────────────────────────────────────
@@ -37,7 +43,7 @@ describe('pathStartEntity', () => {
 
   // ── Singleton / shared-state contract ───────────────────────────────────────
   // These tests simulate two components (Palette and SchemaDetailPanel) each
-  // holding a reference to the same module-level ref.
+  // holding a reference to the same store ref.
 
   it('a write from "ComponentA" is immediately visible to "ComponentB"', () => {
     // Simulated write from CommandPalette

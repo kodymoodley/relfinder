@@ -251,7 +251,8 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onUnmounted, nextTick } from 'vue'
-import { pathStartEntity } from '@/lib/pathStart'
+import { storeToRefs } from 'pinia'
+import { useNavigationStore } from '@/stores/navigation'
 import Drawer from 'primevue/drawer'
 import Tag from 'primevue/tag'
 import DataTable from 'primevue/datatable'
@@ -263,6 +264,8 @@ import { useSchemaStore } from '@/stores/schema'
 import type { SchemaNode, SchemaEdge } from '@/lib/sparql/types'
 import { recordView, recordDwell } from '@/lib/search/interestModel'
 import { searchEntities } from '@/lib/sparql/entitySearch'
+
+const { pathStartEntity } = storeToRefs(useNavigationStore())
 
 const props = defineProps<{
   selectedNode: SchemaNode | null
