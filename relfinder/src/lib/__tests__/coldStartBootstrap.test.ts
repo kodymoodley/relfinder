@@ -8,6 +8,7 @@ import type { SchemaNode, SchemaEdge } from '../sparql/types'
 vi.mock('../search/entityCache', () => ({
   cacheAdd: vi.fn(),
   cacheHas: vi.fn(() => false),
+  cacheAll: vi.fn(() => []),
 }))
 
 import { bootstrapFromSchema } from '../search/coldStartBootstrap'
@@ -136,12 +137,11 @@ describe('bootstrapFromSchema', () => {
     expect(mockedCacheAdd).not.toHaveBeenCalled()
   })
 
-  it('does not call cacheAdd before the idle callback fires', () => {
+  it('calls cacheAdd synchronously for the first chunk without waiting for idle callbacks', () => {
     const nodes = [makeNode('http://e.org/Person', 'Person')]
     bootstrapFromSchema(nodes, [], new Map())
 
-    expect(mockedCacheAdd).not.toHaveBeenCalled()
-    vi.runAllTimers()
+    // First chunk runs synchronously — cacheAdd is already called before any timer fires.
     expect(mockedCacheAdd).toHaveBeenCalledOnce()
   })
 
