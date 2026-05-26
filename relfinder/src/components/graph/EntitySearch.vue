@@ -204,15 +204,13 @@ async function runSparqlSearch(query: string): Promise<void> {
     suggestions.value = cached
   } else {
     const results = filterInstances(
-      await searchEntities(
-        effectiveContext,
-        classes,
+      await searchEntities(effectiveContext, {
+        allowedClasses: classes,
         store,
-        50,
-        query,
-        lang,
-        props.customLabelProperties ?? [],
-      ),
+        textFilter: query,
+        language: lang,
+        customLabelProperties: props.customLabelProperties ?? [],
+      }),
     )
     cacheSet(cacheKey, results)
     suggestions.value = results

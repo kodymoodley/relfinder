@@ -32,7 +32,8 @@ export async function probeTripleCount(
 ): Promise<number> {
   const ac = new AbortController()
   const timer = setTimeout(() => ac.abort(), 10_000)
-  const combinedSignal = signal ?? ac.signal
+  // Honour both the caller's signal and the 10 s timeout — whichever fires first.
+  const combinedSignal = signal ? AbortSignal.any([signal, ac.signal]) : ac.signal
 
   try {
     const rows = await executeSelect(

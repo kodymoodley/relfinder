@@ -17,14 +17,19 @@ import type { SchemaExtractionCallbacks } from '@/lib/sparql/schemaExtractor'
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 
-vi.mock('@/lib/sparql/engine', () => ({
-  executeSelect: vi.fn(),
-  executeSelectOnStore: vi.fn().mockResolvedValue([]),
-}))
+vi.mock('@/lib/sparql/engine', () => {
+  const executeSelect = vi.fn()
+  const executeSelectOnStore = vi.fn().mockResolvedValue([])
+  const runSelect = vi.fn((q: string, ctx: unknown, store?: unknown) =>
+    store ? executeSelectOnStore(q, store) : executeSelect(q, ctx),
+  )
+  return { executeSelect, executeSelectOnStore, runSelect }
+})
 
-vi.mock('@/lib/sparql/entitySearch', () => ({
-  fetchLabels: vi.fn().mockResolvedValue(new Map()),
-}))
+vi.mock('@/lib/sparql/entitySearch', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/sparql/entitySearch')>()
+  return { ...actual, fetchLabels: vi.fn().mockResolvedValue(new Map()) }
+})
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 

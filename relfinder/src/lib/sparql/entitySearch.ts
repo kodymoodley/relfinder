@@ -14,7 +14,8 @@
  */
 
 import type { Store } from 'n3'
-import { executeSelect, executeSelectOnStore } from './engine'
+import { runSelect } from './engine'
+import { chunk } from '../utils/array'
 import { getQueries, RDF_TYPE, SKOS_SUBJECT } from './queryBuilder'
 import { buildRelationshipsGraph, mergeEdgeDuplicates, applyLabelsAndTypes } from './graphBuilder'
 import { shortIri } from '../utils/iri'
@@ -33,6 +34,17 @@ import {
 
 // ── Internal helpers ──────────────────────────────────────────────────────────
 
+/** Standard RDF label predicates tried in priority order when querying labels. */
+const LABEL_PREDICATES = [
+  'http://www.w3.org/2000/01/rdf-schema#label',
+  'http://www.w3.org/2004/02/skos/core#prefLabel',
+  'http://www.w3.org/2004/02/skos/core#altLabel',
+  'http://xmlns.com/foaf/0.1/name',
+  'http://schema.org/name',
+  'http://purl.org/dc/elements/1.1/title',
+  'http://purl.org/dc/terms/title',
+]
+
 /**
  * Returns a SPARQL FILTER clause that restricts `?label` to the given language
  * tag while also accepting untagged plain literals (lang = '').
@@ -42,43 +54,42 @@ function langFilterClause(variable: string, language: string): string {
   return language ? `FILTER (lang(${variable}) = '${language}' || lang(${variable}) = '')` : ''
 }
 
-/** Splits an array into successive chunks of at most `size` elements. */
-function chunks<T>(arr: T[], size: number): T[][] {
-  const result: T[][] = []
-  for (let i = 0; i < arr.length; i += size) {
-    result.push(arr.slice(i, i + size))
-  }
-  return result
-}
-
-/** Executes a query against either a remote endpoint or a local store. */
-async function runSelect(query: string, context: QueryContext, store?: Store) {
-  return store ? executeSelectOnStore(query, store) : executeSelect(query, context)
-}
 
 // ── Entity search ─────────────────────────────────────────────────────────────
+
+export interface SearchEntitiesOptions {
+  /** Class IRIs to filter by. Empty array = any class. Default: []. */
+  allowedClasses?: string[]
+  /** Local N3 Store for file-upload mode. Omit for remote endpoint queries. */
+  store?: Store
+  /** Maximum result rows. Default: 50. */
+  limit?: number
+  /** Case-insensitive prefix filter applied to labels. Default: ''. */
+  textFilter?: string
+  /** Preferred label language tag. Default: 'en'. */
+  language?: string
+  /** Extra label predicates to try in addition to the built-in set. Default: []. */
+  customLabelProperties?: string[]
+}
 
 /**
  * Retrieves entities of the given RDF classes from the endpoint.
  *
- * Ported from `SPARQLEndpoint.entities()`. The `allowedClasses` list replaces
- * the hardcoded `allowed_entity_classes` constructor parameter — pass an empty
- * array to return entities of any class.
- *
- * @param allowedClasses  Array of class IRIs to filter by (full IRIs, not prefixed).
- * @param limit           Maximum result rows. 50 is conservative enough to stay within the
- *                        default timeout of most public endpoints while still providing
- *                        enough choices for the autocomplete dropdown.
+ * Ported from `SPARQLEndpoint.entities()`. Pass `options.allowedClasses` to
+ * restrict results to specific types; an empty array returns any class.
  */
 export async function searchEntities(
   context: QueryContext,
-  allowedClasses: string[] = [],
-  store?: Store,
-  limit = 50,
-  textFilter = '',
-  language = 'en',
-  customLabelProperties: string[] = [],
+  options: SearchEntitiesOptions = {},
 ): Promise<EntitySearchResult[]> {
+  const {
+    allowedClasses = [],
+    store,
+    limit = 50,
+    textFilter = '',
+    language = 'en',
+    customLabelProperties = [],
+  } = options
   const classFilter =
     allowedClasses.length > 0
       ? `FILTER (?ctype IN (${allowedClasses.map((c) => `<${c}>`).join(', ')}))`
@@ -116,16 +127,7 @@ export async function searchEntities(
     // Remote endpoint: restrict to a known set of label predicates.
     // Use FILTER(?lp IN (...)) instead of VALUES because Virtuoso rejects
     // inline VALUES inside a WHERE block (SP030 syntax error).
-    const builtinLabelProps = [
-      'http://www.w3.org/2000/01/rdf-schema#label',
-      'http://www.w3.org/2004/02/skos/core#prefLabel',
-      'http://www.w3.org/2004/02/skos/core#altLabel',
-      'http://xmlns.com/foaf/0.1/name',
-      'http://schema.org/name',
-      'http://purl.org/dc/elements/1.1/title',
-      'http://purl.org/dc/terms/title',
-    ]
-    const allLabelProps = [...new Set([...builtinLabelProps, ...customLabelProperties])]
+    const allLabelProps = [...new Set([...LABEL_PREDICATES, ...customLabelProperties])]
     const labelPropFilter = `FILTER(?lp IN (${allLabelProps.map((p) => `<${p}>`).join(', ')}))`
 
     // Single-class fast path: omit ?ctype from SELECT entirely so that Virtuoso's
@@ -247,17 +249,7 @@ export async function fetchInstancesByClass(
   if (store) {
     // Preferred label predicates tried first; any string literal is the fallback
     // so custom vocabularies still produce a human-readable label.
-    const preferredProps = [
-      'http://www.w3.org/2000/01/rdf-schema#label',
-      'http://www.w3.org/2004/02/skos/core#prefLabel',
-      'http://www.w3.org/2004/02/skos/core#altLabel',
-      'http://xmlns.com/foaf/0.1/name',
-      'http://schema.org/name',
-      'http://purl.org/dc/elements/1.1/title',
-      'http://purl.org/dc/terms/title',
-    ]
-      .map((p) => `<${p}>`)
-      .join('\n          ')
+    const preferredProps = LABEL_PREDICATES.map((p) => `<${p}>`).join('\n          ')
 
     const preferredLangFilter = langFilterClause('?preferredLabel', language)
 
@@ -279,17 +271,7 @@ export async function fetchInstancesByClass(
       } LIMIT ${limit}
     `
   } else {
-    const labelProps = [
-      'http://www.w3.org/2000/01/rdf-schema#label',
-      'http://www.w3.org/2004/02/skos/core#prefLabel',
-      'http://www.w3.org/2004/02/skos/core#altLabel',
-      'http://xmlns.com/foaf/0.1/name',
-      'http://schema.org/name',
-      'http://purl.org/dc/elements/1.1/title',
-      'http://purl.org/dc/terms/title',
-    ]
-      .map((p) => `<${p}>`)
-      .join('\n        ')
+    const labelProps = LABEL_PREDICATES.map((p) => `<${p}>`).join('\n        ')
 
     query = `
       SELECT DISTINCT ?s ?label WHERE {
@@ -418,7 +400,7 @@ export async function fetchLabels(
  *
  * Priority: exact language match → untagged literal → 'en' → first available.
  */
-function pickLabel(entries: LabelEntry[], language: string): string | undefined {
+export function pickLabel(entries: LabelEntry[], language: string): string | undefined {
   if (language) {
     const exact = entries.find((e) => e.lang === language)
     if (exact) return exact.value
@@ -561,8 +543,8 @@ export async function enrichGraph(
 
   // Fetch all language tags in one pass per chunk
   const allLabels = new Map<string, LabelEntry[]>()
-  for (const chunk of chunks(allLabelIris, chunkSize)) {
-    const partial = await fetchLabels(chunk, context, store)
+  for (const batch of chunk(allLabelIris, chunkSize)) {
+    const partial = await fetchLabels(batch, context, store)
     for (const [k, v] of partial) allLabels.set(k, v)
   }
 
@@ -575,8 +557,8 @@ export async function enrichGraph(
 
   // Merge chunked type results
   const typesMap = new Map<string, string>()
-  for (const chunk of chunks(nodeIris, chunkSize)) {
-    const partial = await fetchTypes(chunk, context, ontologyPrefix, store)
+  for (const batch of chunk(nodeIris, chunkSize)) {
+    const partial = await fetchTypes(batch, context, ontologyPrefix, store)
     for (const [k, v] of partial) typesMap.set(k, v)
   }
 
@@ -621,15 +603,9 @@ export async function findRelationships(
   const queryBlocks = getQueries(queryConfig)
   const pathCollections: PathCollection[] = []
 
-  let queryIndex = 0
   for (const blocks of queryBlocks.values()) {
     for (const block of blocks) {
-      queryIndex++
-      console.log(
-        `[findRelationships] query ${queryIndex} — src: ${block.src} dest: ${block.dest}\n${block.query}`,
-      )
       const paths = await runSelect(block.query, context, options.store)
-      console.log(`[findRelationships] query ${queryIndex} returned ${paths.length} rows`)
       pathCollections.push({ src: block.src, dest: block.dest, paths })
     }
   }

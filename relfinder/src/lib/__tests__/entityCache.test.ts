@@ -44,7 +44,9 @@ function makeEntity(iri: string, overrides: Partial<CachedEntity> = {}): CachedE
 // ── entityCache module ────────────────────────────────────────────────────────
 
 describe('entityCache', () => {
-  beforeEach(() => { cache = createEntityCache() })
+  beforeEach(() => {
+    cache = createEntityCache()
+  })
 
   describe('cacheAdd / cacheGet / cacheHas / cacheSize / cacheAll', () => {
     it('stores entities and retrieves them by IRI', () => {

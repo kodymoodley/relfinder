@@ -8,6 +8,54 @@ import { loadSchema, saveSchema } from '@/lib/cache/schemaStorage'
 import type { PersistedSchema } from '@/lib/cache/schemaStorage'
 import type { SchemaNode, SchemaEdge, SchemaDataProp, QueryContext } from '@/lib/sparql/types'
 import { cacheAdd } from '@/lib/search/entityCache'
+import type { CachedEntity } from '@/lib/search/types'
+import type { Ref } from 'vue'
+
+/**
+ * Guards a cache-populate action: skips if already cached or in-flight,
+ * manages the loading set, and optionally removes from a status map on completion.
+ *
+ * `onDone` is called after the result is stored in `cache` and before the
+ * loading set is cleaned up — use it for side effects that depend on the
+ * fresh cache entry.
+ */
+async function withLoadingGuard<T>(
+  key: string,
+  cache: Ref<Map<string, T>>,
+  loadingSet: Ref<Set<string>>,
+  work: () => Promise<T>,
+  statusMap?: Ref<Map<string, string>>,
+  onDone?: (result: T) => void,
+): Promise<void> {
+  if (cache.value.has(key) || loadingSet.value.has(key)) return
+  loadingSet.value.add(key)
+  try {
+    const result = await work()
+    cache.value.set(key, result)
+    onDone?.(result)
+  } finally {
+    loadingSet.value.delete(key)
+    statusMap?.value.delete(key)
+  }
+}
+
+function toEntityCacheEntry(
+  inst: { iri: string; label: string },
+  classIri: string,
+  classLabel: string,
+  now: number,
+): CachedEntity {
+  return {
+    iri: inst.iri,
+    label: inst.label,
+    altLabels: [],
+    classIri,
+    classLabel,
+    description: '',
+    addedAt: now,
+    lastAccessed: now,
+  }
+}
 
 export const useSchemaStore = defineStore('schema', () => {
   // ── Graph state ──────────────────────────────────────────────────────────────
@@ -308,21 +356,16 @@ export const useSchemaStore = defineStore('schema', () => {
     context: QueryContext,
     n3Store: Store | undefined,
   ) {
-    if (dataPropsCache.value.has(classIri)) return
-    if (dataPropsLoading.value.has(classIri)) return
-
-    dataPropsLoading.value.add(classIri)
-    setDataPropsStatus(classIri, 'Querying endpoint…')
-
-    try {
-      const props = await fetchSchemaDataProperties(classIri, context, n3Store, 50, (msg) =>
-        setDataPropsStatus(classIri, msg),
-      )
-      dataPropsCache.value.set(classIri, props)
-    } finally {
-      dataPropsLoading.value.delete(classIri)
-      dataPropsStatus.value.delete(classIri)
-    }
+    await withLoadingGuard(
+      classIri, dataPropsCache, dataPropsLoading,
+      () => {
+        setDataPropsStatus(classIri, 'Querying endpoint…')
+        return fetchSchemaDataProperties(classIri, context, n3Store, 50, (msg) =>
+          setDataPropsStatus(classIri, msg),
+        )
+      },
+      dataPropsStatus,
+    )
   }
 
   // ── Per-class descriptions ────────────────────────────────────────────────
@@ -332,19 +375,14 @@ export const useSchemaStore = defineStore('schema', () => {
     context: QueryContext,
     n3Store: Store | undefined,
   ) {
-    if (descriptionCache.value.has(classIri)) return
-    if (descriptionLoading.value.has(classIri)) return
-
-    descriptionLoading.value.add(classIri)
-    setDescriptionStatus(classIri, 'Fetching description…')
-
-    try {
-      const text = await fetchClassDescription(classIri, context, n3Store)
-      descriptionCache.value.set(classIri, text)
-    } finally {
-      descriptionLoading.value.delete(classIri)
-      descriptionStatus.value.delete(classIri)
-    }
+    await withLoadingGuard(
+      classIri, descriptionCache, descriptionLoading,
+      () => {
+        setDescriptionStatus(classIri, 'Fetching description…')
+        return fetchClassDescription(classIri, context, n3Store)
+      },
+      descriptionStatus,
+    )
   }
 
   // ── Per-class instances ───────────────────────────────────────────────────
@@ -354,33 +392,18 @@ export const useSchemaStore = defineStore('schema', () => {
     context: QueryContext,
     n3Store: Store | undefined,
   ) {
-    if (instancesCache.value.has(classIri)) return
-    if (instancesLoading.value.has(classIri)) return
-
-    instancesLoading.value.add(classIri)
-
-    try {
-      const items = await fetchInstancesByClass(classIri, context, n3Store, 20)
-      instancesCache.value.set(classIri, items)
-      if (items.length > 0) {
-        const classLabel = nodes.value.find((n) => n.iri === classIri)?.label ?? ''
-        const now = Date.now()
-        cacheAdd(
-          items.map((inst) => ({
-            iri: inst.iri,
-            label: inst.label,
-            altLabels: [],
-            classIri,
-            classLabel,
-            description: '',
-            addedAt: now,
-            lastAccessed: now,
-          })),
-        )
-      }
-    } finally {
-      instancesLoading.value.delete(classIri)
-    }
+    await withLoadingGuard(
+      classIri, instancesCache, instancesLoading,
+      () => fetchInstancesByClass(classIri, context, n3Store, 20),
+      undefined,
+      (items) => {
+        if (items.length > 0) {
+          const classLabel = nodes.value.find((n) => n.iri === classIri)?.label ?? ''
+          const now = Date.now()
+          cacheAdd(items.map((inst) => toEntityCacheEntry(inst, classIri, classLabel, now)))
+        }
+      },
+    )
   }
 
   // ── Merge search results into instances cache ─────────────────────────────
@@ -394,18 +417,7 @@ export const useSchemaStore = defineStore('schema', () => {
     instancesCache.value.set(classIri, [...existing, ...novel])
     const classLabel = nodes.value.find((n) => n.iri === classIri)?.label ?? ''
     const now = Date.now()
-    cacheAdd(
-      novel.map((inst) => ({
-        iri: inst.iri,
-        label: inst.label,
-        altLabels: [],
-        classIri,
-        classLabel,
-        description: '',
-        addedAt: now,
-        lastAccessed: now,
-      })),
-    )
+    cacheAdd(novel.map((inst) => toEntityCacheEntry(inst, classIri, classLabel, now)))
   }
 
   // ── Per-instance entity properties ───────────────────────────────────────
@@ -415,17 +427,9 @@ export const useSchemaStore = defineStore('schema', () => {
     context: QueryContext,
     n3Store: Store | undefined,
   ) {
-    if (entityPropsCache.value.has(entityIri)) return
-    if (entityPropsLoading.value.has(entityIri)) return
-
-    entityPropsLoading.value.add(entityIri)
-
-    try {
-      const props = await fetchEntityProps(entityIri, context, n3Store)
-      entityPropsCache.value.set(entityIri, props)
-    } finally {
-      entityPropsLoading.value.delete(entityIri)
-    }
+    await withLoadingGuard(entityIri, entityPropsCache, entityPropsLoading, () =>
+      fetchEntityProps(entityIri, context, n3Store),
+    )
   }
 
   // ── Exports ───────────────────────────────────────────────────────────────

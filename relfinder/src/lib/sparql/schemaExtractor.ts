@@ -14,8 +14,9 @@
  */
 
 import type { Store } from 'n3'
-import { executeSelect, executeSelectOnStore } from './engine'
-import { fetchLabels } from './entitySearch'
+import { runSelect } from './engine'
+import { chunk } from '../utils/array'
+import { fetchLabels, pickLabel } from './entitySearch'
 import { shortIri } from '../utils/iri'
 import type {
   QueryContext,
@@ -28,15 +29,6 @@ import type {
 import { DESCRIPTION_PROPERTIES } from './classDescription'
 import { RDF_TYPE } from './queryBuilder'
 
-function runSelect(query: string, context: QueryContext, store?: Store, signal?: AbortSignal) {
-  return store ? executeSelectOnStore(query, store) : executeSelect(query, context, signal)
-}
-
-function chunk<T>(arr: T[], size: number): T[][] {
-  const out: T[][] = []
-  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size))
-  return out
-}
 
 export interface SchemaExtractionOptions {
   /** Max classes to discover. Default 40. */
@@ -252,12 +244,8 @@ export async function extractSchema(
         for (const node of nodes) {
           const entries = labelMap.get(node.iri)
           if (!entries?.length) continue
-          const best =
-            entries.find((e) => e.lang === language) ??
-            entries.find((e) => e.lang === '') ??
-            entries.find((e) => e.lang === 'en') ??
-            entries[0]
-          if (best) node.label = best.value
+          const best = pickLabel(entries, language)
+          if (best !== undefined) node.label = best
         }
         if (descMap.size > 0) callbacks.onDescriptionsLoaded?.(descMap)
       }),

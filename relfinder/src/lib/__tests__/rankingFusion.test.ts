@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import type { InterestEntry, ScoredEntity } from '../search/types'
 import { weightedSumFusion } from '../search/fusion/weightedSum'
-import { recordSelect, recordDismiss, snapshot, _resetForTest } from '../search/interestModel'
+import { recordSelect, recordDismiss, snapshot, clear } from '../search/interestModel'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -43,7 +43,7 @@ function makeInterestMap(entries: Partial<InterestEntry>[] = []): Map<string, In
 
 beforeEach(() => {
   localStorage.clear()
-  _resetForTest()
+  clear()
 })
 
 // ── weightedSumFusion ─────────────────────────────────────────────────────────
