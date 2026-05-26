@@ -20,7 +20,7 @@ concurrency:
 
 jobs:
   ci:
-    name: Lint / Type-check / Test / Build
+    name: Lint / Type-check / Test / Building
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
