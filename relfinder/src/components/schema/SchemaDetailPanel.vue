@@ -309,7 +309,12 @@ async function runInstanceSparqlSearch(query: string, classIri: string) {
   const context = connectionStore.queryContext ?? { endpointUrl: '' }
   const store = connectionStore.rdfStore ?? connectionStore.localRdfStore ?? undefined
   try {
-    const results = await searchEntities(context, { allowedClasses: [classIri], store, limit: 20, textFilter: query })
+    const results = await searchEntities(context, {
+      allowedClasses: [classIri],
+      store,
+      limit: 20,
+      textFilter: query,
+    })
     if (seq !== _searchSeq) return
     const mapped = results.map((r) => ({ iri: r.iri, label: r.label }))
     instanceSearchResults.value = mapped

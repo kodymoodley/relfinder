@@ -24,7 +24,6 @@ export const DESCRIPTION_PROPERTIES = [
   'http://xmlns.com/foaf/0.1/bio',
 ] as const
 
-
 export async function fetchClassDescription(
   classIri: string,
   context: QueryContext,

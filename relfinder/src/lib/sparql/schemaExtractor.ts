@@ -29,7 +29,6 @@ import type {
 import { DESCRIPTION_PROPERTIES } from './classDescription'
 import { RDF_TYPE } from './queryBuilder'
 
-
 export interface SchemaExtractionOptions {
   /** Max classes to discover. Default 40. */
   classLimit?: number

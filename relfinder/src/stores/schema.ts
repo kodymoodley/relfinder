@@ -357,7 +357,9 @@ export const useSchemaStore = defineStore('schema', () => {
     n3Store: Store | undefined,
   ) {
     await withLoadingGuard(
-      classIri, dataPropsCache, dataPropsLoading,
+      classIri,
+      dataPropsCache,
+      dataPropsLoading,
       () => {
         setDataPropsStatus(classIri, 'Querying endpoint…')
         return fetchSchemaDataProperties(classIri, context, n3Store, 50, (msg) =>
@@ -376,7 +378,9 @@ export const useSchemaStore = defineStore('schema', () => {
     n3Store: Store | undefined,
   ) {
     await withLoadingGuard(
-      classIri, descriptionCache, descriptionLoading,
+      classIri,
+      descriptionCache,
+      descriptionLoading,
       () => {
         setDescriptionStatus(classIri, 'Fetching description…')
         return fetchClassDescription(classIri, context, n3Store)
@@ -393,7 +397,9 @@ export const useSchemaStore = defineStore('schema', () => {
     n3Store: Store | undefined,
   ) {
     await withLoadingGuard(
-      classIri, instancesCache, instancesLoading,
+      classIri,
+      instancesCache,
+      instancesLoading,
       () => fetchInstancesByClass(classIri, context, n3Store, 20),
       undefined,
       (items) => {

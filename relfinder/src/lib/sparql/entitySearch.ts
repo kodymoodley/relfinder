@@ -54,7 +54,6 @@ function langFilterClause(variable: string, language: string): string {
   return language ? `FILTER (lang(${variable}) = '${language}' || lang(${variable}) = '')` : ''
 }
 
-
 // ── Entity search ─────────────────────────────────────────────────────────────
 
 export interface SearchEntitiesOptions {
