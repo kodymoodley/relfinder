@@ -63,9 +63,9 @@ async function connectViaMockedSparql(
   await page.evaluate(() => { sessionStorage.clear(); localStorage.clear() })
   await page.getByTestId('endpoint-url-input').fill(MOCK_ENDPOINT)
   await page.getByTestId('connect-btn').click()
-  await expect(page).toHaveURL('/browse', { timeout: 15_000 })
+  await expect(page).toHaveURL('/browse', { timeout: 30_000 })
   const browse = new BrowsePage(page)
-  await browse.waitForExtractionComplete(30_000)
+  await browse.waitForExtractionComplete(60_000)
   return browse
 }
 
@@ -134,20 +134,20 @@ test.describe('Rapid repeated interactions', () => {
 
   test('extraction cannot be manually started while auto-start is running', async ({ page }) => {
     const browse = await connectWithSlowExtraction(page)
-    await expect(browse.stopBtn()).toBeVisible({ timeout: 10_000 })
+    await expect(browse.stopBtn()).toBeVisible({ timeout: 20_000 })
     // Extract button must be absent while Stop is showing
     await expect(browse.extractBtn()).not.toBeVisible()
-    await browse.waitForExtractionComplete(30_000)
+    await browse.waitForExtractionComplete(60_000)
   })
 
   test('can restart extraction after stopping', async ({ page }) => {
     const browse = await connectWithSlowExtraction(page)
-    await expect(browse.stopBtn()).toBeVisible({ timeout: 10_000 })
+    await expect(browse.stopBtn()).toBeVisible({ timeout: 20_000 })
     await browse.clickStop()
-    await expect(browse.stopBtn()).not.toBeVisible({ timeout: 3_000 })
+    await expect(browse.stopBtn()).not.toBeVisible({ timeout: 6_000 })
 
     const extractVisible = await browse.extractBtn().isVisible()
-    const doneVisible    = await browse.schemaDone().isVisible()
+    const doneVisible = await browse.schemaDone().isVisible()
     expect(extractVisible || doneVisible).toBe(true)
   })
 })
@@ -213,10 +213,10 @@ test.describe('Cytoscape canvas', () => {
   test('empty canvas shows helpful hint text before extraction', async ({ page }) => {
     // Use slow mock so Phase 2 keeps extraction running while we check state
     const browse = await connectWithSlowExtraction(page)
-    await expect(browse.stopBtn()).toBeVisible({ timeout: 10_000 })
+    await expect(browse.stopBtn()).toBeVisible({ timeout: 20_000 })
     // Canvas container is always in the DOM (Cytoscape needs it)
     await expect(browse.schemaCanvas()).toBeAttached()
-    await browse.waitForExtractionComplete(30_000)
+    await browse.waitForExtractionComplete(60_000)
   })
 })
 

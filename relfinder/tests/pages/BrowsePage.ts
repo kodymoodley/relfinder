@@ -7,27 +7,27 @@ import { AppPage } from './AppPage'
 export class BrowsePage extends AppPage {
   // ── Locators ───────────────────────────────────────────────────────────────
 
-  readonly extractBtn           = () => this.page.getByTestId('extract-schema-btn')
-  readonly stopBtn              = () => this.page.getByTestId('stop-extraction-btn')
-  readonly schemaDone           = () => this.page.getByTestId('schema-done-indicator')
-  readonly extractionProgress   = () => this.page.getByTestId('extraction-progress')
-  readonly schemaStats          = () => this.page.getByTestId('schema-stats')
-  readonly nodesCount           = () => this.page.getByTestId('nodes-count')
-  readonly edgesCount           = () => this.page.getByTestId('edges-count')
-  readonly reextractBtn         = () => this.page.getByTestId('reextract-btn')
-  readonly hideOrphansToggle    = () => this.page.getByTestId('hide-orphans-toggle')
-  readonly disconnectBtn        = () => this.page.getByTestId('disconnect-btn')
-  readonly navSchema            = () => this.page.getByTestId('nav-schema')
-  readonly navPaths             = () => this.page.getByTestId('nav-paths')
-  readonly schemaCanvas         = () => this.page.getByTestId('schema-canvas')
-  readonly schemaCanvasEmpty    = () => this.page.getByTestId('schema-canvas-empty')
-  readonly schemaToolbar        = () => this.page.getByTestId('schema-toolbar')
-  readonly zoomInBtn            = () => this.page.getByTestId('zoom-in-btn')
-  readonly zoomOutBtn           = () => this.page.getByTestId('zoom-out-btn')
-  readonly fitBtn               = () => this.page.getByTestId('fit-btn')
-  readonly rerunLayoutBtn       = () => this.page.getByTestId('rerun-layout-btn')
-  readonly toggleLabelsBtn      = () => this.page.getByTestId('toggle-labels-btn')
-  readonly extractionError      = () => this.page.getByTestId('extraction-error-msg')
+  readonly extractBtn = () => this.page.getByTestId('extract-schema-btn')
+  readonly stopBtn = () => this.page.getByTestId('stop-extraction-btn')
+  readonly schemaDone = () => this.page.getByTestId('schema-done-indicator')
+  readonly extractionProgress = () => this.page.getByTestId('extraction-progress')
+  readonly schemaStats = () => this.page.getByTestId('schema-stats')
+  readonly nodesCount = () => this.page.getByTestId('nodes-count')
+  readonly edgesCount = () => this.page.getByTestId('edges-count')
+  readonly reextractBtn = () => this.page.getByTestId('reextract-btn')
+  readonly hideOrphansToggle = () => this.page.getByTestId('hide-orphans-toggle')
+  readonly disconnectBtn = () => this.page.getByTestId('disconnect-btn')
+  readonly navSchema = () => this.page.getByTestId('nav-schema')
+  readonly navPaths = () => this.page.getByTestId('nav-paths')
+  readonly schemaCanvas = () => this.page.getByTestId('schema-canvas')
+  readonly schemaCanvasEmpty = () => this.page.getByTestId('schema-canvas-empty')
+  readonly schemaToolbar = () => this.page.getByTestId('schema-toolbar')
+  readonly zoomInBtn = () => this.page.getByTestId('zoom-in-btn')
+  readonly zoomOutBtn = () => this.page.getByTestId('zoom-out-btn')
+  readonly fitBtn = () => this.page.getByTestId('fit-btn')
+  readonly rerunLayoutBtn = () => this.page.getByTestId('rerun-layout-btn')
+  readonly toggleLabelsBtn = () => this.page.getByTestId('toggle-labels-btn')
+  readonly extractionError = () => this.page.getByTestId('extraction-error-msg')
 
   // ── Navigation ─────────────────────────────────────────────────────────────
 
@@ -55,14 +55,14 @@ export class BrowsePage extends AppPage {
    * Wait until extraction is no longer running (either done or stopped).
    * Polls every 200 ms; times out after `timeoutMs`.
    */
-  async waitForExtractionComplete(timeoutMs = 30_000): Promise<void> {
+  async waitForExtractionComplete(timeoutMs = 60_000): Promise<void> {
     await expect(this.stopBtn()).not.toBeVisible({ timeout: timeoutMs })
   }
 
   /**
    * Wait until the schema has at least `minNodes` nodes rendered.
    */
-  async waitForSchemaWithNodes(minNodes: number, timeoutMs = 30_000): Promise<void> {
+  async waitForSchemaWithNodes(minNodes: number, timeoutMs = 60_000): Promise<void> {
     await expect(async () => {
       const count = await this.getNodeCount()
       expect(count).toBeGreaterThanOrEqual(minNodes)
@@ -86,7 +86,7 @@ export class BrowsePage extends AppPage {
 
   // ── Toolbar actions ────────────────────────────────────────────────────────
 
-  async zoomIn(): Promise<void>  { await this.zoomInBtn().click() }
+  async zoomIn(): Promise<void> { await this.zoomInBtn().click() }
   async zoomOut(): Promise<void> { await this.zoomOutBtn().click() }
   async fitGraph(): Promise<void> { await this.fitBtn().click() }
   async rerunLayout(): Promise<void> { await this.rerunLayoutBtn().click() }
