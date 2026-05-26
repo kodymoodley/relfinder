@@ -21,8 +21,9 @@ vi.mock('idb', () => {
   }
 })
 
-import * as cache from '../search/entityCache'
-import { CACHE_MAX } from '../search/entityCache'
+import { createEntityCache, CACHE_MAX } from '../search/entityCache'
+
+let cache: ReturnType<typeof createEntityCache>
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -43,7 +44,7 @@ function makeEntity(iri: string, overrides: Partial<CachedEntity> = {}): CachedE
 // ── entityCache module ────────────────────────────────────────────────────────
 
 describe('entityCache', () => {
-  beforeEach(() => cache._resetForTest())
+  beforeEach(() => { cache = createEntityCache() })
 
   describe('cacheAdd / cacheGet / cacheHas / cacheSize / cacheAll', () => {
     it('stores entities and retrieves them by IRI', () => {
