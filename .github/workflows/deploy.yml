@@ -15,7 +15,7 @@ permissions:
 # On main: use the 'pages' group so deploys never run in parallel.
 # On other branches: group by ref so a new push cancels a redundant run.
 concurrency:
-  group: ${{ github.ref == 'refs/heads/main' && 'pages' || github.ref }}
+  group: ${{ github.ref == 'refs/heads/main' && 'pages-deploy' || github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
