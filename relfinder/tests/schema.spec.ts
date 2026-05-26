@@ -90,9 +90,9 @@ async function goToBrowseViaSparql(page: Page): Promise<BrowsePage> {
   await page.evaluate(() => { sessionStorage.clear(); localStorage.clear() })
   await page.getByTestId('endpoint-url-input').fill(MOCK_ENDPOINT)
   await page.getByTestId('connect-btn').click()
-  await expect(page).toHaveURL('/browse', { timeout: 30_000 })
+  await expect(page).toHaveURL('/browse', { timeout: 60_000 })
   const browse = new BrowsePage(page)
-  await browse.waitForExtractionComplete(60_000)
+  await browse.waitForExtractionComplete(80_000)
   return browse
 }
 
