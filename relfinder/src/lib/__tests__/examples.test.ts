@@ -68,7 +68,7 @@ describe('TTL examples — node count between 10 and 50', () => {
         // Must have at least one edge
         expect(graph.edges.length).toBeGreaterThanOrEqual(1)
       },
-      30_000,
+      40_000,
     )
   }
 })

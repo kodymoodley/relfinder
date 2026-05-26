@@ -1,41 +1,14 @@
 <template>
   <div class="graph-canvas-wrapper">
     <!-- Empty state -->
-    <div v-if="!hasGraph && !loading" class="canvas-empty">
-      <div class="empty-icon-wrap">
-        <i class="pi pi-share-alt empty-icon" />
-      </div>
-      <p class="empty-title">No graph loaded</p>
-      <p class="empty-hint">Select two entities and click <strong>Find Relationships</strong></p>
-    </div>
+    <GraphEmptyState v-if="!hasGraph && !loading" />
 
     <!-- Loading overlay -->
-    <div v-if="loading" class="canvas-loading">
-      <ProgressSpinner stroke-width="2.5" style="width: 40px; height: 40px" />
-      <p class="loading-title">Finding relationships</p>
-      <div v-if="entity1Label && entity2Label" class="loading-entities">
-        <span class="loading-entity">{{ entity1Label }}</span>
-        <i class="pi pi-arrow-right loading-arrow" />
-        <span class="loading-entity">{{ entity2Label }}</span>
-      </div>
-      <div class="loading-stages">
-        <div
-          v-for="(stage, i) in LOADING_STAGES"
-          :key="i"
-          :class="[
-            'loading-stage',
-            {
-              'loading-stage--done': i < loadingStageIndex,
-              'loading-stage--active': i === loadingStageIndex,
-            },
-          ]"
-        >
-          <span class="loading-stage-dot" />
-          {{ stage }}
-        </div>
-      </div>
-      <p class="loading-elapsed">{{ elapsedSeconds }}s elapsed</p>
-    </div>
+    <GraphLoadingOverlay
+      v-if="loading"
+      :entity1-label="entity1Label"
+      :entity2-label="entity2Label"
+    />
 
     <!-- Cytoscape mount point — always in the DOM so cy can attach -->
     <div
@@ -48,35 +21,7 @@
     />
 
     <!-- Class legend (shown when ≥ 2 distinct classes are present) -->
-    <Transition name="legend-fade">
-      <div
-        v-if="hasGraph && legendEntries.length >= 2"
-        ref="legendRef"
-        class="graph-legend"
-        :style="legendPos ? { left: legendPos.left + 'px', top: legendPos.top + 'px' } : {}"
-        role="complementary"
-        aria-label="Node class legend"
-        @pointerdown="onLegendPointerDown"
-        @pointermove="onLegendPointerMove"
-        @click.capture="onLegendClickCapture"
-      >
-        <button
-          class="legend-toggle"
-          :aria-expanded="!legendCollapsed"
-          aria-controls="graph-legend-list"
-          @click="legendCollapsed = !legendCollapsed"
-        >
-          <span class="legend-title">Legend</span>
-          <i :class="['pi', legendCollapsed ? 'pi-chevron-down' : 'pi-chevron-up']" />
-        </button>
-        <ul v-if="!legendCollapsed" id="graph-legend-list" class="legend-list">
-          <li v-for="entry in legendEntries" :key="entry.iri" class="legend-item">
-            <span class="legend-swatch" :style="{ background: entry.color }" aria-hidden="true" />
-            <span class="legend-label" :title="entry.iri">{{ entry.label }}</span>
-          </li>
-        </ul>
-      </div>
-    </Transition>
+    <GraphLegend v-if="hasGraph" :entries="legendEntries" />
 
     <!-- Select mode indicator -->
     <Transition name="mode-badge">
@@ -87,99 +32,23 @@
     </Transition>
 
     <!-- Toolbar (zoom controls) -->
-    <div v-if="hasGraph" class="canvas-toolbar">
-      <Button
-        v-tooltip.top="'Zoom in'"
-        icon="pi pi-plus"
-        text
-        rounded
-        size="small"
-        @click="zoomIn"
-        aria-label="Zoom in"
-      />
-      <Button
-        v-tooltip.top="'Zoom out'"
-        icon="pi pi-minus"
-        text
-        rounded
-        size="small"
-        @click="zoomOut"
-        aria-label="Zoom out"
-      />
-      <button
-        v-tooltip.top="'Reset zoom to 100%'"
-        class="zoom-level-btn"
-        aria-label="Reset zoom to 100%"
-        @click="resetZoom"
-      >
-        {{ zoomLevel }}%
-      </button>
-      <Button
-        v-tooltip.top="'Fit graph to screen'"
-        icon="pi pi-arrows-alt"
-        text
-        rounded
-        size="small"
-        @click="fitGraph"
-        aria-label="Fit graph"
-      />
-      <Divider layout="vertical" />
-      <Button
-        v-tooltip.top="'Re-run force layout'"
-        icon="pi pi-refresh"
-        text
-        rounded
-        size="small"
-        @click="rerunLayout"
-        aria-label="Re-run layout"
-      />
-      <Divider layout="vertical" />
-      <Button
-        v-tooltip.top="showEdgeLabels ? 'Hide edge labels' : 'Show edge labels'"
-        :icon="showEdgeLabels ? 'pi pi-eye' : 'pi pi-eye-slash'"
-        text
-        rounded
-        size="small"
-        :style="{ opacity: showEdgeLabels ? 1 : 0.45 }"
-        @click="toggleEdgeLabels"
-        :aria-label="showEdgeLabels ? 'Hide edge labels' : 'Show edge labels'"
-      />
-      <Divider layout="vertical" />
-      <Button
-        v-tooltip.top="selectionMode === 'select' ? 'Back to pan mode' : 'Select subgraph'"
-        icon="pi pi-expand"
-        text
-        rounded
-        size="small"
-        :style="{ color: selectionMode === 'select' ? 'var(--rf-primary)' : undefined }"
-        @click="toggleSelectionMode"
-        :aria-label="selectionMode === 'select' ? 'Back to pan mode' : 'Box select to focus labels'"
-      />
-      <template v-if="hasSelection">
-        <Divider layout="vertical" />
-        <Button
-          v-tooltip.top="'Filter subgraph'"
-          icon="pi pi-filter"
-          text
-          rounded
-          size="small"
-          @click="cropToSelection"
-          aria-label="Crop to selection"
-        />
-      </template>
-      <template v-if="cropHistory.length > 0">
-        <Divider layout="vertical" />
-        <Button
-          v-tooltip.top="'Undo filtering'"
-          icon="pi pi-undo"
-          text
-          rounded
-          size="small"
-          @click="undoCrop"
-          aria-label="Undo crop"
-        />
-      </template>
-    </div>
+    <GraphToolbar
+      v-if="hasGraph"
+      :zoom-level="zoomLevel"
+      :show-edge-labels="showEdgeLabels"
+      :selection-mode="selectionMode"
+      :has-selection="hasSelection"
+      :has-crop-history="cropHistory.length > 0"
+      @zoom-in="zoomIn"
+      @zoom-out="zoomOut"
+      @reset-zoom="resetZoom"
+      @fit-graph="fitGraph"
+      @rerun-layout="rerunLayout"
+      @toggle-edge-labels="toggleEdgeLabels"
+      @toggle-selection-mode="toggleSelectionMode"
+      @crop-to-selection="cropToSelection"
+      @undo-crop="undoCrop"
+    />
   </div>
 </template>
 
@@ -191,10 +60,11 @@ import { useTouchBoxSelect } from '@/composables/useTouchBoxSelect'
 import cytoscape from 'cytoscape'
 import type { Core, NodeSingular, Layouts } from 'cytoscape'
 import d3Force from 'cytoscape-d3-force'
-import Button from 'primevue/button'
-import Divider from 'primevue/divider'
-import ProgressSpinner from 'primevue/progressspinner'
 import type { GraphNode, MergedEdge } from '@/lib/sparql/types'
+import GraphEmptyState from './GraphEmptyState.vue'
+import GraphLoadingOverlay from './GraphLoadingOverlay.vue'
+import GraphLegend from './GraphLegend.vue'
+import GraphToolbar from './GraphToolbar.vue'
 
 cytoscape.use(d3Force as unknown as cytoscape.Ext)
 
@@ -230,50 +100,6 @@ const selectionMode = ref<'pan' | 'select'>('pan')
 const hasSelection = ref(false)
 const cropHistory = ref<cytoscape.ElementDefinition[][]>([])
 const zoomLevel = ref(100)
-const legendCollapsed = ref(false)
-
-// ── Draggable legend ──────────────────────────────────────────────────────────
-
-const legendRef = ref<HTMLDivElement | null>(null)
-const legendPos = ref<{ left: number; top: number } | null>(null)
-
-let _legendDragStartX = 0
-let _legendDragStartY = 0
-let _legendElemStartLeft = 0
-let _legendElemStartTop = 0
-let _legendMoved = false
-
-function onLegendPointerDown(e: PointerEvent): void {
-  const el = legendRef.value
-  if (!el) return
-  const containerRect = el.parentElement!.getBoundingClientRect()
-  const rect = el.getBoundingClientRect()
-  _legendDragStartX = e.clientX
-  _legendDragStartY = e.clientY
-  _legendElemStartLeft = legendPos.value?.left ?? rect.left - containerRect.left
-  _legendElemStartTop = legendPos.value?.top ?? rect.top - containerRect.top
-  _legendMoved = false
-  el.setPointerCapture(e.pointerId)
-}
-
-function onLegendPointerMove(e: PointerEvent): void {
-  const el = legendRef.value
-  if (!el || !el.hasPointerCapture(e.pointerId)) return
-  const dx = e.clientX - _legendDragStartX
-  const dy = e.clientY - _legendDragStartY
-  if (!_legendMoved && Math.hypot(dx, dy) < 5) return
-  _legendMoved = true
-  const container = el.parentElement!
-  legendPos.value = {
-    left: Math.max(0, Math.min(_legendElemStartLeft + dx, container.clientWidth - el.offsetWidth)),
-    top: Math.max(0, Math.min(_legendElemStartTop + dy, container.clientHeight - el.offsetHeight)),
-  }
-}
-
-function onLegendClickCapture(e: MouseEvent): void {
-  if (_legendMoved) e.stopPropagation()
-}
-
 // ── Touch box-selection (long-press → drag on mobile) ─────────────────────────
 
 const { attach: attachTouchSelect, detach: detachTouchSelect } = useTouchBoxSelect(
@@ -313,33 +139,6 @@ const legendEntries = computed(() => {
     color,
   }))
 })
-
-const LOADING_STAGES = ['Querying endpoint', 'Traversing paths', 'Collecting results']
-const elapsedSeconds = ref(0)
-let elapsedTimer: ReturnType<typeof setInterval> | null = null
-
-const loadingStageIndex = computed(() => {
-  if (elapsedSeconds.value < 3) return 0
-  if (elapsedSeconds.value < 8) return 1
-  return 2
-})
-
-watch(
-  () => props.loading,
-  (isLoading) => {
-    if (isLoading) {
-      elapsedSeconds.value = 0
-      elapsedTimer = setInterval(() => {
-        elapsedSeconds.value++
-      }, 1000)
-    } else {
-      if (elapsedTimer) {
-        clearInterval(elapsedTimer)
-        elapsedTimer = null
-      }
-    }
-  },
-)
 
 // Colour palette for node classes — matches --rf-cat-* tokens in tokens.css
 const PALETTE = [
@@ -743,10 +542,6 @@ onUnmounted(() => {
   layout = null
   cy?.destroy()
   cy = null
-  if (elapsedTimer) {
-    clearInterval(elapsedTimer)
-    elapsedTimer = null
-  }
 })
 
 defineExpose({ PALETTE, zoomIn, zoomOut, fitGraph, rerunLayout, toggleEdgeLabels })
@@ -1051,13 +846,9 @@ defineExpose({ PALETTE, zoomIn, zoomOut, fitGraph, rerunLayout, toggleEdgeLabels
   min-width: 120px;
   max-width: 180px;
   z-index: 5;
-  cursor: grab;
+  cursor: move;
   touch-action: none;
   user-select: none;
-}
-
-.graph-legend:active {
-  cursor: grabbing;
 }
 
 .legend-toggle {
@@ -1068,7 +859,7 @@ defineExpose({ PALETTE, zoomIn, zoomOut, fitGraph, rerunLayout, toggleEdgeLabels
   background: none;
   border: none;
   padding: 0;
-  cursor: inherit;
+  cursor: pointer;
   gap: var(--rf-space-2);
   min-height: 32px;
 }

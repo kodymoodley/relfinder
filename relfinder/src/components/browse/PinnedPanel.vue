@@ -92,6 +92,7 @@ import type { ExploredPair } from '@/stores/pinned'
 import QueryOptionsPanel from './QueryOptionsPanel.vue'
 import type { QueryConfig } from './QueryOptionsPanel.vue'
 import { QueryCyclesStrategy } from '@/lib/sparql/types'
+import { RDF_TYPE, SKOS_SUBJECT } from '@/lib/sparql/queryBuilder'
 
 const DOT_COLORS = ['#f97316', '#8b5cf6'] as const
 
@@ -101,10 +102,7 @@ const pinnedStore = usePinnedStore()
 const optionsOpen = ref(false)
 const queryOptions = ref<QueryConfig>({
   maxDistance: 2,
-  ignoredProperties: [
-    'http://www.w3.org/1999/02/22-rdf-syntax-ns#type',
-    'http://www.w3.org/2004/02/skos/core#subject',
-  ],
+  ignoredProperties: [RDF_TYPE, SKOS_SUBJECT],
   avoidCycles: QueryCyclesStrategy.NO_INTERMEDIATE_DUPLICATES,
   customLabelProperties: [],
 })

@@ -19,10 +19,14 @@ import { Store } from 'n3'
 import { fetchClassDescription } from '@/lib/sparql/classDescription'
 import { executeSelect, executeSelectOnStore } from '@/lib/sparql/engine'
 
-vi.mock('@/lib/sparql/engine', () => ({
-  executeSelect: vi.fn(),
-  executeSelectOnStore: vi.fn(),
-}))
+vi.mock('@/lib/sparql/engine', () => {
+  const executeSelect = vi.fn()
+  const executeSelectOnStore = vi.fn()
+  const runSelect = vi.fn((q: string, ctx: unknown, store?: unknown) =>
+    store ? executeSelectOnStore(q, store) : executeSelect(q, ctx),
+  )
+  return { executeSelect, executeSelectOnStore, runSelect }
+})
 
 const CTX = { endpointUrl: 'https://dbpedia.org/sparql' }
 const ACTOR_CLASS = 'http://dbpedia.org/ontology/Actor'

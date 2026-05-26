@@ -7,6 +7,55 @@ import { fetchClassDescription } from '@/lib/sparql/classDescription'
 import { loadSchema, saveSchema } from '@/lib/cache/schemaStorage'
 import type { PersistedSchema } from '@/lib/cache/schemaStorage'
 import type { SchemaNode, SchemaEdge, SchemaDataProp, QueryContext } from '@/lib/sparql/types'
+import { cacheAdd } from '@/lib/search/entityCache'
+import type { CachedEntity } from '@/lib/search/types'
+import type { Ref } from 'vue'
+
+/**
+ * Guards a cache-populate action: skips if already cached or in-flight,
+ * manages the loading set, and optionally removes from a status map on completion.
+ *
+ * `onDone` is called after the result is stored in `cache` and before the
+ * loading set is cleaned up — use it for side effects that depend on the
+ * fresh cache entry.
+ */
+async function withLoadingGuard<T>(
+  key: string,
+  cache: Ref<Map<string, T>>,
+  loadingSet: Ref<Set<string>>,
+  work: () => Promise<T>,
+  statusMap?: Ref<Map<string, string>>,
+  onDone?: (result: T) => void,
+): Promise<void> {
+  if (cache.value.has(key) || loadingSet.value.has(key)) return
+  loadingSet.value.add(key)
+  try {
+    const result = await work()
+    cache.value.set(key, result)
+    onDone?.(result)
+  } finally {
+    loadingSet.value.delete(key)
+    statusMap?.value.delete(key)
+  }
+}
+
+function toEntityCacheEntry(
+  inst: { iri: string; label: string },
+  classIri: string,
+  classLabel: string,
+  now: number,
+): CachedEntity {
+  return {
+    iri: inst.iri,
+    label: inst.label,
+    altLabels: [],
+    classIri,
+    classLabel,
+    description: '',
+    addedAt: now,
+    lastAccessed: now,
+  }
+}
 
 export const useSchemaStore = defineStore('schema', () => {
   // ── Graph state ──────────────────────────────────────────────────────────────
@@ -55,7 +104,7 @@ export const useSchemaStore = defineStore('schema', () => {
 
   // ── Internal helpers ─────────────────────────────────────────────────────────
 
-  // Module-level so both start() and loadMore() share the same processed set.
+  // Shared across start() and loadMore() calls within the same store instance.
   let abortController: AbortController | null = null
   const _processedSet = new Set<string>()
   let _context: QueryContext | null = null
@@ -64,11 +113,11 @@ export const useSchemaStore = defineStore('schema', () => {
   let _edgeLimit = 10
 
   function setDataPropsStatus(classIri: string, msg: string) {
-    dataPropsStatus.value = new Map(dataPropsStatus.value).set(classIri, msg)
+    dataPropsStatus.value.set(classIri, msg)
   }
 
   function setDescriptionStatus(classIri: string, msg: string) {
-    descriptionStatus.value = new Map(descriptionStatus.value).set(classIri, msg)
+    descriptionStatus.value.set(classIri, msg)
   }
 
   /** Snapshot current reactive state into the localStorage schema entry. */
@@ -116,15 +165,6 @@ export const useSchemaStore = defineStore('schema', () => {
     const isFileSource = n3Store !== undefined
     const endpointUrl = isFileSource ? '' : context.endpointUrl || '__file__'
 
-    console.log(
-      '[schema] start() called — force:',
-      force,
-      'current nodes:',
-      nodes.value.length,
-      'extracting:',
-      extracting.value,
-    )
-
     // ── Try to restore from persistent storage ──────────────────────────────
     const saved = force || isFileSource ? null : loadSchema(endpointUrl)
     const canResume =
@@ -141,32 +181,17 @@ export const useSchemaStore = defineStore('schema', () => {
       }
       lastBatchSize.value = saved.nodes.length
 
-      console.log(
-        '[schema] cache check — saved:',
-        !!saved,
-        'canResume:',
-        canResume,
-        `processed ${_processedSet.size}/${saved.nodes.length}`,
-      )
-
       if (_processedSet.size >= saved.nodes.length) {
-        console.log('[schema] FULLY CACHED — returning early, no extraction')
         return
       }
-
-      console.log(
-        '[schema] PARTIAL CACHE — resuming Phase 2 for',
-        saved.nodes.length - _processedSet.size,
-        'remaining classes',
-      )
 
       progress.value = { completed: _processedSet.size, total: saved.nodes.length }
     } else {
       // Fresh start
       nodes.value = []
       edges.value = []
-      dataPropsCache.value = new Map()
-      descriptionCache.value = new Map()
+      dataPropsCache.value.clear()
+      descriptionCache.value.clear()
       progress.value = { completed: 0, total: 0 }
       lastBatchSize.value = 0
     }
@@ -187,43 +212,30 @@ export const useSchemaStore = defineStore('schema', () => {
         },
         {
           onDescriptionsLoaded(map) {
-            descriptionCache.value = new Map([...descriptionCache.value, ...map])
+            for (const [k, v] of map) descriptionCache.value.set(k, v)
           },
           onClassesLoaded(incoming) {
             lastBatchSize.value = incoming.length
-            nodes.value = incoming
+            nodes.value = [...incoming]
             progress.value = { completed: _processedSet.size, total: incoming.length }
             statusMessage.value = ''
             if (!isFileSource) persist(endpointUrl)
           },
           onEdgesLoaded(incoming) {
-            edges.value = [...edges.value, ...incoming]
-            console.log(
-              '[schema] onEdgesLoaded — total edges now:',
-              edges.value.length,
-              '| extracting:',
-              extracting.value,
-            )
+            edges.value.push(...incoming)
           },
           onProgress(completed, total) {
             progress.value = { completed, total }
           },
           onClassProcessed(classIri) {
             _processedSet.add(classIri)
-            console.log(
-              '[schema] onClassProcessed',
-              classIri,
-              '| processed:',
-              _processedSet.size,
-              '| extracting:',
-              extracting.value,
-            )
+            fetchInstances(classIri, context, n3Store).catch(() => {})
+            fetchDataProps(classIri, context, n3Store).catch(() => {})
             if (!isFileSource) persist(endpointUrl)
           },
         },
         abortController.signal,
       )
-      console.log('[schema] extractSchema returned — setting extracting=false')
     } catch (err) {
       if ((err as Error)?.name !== 'AbortError') {
         extractError.value =
@@ -232,14 +244,6 @@ export const useSchemaStore = defineStore('schema', () => {
             : 'An unexpected error occurred.'
       }
     } finally {
-      console.log(
-        '[schema] finally — extracting was:',
-        extracting.value,
-        '| edges:',
-        edges.value.length,
-        '| nodes:',
-        nodes.value.length,
-      )
       extracting.value = false
       statusMessage.value = ''
     }
@@ -268,8 +272,6 @@ export const useSchemaStore = defineStore('schema', () => {
     progress.value = { completed: 0, total: 0 }
     statusMessage.value = 'Discovering more classes…'
 
-    const batchProcessed = new Set<string>()
-
     try {
       await extractSchema(
         context,
@@ -282,24 +284,25 @@ export const useSchemaStore = defineStore('schema', () => {
         },
         {
           onDescriptionsLoaded(map) {
-            descriptionCache.value = new Map([...descriptionCache.value, ...map])
+            for (const [k, v] of map) descriptionCache.value.set(k, v)
           },
           onClassesLoaded(incoming) {
             lastBatchSize.value = incoming.length
-            nodes.value = [...nodes.value, ...incoming]
+            nodes.value.push(...incoming)
             progress.value = { completed: _processedSet.size, total: nodes.value.length }
             statusMessage.value = ''
             if (!isFileSource) persist(endpointUrl)
           },
           onEdgesLoaded(incoming) {
-            edges.value = [...edges.value, ...incoming]
+            edges.value.push(...incoming)
           },
           onProgress(completed, total) {
             progress.value = { completed, total }
           },
           onClassProcessed(classIri) {
-            batchProcessed.add(classIri)
             _processedSet.add(classIri)
+            fetchInstances(classIri, context, n3Store).catch(() => {})
+            fetchDataProps(classIri, context, n3Store).catch(() => {})
             if (!isFileSource) persist(endpointUrl)
           },
         },
@@ -319,14 +322,12 @@ export const useSchemaStore = defineStore('schema', () => {
   }
 
   function cancel() {
-    console.log('[schema] cancel() called')
     abortController?.abort()
     extracting.value = false
     statusMessage.value = ''
   }
 
   function clear() {
-    console.log('[schema] clear() called — nodes before clear:', nodes.value.length)
     abortController?.abort()
     nodes.value = []
     edges.value = []
@@ -335,14 +336,14 @@ export const useSchemaStore = defineStore('schema', () => {
     progress.value = { completed: 0, total: 0 }
     statusMessage.value = ''
     lastBatchSize.value = 0
-    dataPropsCache.value = new Map()
-    dataPropsLoading.value = new Set()
-    dataPropsStatus.value = new Map()
-    descriptionCache.value = new Map()
-    descriptionLoading.value = new Set()
-    descriptionStatus.value = new Map()
-    instancesLoading.value = new Set()
-    entityPropsLoading.value = new Set()
+    dataPropsCache.value.clear()
+    dataPropsLoading.value.clear()
+    dataPropsStatus.value.clear()
+    descriptionCache.value.clear()
+    descriptionLoading.value.clear()
+    descriptionStatus.value.clear()
+    instancesLoading.value.clear()
+    entityPropsLoading.value.clear()
     _processedSet.clear()
     _context = null
     _n3Store = undefined
@@ -355,25 +356,18 @@ export const useSchemaStore = defineStore('schema', () => {
     context: QueryContext,
     n3Store: Store | undefined,
   ) {
-    if (dataPropsCache.value.has(classIri)) return
-    if (dataPropsLoading.value.has(classIri)) return
-
-    dataPropsLoading.value = new Set(dataPropsLoading.value).add(classIri)
-    setDataPropsStatus(classIri, 'Querying endpoint…')
-
-    try {
-      const props = await fetchSchemaDataProperties(classIri, context, n3Store, 50, (msg) =>
-        setDataPropsStatus(classIri, msg),
-      )
-      dataPropsCache.value = new Map(dataPropsCache.value).set(classIri, props)
-    } finally {
-      const next = new Set(dataPropsLoading.value)
-      next.delete(classIri)
-      dataPropsLoading.value = next
-      const s = new Map(dataPropsStatus.value)
-      s.delete(classIri)
-      dataPropsStatus.value = s
-    }
+    await withLoadingGuard(
+      classIri,
+      dataPropsCache,
+      dataPropsLoading,
+      () => {
+        setDataPropsStatus(classIri, 'Querying endpoint…')
+        return fetchSchemaDataProperties(classIri, context, n3Store, 50, (msg) =>
+          setDataPropsStatus(classIri, msg),
+        )
+      },
+      dataPropsStatus,
+    )
   }
 
   // ── Per-class descriptions ────────────────────────────────────────────────
@@ -383,23 +377,16 @@ export const useSchemaStore = defineStore('schema', () => {
     context: QueryContext,
     n3Store: Store | undefined,
   ) {
-    if (descriptionCache.value.has(classIri)) return
-    if (descriptionLoading.value.has(classIri)) return
-
-    descriptionLoading.value = new Set(descriptionLoading.value).add(classIri)
-    setDescriptionStatus(classIri, 'Fetching description…')
-
-    try {
-      const text = await fetchClassDescription(classIri, context, n3Store)
-      descriptionCache.value = new Map(descriptionCache.value).set(classIri, text)
-    } finally {
-      const next = new Set(descriptionLoading.value)
-      next.delete(classIri)
-      descriptionLoading.value = next
-      const s = new Map(descriptionStatus.value)
-      s.delete(classIri)
-      descriptionStatus.value = s
-    }
+    await withLoadingGuard(
+      classIri,
+      descriptionCache,
+      descriptionLoading,
+      () => {
+        setDescriptionStatus(classIri, 'Fetching description…')
+        return fetchClassDescription(classIri, context, n3Store)
+      },
+      descriptionStatus,
+    )
   }
 
   // ── Per-class instances ───────────────────────────────────────────────────
@@ -409,19 +396,34 @@ export const useSchemaStore = defineStore('schema', () => {
     context: QueryContext,
     n3Store: Store | undefined,
   ) {
-    if (instancesCache.value.has(classIri)) return
-    if (instancesLoading.value.has(classIri)) return
+    await withLoadingGuard(
+      classIri,
+      instancesCache,
+      instancesLoading,
+      () => fetchInstancesByClass(classIri, context, n3Store, 20),
+      undefined,
+      (items) => {
+        if (items.length > 0) {
+          const classLabel = nodes.value.find((n) => n.iri === classIri)?.label ?? ''
+          const now = Date.now()
+          cacheAdd(items.map((inst) => toEntityCacheEntry(inst, classIri, classLabel, now)))
+        }
+      },
+    )
+  }
 
-    instancesLoading.value = new Set(instancesLoading.value).add(classIri)
+  // ── Merge search results into instances cache ─────────────────────────────
 
-    try {
-      const items = await fetchInstancesByClass(classIri, context, n3Store, 20)
-      instancesCache.value = new Map(instancesCache.value).set(classIri, items)
-    } finally {
-      const next = new Set(instancesLoading.value)
-      next.delete(classIri)
-      instancesLoading.value = next
-    }
+  function mergeInstances(classIri: string, incoming: Array<{ iri: string; label: string }>) {
+    if (incoming.length === 0) return
+    const existing = instancesCache.value.get(classIri) ?? []
+    const knownIris = new Set(existing.map((i) => i.iri))
+    const novel = incoming.filter((i) => !knownIris.has(i.iri))
+    if (novel.length === 0) return
+    instancesCache.value.set(classIri, [...existing, ...novel])
+    const classLabel = nodes.value.find((n) => n.iri === classIri)?.label ?? ''
+    const now = Date.now()
+    cacheAdd(novel.map((inst) => toEntityCacheEntry(inst, classIri, classLabel, now)))
   }
 
   // ── Per-instance entity properties ───────────────────────────────────────
@@ -431,19 +433,9 @@ export const useSchemaStore = defineStore('schema', () => {
     context: QueryContext,
     n3Store: Store | undefined,
   ) {
-    if (entityPropsCache.value.has(entityIri)) return
-    if (entityPropsLoading.value.has(entityIri)) return
-
-    entityPropsLoading.value = new Set(entityPropsLoading.value).add(entityIri)
-
-    try {
-      const props = await fetchEntityProps(entityIri, context, n3Store)
-      entityPropsCache.value = new Map(entityPropsCache.value).set(entityIri, props)
-    } finally {
-      const next = new Set(entityPropsLoading.value)
-      next.delete(entityIri)
-      entityPropsLoading.value = next
-    }
+    await withLoadingGuard(entityIri, entityPropsCache, entityPropsLoading, () =>
+      fetchEntityProps(entityIri, context, n3Store),
+    )
   }
 
   // ── Exports ───────────────────────────────────────────────────────────────
@@ -480,6 +472,7 @@ export const useSchemaStore = defineStore('schema', () => {
     instancesCache,
     instancesLoading,
     fetchInstances,
+    mergeInstances,
     // entity props
     entityPropsCache,
     entityPropsLoading,

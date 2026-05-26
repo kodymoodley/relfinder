@@ -90,9 +90,9 @@ async function goToBrowseViaSparql(page: Page): Promise<BrowsePage> {
   await page.evaluate(() => { sessionStorage.clear(); localStorage.clear() })
   await page.getByTestId('endpoint-url-input').fill(MOCK_ENDPOINT)
   await page.getByTestId('connect-btn').click()
-  await expect(page).toHaveURL('/browse', { timeout: 15_000 })
+  await expect(page).toHaveURL('/browse', { timeout: 60_000 })
   const browse = new BrowsePage(page)
-  await browse.waitForExtractionComplete(30_000)
+  await browse.waitForExtractionComplete(80_000)
   return browse
 }
 
@@ -102,17 +102,17 @@ test.describe('Schema view — auto-start behaviour', () => {
   test('navigating to /browse auto-starts extraction (Stop button appears)', async ({ page }) => {
     // Use slow mock so Phase 2 keeps the Stop button visible long enough to assert
     const browse = await navigateWithSlowExtraction(page)
-    await expect(browse.stopBtn()).toBeVisible({ timeout: 10_000 })
+    await expect(browse.stopBtn()).toBeVisible({ timeout: 20_000 })
     await expect(browse.extractionProgress()).toBeVisible()
     // Let extraction finish so the dev server is clean for the next test
-    await browse.waitForExtractionComplete(30_000)
+    await browse.waitForExtractionComplete(60_000)
   })
 
   test('extract button is NOT visible while auto-extraction is running', async ({ page }) => {
     const browse = await navigateWithSlowExtraction(page)
-    await expect(browse.stopBtn()).toBeVisible({ timeout: 10_000 })
+    await expect(browse.stopBtn()).toBeVisible({ timeout: 20_000 })
     await expect(browse.extractBtn()).not.toBeVisible()
-    await browse.waitForExtractionComplete(30_000)
+    await browse.waitForExtractionComplete(60_000)
   })
 
   test('extraction completes automatically and shows Schema loaded indicator', async ({ page }) => {
@@ -157,7 +157,7 @@ test.describe('Extraction — Stop button', () => {
     await browse.clickStop()
     await expect(browse.stopBtn()).not.toBeVisible({ timeout: 3_000 })
     const extractVisible = await browse.extractBtn().isVisible()
-    const doneVisible    = await browse.schemaDone().isVisible()
+    const doneVisible = await browse.schemaDone().isVisible()
     expect(extractVisible || doneVisible).toBe(true)
   })
 

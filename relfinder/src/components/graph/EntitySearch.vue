@@ -75,6 +75,32 @@ import { searchEntities } from '@/lib/sparql/entitySearch'
 import type { EntitySearchResult } from '@/lib/sparql/types'
 import { shortIri } from '@/lib/utils/iri'
 import { cacheGet, cacheSet } from '@/lib/cache/queryCache'
+import { cacheAdd } from '@/lib/search/entityCache'
+import { useSearchIndex } from '@/composables/useSearchIndex'
+import { weightedSumFusion } from '@/lib/search/fusion/weightedSum'
+import { snapshot } from '@/lib/search/interestModel'
+import { searchConfig } from '@/lib/search/strategyRegistry'
+import { recordSelect } from '@/lib/search/interestModel'
+
+// RDF/OWL meta-types — entities typed as these are schema-level constructs,
+// not domain instances, and should be excluded from the Paths entity picker.
+const META_CLASS_IRIS = new Set([
+  'http://www.w3.org/2002/07/owl#Class',
+  'http://www.w3.org/2000/01/rdf-schema#Class',
+  'http://www.w3.org/1999/02/22-rdf-syntax-ns#Property',
+  'http://www.w3.org/2002/07/owl#ObjectProperty',
+  'http://www.w3.org/2002/07/owl#DatatypeProperty',
+  'http://www.w3.org/2002/07/owl#AnnotationProperty',
+  'http://www.w3.org/2002/07/owl#TransitiveProperty',
+  'http://www.w3.org/2002/07/owl#SymmetricProperty',
+  'http://www.w3.org/2002/07/owl#AsymmetricProperty',
+  'http://www.w3.org/2002/07/owl#ReflexiveProperty',
+  'http://www.w3.org/2002/07/owl#IrreflexiveProperty',
+  'http://www.w3.org/2002/07/owl#FunctionalProperty',
+  'http://www.w3.org/2002/07/owl#InverseFunctionalProperty',
+  'http://www.w3.org/2002/07/owl#Restriction',
+  'http://www.w3.org/2002/07/owl#Ontology',
+])
 
 const props = defineProps<{
   id: string
@@ -84,6 +110,8 @@ const props = defineProps<{
   allowedClasses?: string[]
   language?: string
   customLabelProperties?: string[]
+  /** When true, schema-level constructs (classes, properties) are excluded from results. */
+  instancesOnly?: boolean
   /** Pre-fills the selection; when set the field is shown in a locked/disabled state. */
   initialEntity?: EntitySearchResult | null
 }>()
@@ -93,6 +121,7 @@ const emit = defineEmits<{
 }>()
 
 const connectionStore = useConnectionStore()
+const { search: searchIndex } = useSearchIndex()
 
 // Separate refs: inputText drives the AutoComplete input; selectedEntity drives
 // the chip. Using v-if on the AutoComplete means these never conflict.
@@ -122,38 +151,11 @@ async function runSearch(query: string) {
   }
 
   try {
-    const context = connectionStore.queryContext
-    const store = connectionStore.rdfStore ?? undefined
-    const effectiveContext = context ?? { endpointUrl: '' }
-    const lang = props.language ?? 'en'
-    const classes = props.allowedClasses ?? []
-    const cacheKey = `search:${effectiveContext.endpointUrl}:${lang}:${classes.join(',')}:${query}`
-
-    const cached = cacheGet<EntitySearchResult[]>(cacheKey)
-    if (cached) {
-      suggestions.value = cached
+    if (searchConfig.indexEnabled) {
+      await runLocalSearch(query)
     } else {
-      const results = await searchEntities(
-        effectiveContext,
-        classes,
-        store,
-        50,
-        query,
-        lang,
-        props.customLabelProperties ?? [],
-      )
-      cacheSet(cacheKey, results)
-      suggestions.value = results
+      await runSparqlSearch(query)
     }
-
-    if (suggestions.value.length === 0) {
-      statusMessage.value = `No results for "${query}"`
-    } else {
-      statusMessage.value = `${suggestions.value.length} result${suggestions.value.length === 1 ? '' : 's'} for "${query}"`
-    }
-    statusClearTimer = setTimeout(() => {
-      statusMessage.value = ''
-    }, 3000)
   } catch {
     suggestions.value = []
     statusMessage.value = 'Search failed — check your connection'
@@ -165,8 +167,86 @@ async function runSearch(query: string) {
   }
 }
 
+function filterInstances(results: EntitySearchResult[]): EntitySearchResult[] {
+  if (!props.instancesOnly) return results
+  return results.filter((r) => !META_CLASS_IRIS.has(r.class))
+}
+
+async function runLocalSearch(query: string): Promise<void> {
+  const classes = props.allowedClasses ?? []
+  const raw = await searchIndex(query, 50, classes.length > 0 ? classes : undefined)
+  const fused = weightedSumFusion.fuse(raw, [], snapshot())
+  suggestions.value = filterInstances(
+    fused.map((e) => ({ iri: e.iri, label: e.label, class: e.classIri })),
+  )
+
+  if (suggestions.value.length === 0 && classes.length > 0) {
+    // No local hits for a class-scoped search — fall back to a targeted SPARQL query
+    // so the user always gets results while the cache warms up.
+    await runSparqlSearch(query)
+    if (suggestions.value.length > 0) seedCacheFromResults(suggestions.value)
+    return
+  }
+
+  applyStatus(query)
+}
+
+async function runSparqlSearch(query: string): Promise<void> {
+  const context = connectionStore.queryContext
+  const store = connectionStore.rdfStore ?? undefined
+  const effectiveContext = context ?? { endpointUrl: '' }
+  const lang = props.language ?? 'en'
+  const classes = props.allowedClasses ?? []
+  const cacheKey = `search:${effectiveContext.endpointUrl}:${lang}:${classes.join(',')}:${query}`
+
+  const cached = cacheGet<EntitySearchResult[]>(cacheKey)
+  if (cached) {
+    suggestions.value = cached
+  } else {
+    const results = filterInstances(
+      await searchEntities(effectiveContext, {
+        allowedClasses: classes,
+        store,
+        textFilter: query,
+        language: lang,
+        customLabelProperties: props.customLabelProperties ?? [],
+      }),
+    )
+    cacheSet(cacheKey, results)
+    suggestions.value = results
+  }
+
+  applyStatus(query)
+}
+
+function applyStatus(query: string): void {
+  const n = suggestions.value.length
+  statusMessage.value =
+    n === 0 ? `No results for "${query}"` : `${n} result${n === 1 ? '' : 's'} for "${query}"`
+  statusClearTimer = setTimeout(() => {
+    statusMessage.value = ''
+  }, 3000)
+}
+
+function seedCacheFromResults(results: EntitySearchResult[]): void {
+  const now = Date.now()
+  cacheAdd(
+    results.map((r) => ({
+      iri: r.iri,
+      label: r.label,
+      altLabels: [],
+      classIri: r.class,
+      classLabel: shortIri(r.class),
+      description: '',
+      addedAt: now,
+      lastAccessed: now,
+    })),
+  )
+}
+
 function onSelect(event: { value: EntitySearchResult }) {
   selectedEntity.value = event.value
+  recordSelect(event.value.iri)
   emit('select', event.value)
 }
 

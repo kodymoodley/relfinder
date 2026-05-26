@@ -34,22 +34,69 @@
         </div>
         <p v-else-if="instances.length === 0" class="list-empty">No instances found.</p>
         <template v-else>
-          <!-- Start entity chip — persists across class selections -->
-          <div v-if="pendingStart" class="start-chip">
-            <span class="start-dot" />
-            <span class="start-chip-label" :title="pendingStart.iri">{{ pendingStart.label }}</span>
-            <button class="start-chip-clear" aria-label="Clear start" @click="pendingStart = null">
+          <!-- Search filter -->
+          <div class="instance-search-wrap">
+            <i class="pi pi-search instance-search-icon" />
+            <input
+              ref="instanceSearchRef"
+              v-model="instanceSearch"
+              class="instance-search-input"
+              placeholder="Filter instances…"
+              autocomplete="off"
+            />
+            <Transition name="source-badge">
+              <span
+                v-if="searchMode"
+                :key="searchMode"
+                class="search-source-badge"
+                :class="`search-source-badge--${searchMode}`"
+                :title="
+                  searchMode === 'live'
+                    ? 'Results from SPARQL endpoint'
+                    : searchMode === 'querying'
+                      ? 'Querying endpoint…'
+                      : 'Results from local cache'
+                "
+              >
+                <span class="search-source-dot" />
+                <span v-if="searchMode === 'live'" class="search-source-text">endpoint</span>
+              </span>
+            </Transition>
+            <button
+              v-if="instanceSearch"
+              class="instance-search-clear"
+              aria-label="Clear filter"
+              @click="clearInstanceSearch"
+            >
               <i class="pi pi-times" />
             </button>
           </div>
-          <p v-if="pendingStart" class="start-hint">Pick a destination:</p>
+          <p v-if="!instanceSearchLoading && displayedInstances.length === 0" class="list-empty">
+            No matches.
+          </p>
+
+          <!-- Start entity chip — shared with CommandPalette via pathStartEntity -->
+          <div v-if="pathStartEntity" class="start-chip">
+            <span class="start-dot" />
+            <span class="start-chip-label" :title="pathStartEntity.iri">{{
+              pathStartEntity.label
+            }}</span>
+            <button
+              class="start-chip-clear"
+              aria-label="Clear start"
+              @click="pathStartEntity = null"
+            >
+              <i class="pi pi-times" />
+            </button>
+          </div>
+          <p v-if="pathStartEntity" class="start-hint">Pick a destination:</p>
           <ul class="instance-list">
             <li
-              v-for="inst in instances.slice(0, 20)"
+              v-for="inst in displayedInstances"
               :key="inst.iri"
               class="instance-item"
               :class="{
-                'instance-item--start': pendingStart?.iri === inst.iri,
+                'instance-item--start': pathStartEntity?.iri === inst.iri,
                 'instance-item--expanded': expandedInstances.has(inst.iri),
               }"
             >
@@ -68,13 +115,13 @@
                 </button>
                 <span class="instance-label" :title="inst.iri">{{ inst.label }}</span>
                 <Button
-                  v-if="!pendingStart"
+                  v-if="!pathStartEntity"
                   size="small"
                   text
                   label="Set as start"
                   class="set-start-btn"
                   @click="
-                    pendingStart = {
+                    pathStartEntity = {
                       iri: inst.iri,
                       label: inst.label,
                       class: props.selectedNode!.iri,
@@ -82,18 +129,12 @@
                   "
                 />
                 <Button
-                  v-else-if="pendingStart.iri !== inst.iri"
+                  v-else-if="pathStartEntity.iri !== inst.iri"
                   size="small"
                   text
                   label="Find path →"
                   class="find-path-btn"
-                  @click="
-                    emit('find-paths', pendingStart!, {
-                      iri: inst.iri,
-                      label: inst.label,
-                      class: props.selectedNode!.iri,
-                    })
-                  "
+                  @click="doFindPath(inst)"
                 />
               </div>
               <div v-if="expandedInstances.has(inst.iri)" class="instance-detail">
@@ -209,7 +250,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onUnmounted, nextTick } from 'vue'
+import { storeToRefs } from 'pinia'
+import { useNavigationStore } from '@/stores/navigation'
 import Drawer from 'primevue/drawer'
 import Tag from 'primevue/tag'
 import DataTable from 'primevue/datatable'
@@ -219,6 +262,10 @@ import ProgressSpinner from 'primevue/progressspinner'
 import { useConnectionStore } from '@/stores/connection'
 import { useSchemaStore } from '@/stores/schema'
 import type { SchemaNode, SchemaEdge } from '@/lib/sparql/types'
+import { recordView, recordDwell } from '@/lib/search/interestModel'
+import { searchEntities } from '@/lib/sparql/entitySearch'
+
+const { pathStartEntity } = storeToRefs(useNavigationStore())
 
 const props = defineProps<{
   selectedNode: SchemaNode | null
@@ -236,8 +283,63 @@ const emit = defineEmits<{
   ]
 }>()
 
-const pendingStart = ref<{ iri: string; label: string; class: string } | null>(null)
 const expandedInstances = ref<Set<string>>(new Set())
+const instanceSearch = ref('')
+const instanceSearchRef = ref<HTMLInputElement | null>(null)
+const instanceSearchResults = ref<Array<{ iri: string; label: string }>>([])
+const instanceSearchLoading = ref(false)
+let _searchSeq = 0
+let _instanceSearchTimer: ReturnType<typeof setTimeout> | null = null
+
+function doFindPath(inst: { iri: string; label: string }) {
+  const start = pathStartEntity.value!
+  pathStartEntity.value = null
+  emit('find-paths', start, { iri: inst.iri, label: inst.label, class: props.selectedNode!.iri })
+}
+
+function clearInstanceSearch() {
+  instanceSearch.value = ''
+  nextTick(() => instanceSearchRef.value?.focus())
+}
+
+async function runInstanceSparqlSearch(query: string, classIri: string) {
+  const seq = ++_searchSeq
+  instanceSearchLoading.value = true
+  instanceSearchResults.value = []
+  const context = connectionStore.queryContext ?? { endpointUrl: '' }
+  const store = connectionStore.rdfStore ?? connectionStore.localRdfStore ?? undefined
+  try {
+    const results = await searchEntities(context, {
+      allowedClasses: [classIri],
+      store,
+      limit: 20,
+      textFilter: query,
+    })
+    if (seq !== _searchSeq) return
+    const mapped = results.map((r) => ({ iri: r.iri, label: r.label }))
+    instanceSearchResults.value = mapped
+    schemaStore.mergeInstances(classIri, mapped)
+  } catch {
+    if (seq === _searchSeq) instanceSearchResults.value = []
+  } finally {
+    if (seq === _searchSeq) instanceSearchLoading.value = false
+  }
+}
+
+// ── Dwell tracking ────────────────────────────────────────────────────────────
+
+let _dwellIri: string | null = null
+let _dwellStart: number | null = null
+
+function commitDwell() {
+  if (_dwellIri !== null && _dwellStart !== null) {
+    recordDwell(_dwellIri, Date.now() - _dwellStart)
+    _dwellIri = null
+    _dwellStart = null
+  }
+}
+
+onUnmounted(commitDwell)
 
 function toggleExpand(iri: string) {
   const next = new Set(expandedInstances.value)
@@ -271,6 +373,7 @@ watch(
 
 watch(visible, (v) => {
   if (!v) {
+    commitDwell()
     emit('update:selectedNode', null)
     emit('update:selectedEdge', null)
   }
@@ -278,13 +381,21 @@ watch(visible, (v) => {
 
 watch(
   () => props.selectedNode,
-  (node) => {
+  (node, prev) => {
+    if (prev) commitDwell()
+    instanceSearch.value = ''
+    instanceSearchResults.value = []
+    instanceSearchLoading.value = false
+    ++_searchSeq
     if (!node) return
     const context = connectionStore.queryContext ?? { endpointUrl: '' }
     const store = connectionStore.rdfStore ?? connectionStore.localRdfStore ?? undefined
     schemaStore.fetchDataProps(node.iri, context, store).catch(() => {})
     schemaStore.fetchDescription(node.iri, context, store).catch(() => {})
     schemaStore.fetchInstances(node.iri, context, store).catch(() => {})
+    recordView(node.iri)
+    _dwellIri = node.iri
+    _dwellStart = Date.now()
   },
 )
 
@@ -343,6 +454,40 @@ const loadingInstances = computed(() =>
 const instances = computed(() =>
   props.selectedNode ? (schemaStore.instancesCache.get(props.selectedNode.iri) ?? []) : [],
 )
+
+const filteredInstances = computed(() => {
+  const q = instanceSearch.value.trim().toLowerCase()
+  if (!q) return instances.value.slice(0, 20)
+  return instances.value.filter((i) => i.label.toLowerCase().includes(q)).slice(0, 20)
+})
+
+// When the local filter is empty and the search query is non-empty, show SPARQL results.
+const displayedInstances = computed(() =>
+  filteredInstances.value.length > 0 ? filteredInstances.value : instanceSearchResults.value,
+)
+
+const searchMode = computed<null | 'cached' | 'querying' | 'live'>(() => {
+  if (!instanceSearch.value.trim()) return null
+  if (instanceSearchLoading.value) return 'querying'
+  if (instanceSearchResults.value.length > 0) return 'live'
+  if (filteredInstances.value.length > 0) return 'cached'
+  return null
+})
+
+watch(instanceSearch, (q) => {
+  if (_instanceSearchTimer) clearTimeout(_instanceSearchTimer)
+  instanceSearchResults.value = []
+  ++_searchSeq
+  if (!q.trim()) {
+    instanceSearchLoading.value = false
+    return
+  }
+  _instanceSearchTimer = setTimeout(() => {
+    if (filteredInstances.value.length === 0 && props.selectedNode) {
+      runInstanceSparqlSearch(q.trim(), props.selectedNode.iri)
+    }
+  }, 350)
+})
 
 const objectProps = computed(() => {
   if (!props.selectedNode) return []
@@ -741,5 +886,133 @@ const incoming = computed(() => {
   font-size: var(--rf-text-xs);
   color: var(--rf-text-muted);
   font-style: italic;
+}
+
+.instance-search-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--rf-space-2);
+  padding: var(--rf-space-1) var(--rf-space-3);
+  background: var(--rf-surface-alt);
+  border: 1px solid var(--rf-border);
+  border-radius: var(--rf-radius-md);
+  margin-bottom: var(--rf-space-2);
+  transition: border-color var(--rf-duration-fast) var(--rf-ease-out);
+}
+
+.instance-search-wrap:focus-within {
+  border-color: var(--rf-primary);
+}
+
+.instance-search-icon {
+  color: var(--rf-text-subtle);
+  font-size: 0.7rem;
+  flex-shrink: 0;
+}
+
+.instance-search-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: var(--rf-text-xs);
+  color: var(--rf-text);
+  caret-color: var(--rf-primary);
+}
+
+.instance-search-input::placeholder {
+  color: var(--rf-text-subtle);
+}
+
+.instance-search-clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--rf-text-subtle);
+  padding: 2px;
+  border-radius: var(--rf-radius-sm);
+  line-height: 1;
+  flex-shrink: 0;
+  transition: color var(--rf-duration-fast) var(--rf-ease-out);
+}
+
+.instance-search-clear:hover {
+  color: var(--rf-text);
+}
+
+.instance-search-clear .pi {
+  font-size: 0.6rem;
+}
+
+/* ── Search source badge ─────────────────────────────────────────────────── */
+
+.search-source-badge {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+  margin-right: 2px;
+}
+
+.search-source-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.search-source-text {
+  font-size: 9px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.search-source-badge--cached .search-source-dot {
+  background: var(--rf-text-subtle);
+  opacity: 0.5;
+}
+
+.search-source-badge--querying .search-source-dot {
+  background: var(--rf-primary);
+  animation: source-pulse 1.1s ease-in-out infinite;
+}
+
+.search-source-badge--live .search-source-dot {
+  background: #22c55e;
+}
+
+.search-source-badge--live .search-source-text {
+  color: #22c55e;
+  opacity: 0.8;
+}
+
+@keyframes source-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.25;
+    transform: scale(0.65);
+  }
+}
+
+.source-badge-enter-active,
+.source-badge-leave-active {
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+
+.source-badge-enter-from,
+.source-badge-leave-to {
+  opacity: 0;
+  transform: scale(0.7);
 }
 </style>

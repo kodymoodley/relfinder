@@ -113,6 +113,22 @@ export async function executeSelectOnStore(query: string, store: Store): Promise
 }
 
 /**
+ * Dispatches a SELECT query to either a local N3 Store or a remote endpoint,
+ * depending on whether `store` is provided.
+ *
+ * Use this instead of calling `executeSelectOnStore` / `executeSelect` directly
+ * when the call site already handles both file and SPARQL sources.
+ */
+export function runSelect(
+  query: string,
+  context: QueryContext,
+  store?: Store,
+  signal?: AbortSignal,
+): Promise<SparqlBinding[]> {
+  return store ? executeSelectOnStore(query, store) : executeSelect(query, context, signal)
+}
+
+/**
  * Executes a SPARQL CONSTRUCT query against a remote SPARQL endpoint and
  * returns the resulting triples as an array of RDF.js Quad objects.
  *

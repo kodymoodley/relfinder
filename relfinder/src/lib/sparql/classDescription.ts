@@ -8,7 +8,7 @@
  */
 
 import type { Store } from 'n3'
-import { executeSelect, executeSelectOnStore } from './engine'
+import { runSelect } from './engine'
 import type { QueryContext } from './types'
 
 // Priority order: most precise/standard first, dataset-specific last.
@@ -23,10 +23,6 @@ export const DESCRIPTION_PROPERTIES = [
   'http://www.w3.org/2004/02/skos/core#note',
   'http://xmlns.com/foaf/0.1/bio',
 ] as const
-
-function runSelect(query: string, context: QueryContext, store?: Store) {
-  return store ? executeSelectOnStore(query, store) : executeSelect(query, context)
-}
 
 export async function fetchClassDescription(
   classIri: string,

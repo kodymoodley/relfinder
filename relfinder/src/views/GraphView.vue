@@ -59,7 +59,7 @@
         <!-- Entity selection -->
         <section class="sidebar-section" data-testid="entity1-search">
           <EntitySearch
-            :key="`e1-${entitySearchKey}`"
+            :key="`e1-${entity1SearchKey}`"
             id="entity1"
             label="Source"
             placeholder="Search…"
@@ -68,13 +68,14 @@
             :language="graphOptions.language"
             :custom-label-properties="graphOptions.customLabelProperties"
             :initial-entity="presetEntity1"
+            instances-only
             @select="entity1 = $event"
           />
         </section>
 
         <section class="sidebar-section" data-testid="entity2-search">
           <EntitySearch
-            :key="`e2-${entitySearchKey}`"
+            :key="`e2-${entity2SearchKey}`"
             id="entity2"
             label="Target"
             placeholder="Search…"
@@ -83,6 +84,7 @@
             :language="graphOptions.language"
             :custom-label-properties="graphOptions.customLabelProperties"
             :initial-entity="presetEntity2"
+            instances-only
             @select="entity2 = $event"
           />
         </section>
@@ -249,41 +251,40 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, watch, onMounted, onUnmounted, onActivated, onDeactivated, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import Button from 'primevue/button'
-import { useDarkMode } from '@/composables/useDarkMode'
-import { useBreakpoint } from '@/composables/useBreakpoint'
+import { useSidebar } from '@/composables/useSidebar'
+import { useClassColors } from '@/composables/useClassColors'
+import { useGraphFilters } from '@/composables/useGraphFilters'
+import { useRecentGraphs } from '@/composables/useRecentGraphs'
+import { useRelationshipSearch } from '@/composables/useRelationshipSearch'
 import Divider from 'primevue/divider'
 import Message from 'primevue/message'
 import Tag from 'primevue/tag'
 import { useConnectionStore } from '@/stores/connection'
-import { findRelationships, refreshGraphLabels } from '@/lib/sparql/entitySearch'
-import { fetchNeighbourhoodStore } from '@/lib/sparql/subgraphStrategy'
 import { cacheGet } from '@/lib/cache/queryCache'
-import {
-  saveGraph,
-  loadGraph,
-  lookupGraph,
-  listRecentGraphs,
-  deleteGraphEntry,
-} from '@/lib/cache/graphStorage'
+import { loadGraph, lookupGraph } from '@/lib/cache/graphStorage'
 import type { GraphHistoryMeta } from '@/lib/cache/graphStorage'
 import { QueryCyclesStrategy } from '@/lib/sparql/types'
+import { RDF_TYPE, SKOS_SUBJECT } from '@/lib/sparql/queryBuilder'
 import type { EntitySearchResult, RelationshipGraph, GraphNode } from '@/lib/sparql/types'
 import EntitySearch from '@/components/graph/EntitySearch.vue'
 import OptionsPanel from '@/components/graph/OptionsPanel.vue'
 import type { GraphOptions } from '@/components/graph/OptionsPanel.vue'
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
 import NodeDetail from '@/components/graph/NodeDetail.vue'
+import { recordView } from '@/lib/search/interestModel'
 import ShortcutsModal from '@/components/common/ShortcutsModal.vue'
 import FirstRunTip from '@/components/common/FirstRunTip.vue'
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
+import { storeToRefs } from 'pinia'
+import { useNavigationStore } from '@/stores/navigation'
 
 const router = useRouter()
 const connectionStore = useConnectionStore()
-const { dark, toggle: toggleDark } = useDarkMode()
-const { isMobile } = useBreakpoint()
+const { sidebarCollapsed, dark, toggleDark, isMobile, onEscKey } = useSidebar()
+const { palettePreviewEntity, graphPreset } = storeToRefs(useNavigationStore())
 
 // ── State ─────────────────────────────────────────────────────────────────────
 
@@ -301,18 +302,55 @@ const presetEntity1 = ref<EntitySearchResult | null>(_historyExample?.entity1 ??
 const presetEntity2 = ref<EntitySearchResult | null>(_historyExample?.entity2 ?? null)
 const entity1 = ref<EntitySearchResult | null>(presetEntity1.value)
 const entity2 = ref<EntitySearchResult | null>(presetEntity2.value)
-const graph = ref<RelationshipGraph | null>(null)
-const searching = ref(false)
-const searchError = ref('')
+const entity1SearchKey = ref(0)
+const entity2SearchKey = ref(0)
 const selectedNode = ref<GraphNode | null>(null)
-const sidebarCollapsed = ref(isMobile.value)
+watch(selectedNode, (node) => {
+  if (node) recordView(node.iri)
+})
+
+// Open NodeDetail for an instance selected via the command palette (ⓘ button).
+// Works whether GraphView is freshly mounted or activated from the keep-alive cache.
+watch(
+  palettePreviewEntity,
+  (entity) => {
+    if (!entity) return
+    palettePreviewEntity.value = null
+    selectedNode.value = {
+      id: -1,
+      iri: entity.iri,
+      label: entity.label,
+      class: entity.class,
+      isEndpoint: false,
+    }
+  },
+  { immediate: true },
+)
+
+// Apply entity presets from the command palette or class pane "Find path →" flow.
+// Using a reactive signal (not history.state) so this fires even when GraphView is
+// already the active view and router.push triggers a same-route navigation.
+watch(
+  graphPreset,
+  async (preset) => {
+    if (!preset) return
+    graphPreset.value = null
+    presetEntity1.value = preset.entity1
+    entity1.value = preset.entity1
+    entity1SearchKey.value++
+    presetEntity2.value = preset.entity2
+    entity2.value = preset.entity2
+    entity2SearchKey.value++
+    await nextTick()
+    presetEntity1.value = null
+    presetEntity2.value = null
+  },
+  { immediate: true },
+)
+
 const optionsOpen = ref(false)
 const showShortcuts = ref(false)
 const graphCanvasRef = ref<InstanceType<typeof GraphCanvas> | null>(null)
-
-watch(isMobile, (mobile) => {
-  if (mobile) sidebarCollapsed.value = true
-})
 
 useKeyboardShortcuts({
   zoomIn: () => graphCanvasRef.value?.zoomIn(),
@@ -325,16 +363,12 @@ useKeyboardShortcuts({
   },
 })
 
-const recentOpen = ref(true)
-const recentGraphs = ref<GraphHistoryMeta[]>([])
-const entitySearchKey = ref(0)
+const { recentOpen, recentGraphs, endpointKey, refreshRecent, onDeleteRecent } =
+  useRecentGraphs(connectionStore)
 
 const graphOptions = ref<GraphOptions>({
   maxDistance: 2,
-  ignoredProperties: [
-    'http://www.w3.org/1999/02/22-rdf-syntax-ns#type',
-    'http://www.w3.org/2004/02/skos/core#subject',
-  ],
+  ignoredProperties: [RDF_TYPE, SKOS_SUBJECT],
   avoidCycles: QueryCyclesStrategy.NO_INTERMEDIATE_DUPLICATES,
   allowedClasses: [],
   hiddenClasses: [],
@@ -343,72 +377,24 @@ const graphOptions = ref<GraphOptions>({
   ..._historyExample?.options,
 })
 
-// ── Class colour assignment ───────────────────────────────────────────────────
-
-const PALETTE = [
-  '#06b6d4', // cyan
-  '#10b981', // emerald
-  '#a78bfa', // violet
-  '#facc15', // yellow
-  '#f472b6', // pink
-  '#f87171', // red
-  '#60a5fa', // blue
-  '#a3e635', // lime
-]
-
-const classColors = ref(new Map<string, string>())
-
-// ── Client-side display filtering ─────────────────────────────────────────────
-
-const displayClasses = computed(() => {
-  if (!graph.value) return []
-  return graph.value.classes.filter((c) => !graphOptions.value.hiddenClasses.includes(c))
-})
-
-const displayNodes = computed(() => {
-  if (!graph.value) return []
-  const hidden = graphOptions.value.hiddenClasses
-  if (hidden.length === 0) return graph.value.nodes
-  return graph.value.nodes.filter((n) => !hidden.includes(n.class))
-})
-
-const displayEdges = computed(() => {
-  if (!graph.value) return []
-  if (graphOptions.value.hiddenClasses.length === 0) return graph.value.edges
-  const visibleIds = new Set(displayNodes.value.map((n) => n.id))
-  return graph.value.edges.filter((e) => visibleIds.has(e.sid) && visibleIds.has(e.tid))
-})
-
-const availableLanguages = computed(() => {
-  if (!graph.value) return []
-  const langs = new Set<string>()
-  for (const entries of graph.value.allLabels.values()) {
-    for (const entry of entries) langs.add(entry.lang)
-  }
-  return [...langs].sort()
-})
-
-watch(
-  () => graph.value?.classes,
-  (classes) => {
-    if (!classes) return
-    const map = new Map<string, string>()
-    classes.forEach((cls, idx) => {
-      map.set(cls, PALETTE[idx % PALETTE.length] ?? '#94a3b8')
-    })
-    classColors.value = map
+const { graph, searching, searchError, onFindRelationships } = useRelationshipSearch(
+  entity1,
+  entity2,
+  graphOptions,
+  connectionStore,
+  endpointKey,
+  () => {
+    selectedNode.value = null
   },
+  refreshRecent,
+)
+const { classColors } = useClassColors(graph)
+const { displayClasses, displayNodes, displayEdges, availableLanguages } = useGraphFilters(
+  graph,
+  graphOptions,
 )
 
 // ── Recent graphs ─────────────────────────────────────────────────────────────
-
-function endpointKey(): string {
-  return connectionStore.queryContext?.endpointUrl ?? '__file__'
-}
-
-function refreshRecent() {
-  recentGraphs.value = listRecentGraphs(endpointKey())
-}
 
 async function onLoadRecent(entry: GraphHistoryMeta) {
   // Seed EntitySearch chips via initial-entity (unlocked after nextTick)
@@ -416,7 +402,8 @@ async function onLoadRecent(entry: GraphHistoryMeta) {
   presetEntity2.value = entry.entity2
   entity1.value = entry.entity1
   entity2.value = entry.entity2
-  entitySearchKey.value++
+  entity1SearchKey.value++
+  entity2SearchKey.value++
 
   // Unlock chips so the user can still change entities
   await nextTick()
@@ -436,76 +423,6 @@ async function onLoadRecent(entry: GraphHistoryMeta) {
   refreshRecent()
 }
 
-function onDeleteRecent(id: string) {
-  deleteGraphEntry(id)
-  refreshRecent()
-}
-
-// ── Find relationships ────────────────────────────────────────────────────────
-
-async function onFindRelationships() {
-  if (!entity1.value || !entity2.value) return
-
-  searching.value = true
-  searchError.value = ''
-  graph.value = null
-  selectedNode.value = null
-
-  try {
-    const context = connectionStore.queryContext
-    const effectiveContext = context ?? { endpointUrl: '' }
-
-    // Resolve which N3 store to use for local query execution.
-    // Wait for any in-progress probe/fetch to settle first.
-    await connectionStore.waitForSubgraph()
-    let store: import('n3').Store | undefined
-    if (connectionStore.isFileSource) {
-      store = connectionStore.rdfStore ?? undefined
-    } else if (connectionStore.localRdfStore) {
-      store = connectionStore.localRdfStore
-    } else if (context) {
-      // Large endpoint (> 50 000 triples) — fetch 2-hop neighbourhoods on demand.
-      store = await fetchNeighbourhoodStore(entity1.value.iri, entity2.value.iri, context)
-    }
-
-    graph.value = await findRelationships(
-      entity1.value.iri,
-      entity2.value.iri,
-      graphOptions.value.maxDistance,
-      effectiveContext,
-      {
-        ignoredProperties: graphOptions.value.ignoredProperties,
-        avoidCycles: graphOptions.value.avoidCycles,
-        language: graphOptions.value.language,
-        store,
-      },
-    )
-
-    if (graph.value.nodes.length === 0) {
-      searchError.value =
-        'No relationships found. Try increasing Max Depth, or select different entities.'
-    } else {
-      // Persist for future sessions
-      saveGraph(
-        endpointKey(),
-        entity1.value,
-        entity2.value,
-        graphOptions.value.maxDistance,
-        graphOptions.value.ignoredProperties,
-        graph.value,
-      )
-      refreshRecent()
-    }
-  } catch (err) {
-    searchError.value =
-      err instanceof Error
-        ? `Query failed: ${err.message}`
-        : 'An unexpected error occurred. Try again or check your network connection.'
-  } finally {
-    searching.value = false
-  }
-}
-
 // ── Disconnect ────────────────────────────────────────────────────────────────
 
 function onDisconnect() {
@@ -513,17 +430,32 @@ function onDisconnect() {
   router.push({ name: 'connection' })
 }
 
-// ── Escape key closes mobile sidebar ─────────────────────────────────────────
-
-function onEscKey(e: KeyboardEvent) {
-  if (e.key === 'Escape' && isMobile.value && !sidebarCollapsed.value) {
-    sidebarCollapsed.value = true
+// With <keep-alive>, use onActivated/onDeactivated for the keyboard listener
+// so Esc is only captured while the graph view is actually visible.
+// Also re-read history.state.example so palette/browse entity presets work
+// when this view is activated from the keep-alive cache (onMounted doesn't re-fire).
+onActivated(async () => {
+  document.addEventListener('keydown', onEscKey)
+  const ex = (history.state as Record<string, unknown>)?.example as
+    | { entity1: EntitySearchResult | null; entity2: EntitySearchResult | null }
+    | undefined
+  if (!ex) return
+  if (ex.entity1) {
+    presetEntity1.value = ex.entity1
+    entity1.value = ex.entity1
+    entity1SearchKey.value++
   }
-}
-
-onUnmounted(() => {
-  document.removeEventListener('keydown', onEscKey)
+  if (ex.entity2) {
+    presetEntity2.value = ex.entity2
+    entity2.value = ex.entity2
+    entity2SearchKey.value++
+  }
+  await nextTick()
+  presetEntity1.value = null
+  presetEntity2.value = null
 })
+onDeactivated(() => document.removeEventListener('keydown', onEscKey))
+onUnmounted(() => document.removeEventListener('keydown', onEscKey))
 
 // ── Auto-run when entities are preset (from browse or examples panel) ────────
 
@@ -560,17 +492,6 @@ onMounted(() => {
   // 3. Full query
   onFindRelationships()
 })
-
-// ── Re-run on options change ──────────────────────────────────────────────────
-
-// Language-only change: re-apply labels from the stored allLabels map — no
-// network calls needed since all language tags were fetched up front.
-watch(
-  () => graphOptions.value.language,
-  (lang) => {
-    if (graph.value) refreshGraphLabels(graph.value, lang)
-  },
-)
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

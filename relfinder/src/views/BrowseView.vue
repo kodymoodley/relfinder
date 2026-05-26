@@ -252,7 +252,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
 import Button from 'primevue/button'
@@ -261,8 +261,7 @@ import ProgressBar from 'primevue/progressbar'
 import Divider from 'primevue/divider'
 import InputNumber from 'primevue/inputnumber'
 import ToggleButton from 'primevue/togglebutton'
-import { useDarkMode } from '@/composables/useDarkMode'
-import { useBreakpoint } from '@/composables/useBreakpoint'
+import { useSidebar } from '@/composables/useSidebar'
 import { useConnectionStore } from '@/stores/connection'
 import { useSchemaStore } from '@/stores/schema'
 import type { SchemaNode, SchemaEdge } from '@/lib/sparql/types'
@@ -271,19 +270,20 @@ import SchemaDetailPanel from '@/components/schema/SchemaDetailPanel.vue'
 import ShortcutsModal from '@/components/common/ShortcutsModal.vue'
 import FirstRunTip from '@/components/common/FirstRunTip.vue'
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
+import { storeToRefs } from 'pinia'
+import { useNavigationStore } from '@/stores/navigation'
 
 const router = useRouter()
 const toast = useToast()
 const connectionStore = useConnectionStore()
 const schemaStore = useSchemaStore()
-const { dark, toggle: toggleDark } = useDarkMode()
-const { isMobile } = useBreakpoint()
+const { sidebarCollapsed, dark, toggleDark, isMobile, onEscKey } = useSidebar()
+const { paletteNodeIri, palettePropertyIri, graphPreset } = storeToRefs(useNavigationStore())
 
 // ── Local UI state ────────────────────────────────────────────────────────────
 
 const selectedNode = ref<SchemaNode | null>(null)
 const selectedEdge = ref<SchemaEdge | null>(null)
-const sidebarCollapsed = ref(isMobile.value)
 const optionsOpen = ref(false)
 const showShortcuts = ref(false)
 const schemaCanvasRef = ref<InstanceType<typeof SchemaCanvas> | null>(null)
@@ -299,9 +299,6 @@ useKeyboardShortcuts({
   },
 })
 
-watch(isMobile, (mobile) => {
-  if (mobile) sidebarCollapsed.value = true
-})
 const classLimit = ref(10)
 const edgeLimit = ref(3)
 
@@ -350,16 +347,11 @@ function onFindPaths(
   start: { iri: string; label: string; class: string },
   end: { iri: string; label: string; class: string },
 ) {
-  // Spread into plain objects — history.pushState cannot clone Vue Proxy objects.
-  router.push({
-    name: 'graph',
-    state: {
-      example: {
-        entity1: { iri: start.iri, label: start.label },
-        entity2: { iri: end.iri, label: end.label },
-      },
-    },
-  })
+  graphPreset.value = {
+    entity1: { iri: start.iri, label: start.label, class: start.class },
+    entity2: { iri: end.iri, label: end.label, class: end.class },
+  }
+  router.push({ name: 'graph' })
 }
 
 // ── Load more ─────────────────────────────────────────────────────────────────
@@ -385,13 +377,62 @@ function onDisconnect() {
   router.push({ name: 'connection' })
 }
 
-// ── Lifecycle ─────────────────────────────────────────────────────────────────
+// ── Palette selection (from command palette Ctrl+K) ───────────────────────────
+// Reactive refs are written by CommandPalette and cleared here after consumption.
+// This works for both cross-route navigation (component mounts fresh) and
+// same-route navigation (onMounted doesn't re-fire) without history.state hacks.
 
-function onEscKey(e: KeyboardEvent) {
-  if (e.key === 'Escape' && isMobile.value && !sidebarCollapsed.value) {
-    sidebarCollapsed.value = true
-  }
-}
+watch(
+  paletteNodeIri,
+  async (iri) => {
+    if (!iri) return
+    paletteNodeIri.value = null
+    await nextTick()
+    const node = schemaStore.nodes.find((n) => n.iri === iri)
+    if (node) {
+      selectedNode.value = node
+      return
+    }
+    const stop = watch(
+      () => schemaStore.nodes,
+      (nodes) => {
+        const n = nodes.find((n) => n.iri === iri)
+        if (n) {
+          selectedNode.value = n
+          stop()
+        }
+      },
+    )
+  },
+  { immediate: true },
+)
+
+watch(
+  palettePropertyIri,
+  async (iri) => {
+    if (!iri) return
+    palettePropertyIri.value = null
+    await nextTick()
+    const edge = schemaStore.edges.find((e) => e.props.some((p) => p.iri === iri))
+    if (edge) {
+      selectedNode.value = null
+      selectedEdge.value = edge
+      return
+    }
+    const stop = watch(
+      () => schemaStore.edges,
+      (edges) => {
+        const e = edges.find((e) => e.props.some((p) => p.iri === iri))
+        if (e) {
+          selectedNode.value = null
+          selectedEdge.value = e
+          stop()
+        }
+      },
+    )
+  },
+  { immediate: true },
+)
 
 onMounted(() => {
   document.addEventListener('keydown', onEscKey)
