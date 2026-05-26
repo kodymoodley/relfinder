@@ -32,99 +32,23 @@
     </Transition>
 
     <!-- Toolbar (zoom controls) -->
-    <div v-if="hasGraph" class="canvas-toolbar">
-      <Button
-        v-tooltip.top="'Zoom in'"
-        icon="pi pi-plus"
-        text
-        rounded
-        size="small"
-        @click="zoomIn"
-        aria-label="Zoom in"
-      />
-      <Button
-        v-tooltip.top="'Zoom out'"
-        icon="pi pi-minus"
-        text
-        rounded
-        size="small"
-        @click="zoomOut"
-        aria-label="Zoom out"
-      />
-      <button
-        v-tooltip.top="'Reset zoom to 100%'"
-        class="zoom-level-btn"
-        aria-label="Reset zoom to 100%"
-        @click="resetZoom"
-      >
-        {{ zoomLevel }}%
-      </button>
-      <Button
-        v-tooltip.top="'Fit graph to screen'"
-        icon="pi pi-arrows-alt"
-        text
-        rounded
-        size="small"
-        @click="fitGraph"
-        aria-label="Fit graph"
-      />
-      <Divider layout="vertical" />
-      <Button
-        v-tooltip.top="'Re-run force layout'"
-        icon="pi pi-refresh"
-        text
-        rounded
-        size="small"
-        @click="rerunLayout"
-        aria-label="Re-run layout"
-      />
-      <Divider layout="vertical" />
-      <Button
-        v-tooltip.top="showEdgeLabels ? 'Hide edge labels' : 'Show edge labels'"
-        :icon="showEdgeLabels ? 'pi pi-eye' : 'pi pi-eye-slash'"
-        text
-        rounded
-        size="small"
-        :style="{ opacity: showEdgeLabels ? 1 : 0.45 }"
-        @click="toggleEdgeLabels"
-        :aria-label="showEdgeLabels ? 'Hide edge labels' : 'Show edge labels'"
-      />
-      <Divider layout="vertical" />
-      <Button
-        v-tooltip.top="selectionMode === 'select' ? 'Back to pan mode' : 'Select subgraph'"
-        icon="pi pi-expand"
-        text
-        rounded
-        size="small"
-        :style="{ color: selectionMode === 'select' ? 'var(--rf-primary)' : undefined }"
-        @click="toggleSelectionMode"
-        :aria-label="selectionMode === 'select' ? 'Back to pan mode' : 'Box select to focus labels'"
-      />
-      <template v-if="hasSelection">
-        <Divider layout="vertical" />
-        <Button
-          v-tooltip.top="'Filter subgraph'"
-          icon="pi pi-filter"
-          text
-          rounded
-          size="small"
-          @click="cropToSelection"
-          aria-label="Crop to selection"
-        />
-      </template>
-      <template v-if="cropHistory.length > 0">
-        <Divider layout="vertical" />
-        <Button
-          v-tooltip.top="'Undo filtering'"
-          icon="pi pi-undo"
-          text
-          rounded
-          size="small"
-          @click="undoCrop"
-          aria-label="Undo crop"
-        />
-      </template>
-    </div>
+    <GraphToolbar
+      v-if="hasGraph"
+      :zoom-level="zoomLevel"
+      :show-edge-labels="showEdgeLabels"
+      :selection-mode="selectionMode"
+      :has-selection="hasSelection"
+      :has-crop-history="cropHistory.length > 0"
+      @zoom-in="zoomIn"
+      @zoom-out="zoomOut"
+      @reset-zoom="resetZoom"
+      @fit-graph="fitGraph"
+      @rerun-layout="rerunLayout"
+      @toggle-edge-labels="toggleEdgeLabels"
+      @toggle-selection-mode="toggleSelectionMode"
+      @crop-to-selection="cropToSelection"
+      @undo-crop="undoCrop"
+    />
   </div>
 </template>
 
@@ -136,12 +60,11 @@ import { useTouchBoxSelect } from '@/composables/useTouchBoxSelect'
 import cytoscape from 'cytoscape'
 import type { Core, NodeSingular, Layouts } from 'cytoscape'
 import d3Force from 'cytoscape-d3-force'
-import Button from 'primevue/button'
-import Divider from 'primevue/divider'
 import type { GraphNode, MergedEdge } from '@/lib/sparql/types'
 import GraphEmptyState from './GraphEmptyState.vue'
 import GraphLoadingOverlay from './GraphLoadingOverlay.vue'
 import GraphLegend from './GraphLegend.vue'
+import GraphToolbar from './GraphToolbar.vue'
 
 cytoscape.use(d3Force as unknown as cytoscape.Ext)
 
