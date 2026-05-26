@@ -123,7 +123,7 @@ describe('panelHeader', () => {
   it('falls back to IRI fragment when endpoint has no label in allNodes', () => {
     const header = panelHeader(null, knowsEdge, []) // empty allNodes → no labelMap entries
     expect(header).toContain('Person') // fragment of http://e.org/Person
-    expect(header).toContain('Org')    // fragment of http://e.org/Org
+    expect(header).toContain('Org') // fragment of http://e.org/Org
   })
 })
 

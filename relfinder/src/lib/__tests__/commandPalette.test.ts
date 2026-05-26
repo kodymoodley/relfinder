@@ -58,11 +58,7 @@ function isInstance(result: Pick<PaletteResult, 'classIri'>): boolean {
   return result.classIri !== OWL_CLASS && result.classIri !== OWL_OBJECT_PROPERTY
 }
 
-function navigateActive(
-  key: 'ArrowDown' | 'ArrowUp',
-  current: number,
-  total: number,
-): number {
+function navigateActive(key: 'ArrowDown' | 'ArrowUp', current: number, total: number): number {
   if (total === 0) return current
   if (key === 'ArrowDown') return (current + 1) % total
   return (current - 1 + total) % total
@@ -72,34 +68,64 @@ function navigateActive(
 
 describe('toResult — classification', () => {
   it('assigns severity info and typeLabel Class for OWL Class', () => {
-    const r = toResult({ iri: 'http://e.org/Person', label: 'Person', classIri: OWL_CLASS, classLabel: '' })
+    const r = toResult({
+      iri: 'http://e.org/Person',
+      label: 'Person',
+      classIri: OWL_CLASS,
+      classLabel: '',
+    })
     expect(r.severity).toBe('info')
     expect(r.typeLabel).toBe('Class')
   })
 
   it('assigns severity secondary and typeLabel Property for OWL ObjectProperty', () => {
-    const r = toResult({ iri: 'http://e.org/knows', label: 'knows', classIri: OWL_OBJECT_PROPERTY, classLabel: '' })
+    const r = toResult({
+      iri: 'http://e.org/knows',
+      label: 'knows',
+      classIri: OWL_OBJECT_PROPERTY,
+      classLabel: '',
+    })
     expect(r.severity).toBe('secondary')
     expect(r.typeLabel).toBe('Property')
   })
 
   it('assigns severity success for any other classIri (instance)', () => {
-    const r = toResult({ iri: 'http://e.org/alice', label: 'Alice', classIri: 'http://e.org/Person', classLabel: 'Person' })
+    const r = toResult({
+      iri: 'http://e.org/alice',
+      label: 'Alice',
+      classIri: 'http://e.org/Person',
+      classLabel: 'Person',
+    })
     expect(r.severity).toBe('success')
   })
 
   it('uses classLabel as typeLabel for instances when classLabel is non-empty', () => {
-    const r = toResult({ iri: 'http://e.org/alice', label: 'Alice', classIri: 'http://e.org/Person', classLabel: 'Person' })
+    const r = toResult({
+      iri: 'http://e.org/alice',
+      label: 'Alice',
+      classIri: 'http://e.org/Person',
+      classLabel: 'Person',
+    })
     expect(r.typeLabel).toBe('Person')
   })
 
   it('falls back to "Instance" typeLabel when classLabel is empty', () => {
-    const r = toResult({ iri: 'http://e.org/alice', label: 'Alice', classIri: 'http://e.org/Person', classLabel: '' })
+    const r = toResult({
+      iri: 'http://e.org/alice',
+      label: 'Alice',
+      classIri: 'http://e.org/Person',
+      classLabel: '',
+    })
     expect(r.typeLabel).toBe('Instance')
   })
 
   it('preserves iri and label on the result', () => {
-    const r = toResult({ iri: 'http://e.org/X', label: 'X label', classIri: OWL_CLASS, classLabel: '' })
+    const r = toResult({
+      iri: 'http://e.org/X',
+      label: 'X label',
+      classIri: OWL_CLASS,
+      classLabel: '',
+    })
     expect(r.iri).toBe('http://e.org/X')
     expect(r.label).toBe('X label')
   })

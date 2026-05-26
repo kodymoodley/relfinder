@@ -34,7 +34,10 @@ const META_CLASS_IRIS = new Set([
 
 // ── Logic mirrors (must stay in sync with EntitySearch.vue) ──────────────────
 
-function filterInstances(results: EntitySearchResult[], instancesOnly: boolean): EntitySearchResult[] {
+function filterInstances(
+  results: EntitySearchResult[],
+  instancesOnly: boolean,
+): EntitySearchResult[] {
   if (!instancesOnly) return results
   return results.filter((r) => !META_CLASS_IRIS.has(r.class))
 }
@@ -47,11 +50,31 @@ function applyStatus(query: string, count: number): string {
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
-const alice: EntitySearchResult = { iri: 'http://e.org/Alice', label: 'Alice', class: 'http://e.org/Person' }
-const bob: EntitySearchResult = { iri: 'http://e.org/Bob', label: 'Bob', class: 'http://e.org/Person' }
-const personClass: EntitySearchResult = { iri: 'http://e.org/Person', label: 'Person', class: 'http://www.w3.org/2002/07/owl#Class' }
-const knowsProp: EntitySearchResult = { iri: 'http://e.org/knows', label: 'knows', class: 'http://www.w3.org/2002/07/owl#ObjectProperty' }
-const rdfsClass: EntitySearchResult = { iri: 'http://e.org/Org', label: 'Org', class: 'http://www.w3.org/2000/01/rdf-schema#Class' }
+const alice: EntitySearchResult = {
+  iri: 'http://e.org/Alice',
+  label: 'Alice',
+  class: 'http://e.org/Person',
+}
+const bob: EntitySearchResult = {
+  iri: 'http://e.org/Bob',
+  label: 'Bob',
+  class: 'http://e.org/Person',
+}
+const personClass: EntitySearchResult = {
+  iri: 'http://e.org/Person',
+  label: 'Person',
+  class: 'http://www.w3.org/2002/07/owl#Class',
+}
+const knowsProp: EntitySearchResult = {
+  iri: 'http://e.org/knows',
+  label: 'knows',
+  class: 'http://www.w3.org/2002/07/owl#ObjectProperty',
+}
+const rdfsClass: EntitySearchResult = {
+  iri: 'http://e.org/Org',
+  label: 'Org',
+  class: 'http://www.w3.org/2000/01/rdf-schema#Class',
+}
 
 // ── filterInstances ───────────────────────────────────────────────────────────
 
