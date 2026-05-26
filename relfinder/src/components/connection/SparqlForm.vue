@@ -1,7 +1,37 @@
 <template>
   <form class="sparql-form" @submit.prevent="onSubmit">
+    <!-- Sample databases collapsible (expanded by default) -->
+    <div class="collapsible">
+      <button type="button" class="collapsible-toggle" @click="showSamples = !showSamples">
+        <span class="collapsible-label">Sample databases</span>
+        <span class="collapsible-badge">click to connect</span>
+        <i :class="['pi', showSamples ? 'pi-chevron-up' : 'pi-chevron-down', 'collapsible-chevron']" />
+      </button>
+      <Transition name="collapse">
+        <div v-show="showSamples" class="collapsible-body">
+          <p class="fieldset-hint">
+            Select any database below to connect instantly — no configuration needed.
+          </p>
+          <div class="endpoint-grid">
+            <button
+              v-for="entry in ENDPOINT_DIRECTORY"
+              :key="entry.id"
+              type="button"
+              class="endpoint-card"
+              :disabled="connecting"
+              @click="connectEndpoint(entry)"
+            >
+              <span class="endpoint-card-name">{{ entry.name }}</span>
+              <span class="endpoint-card-domain">{{ entry.domain }}</span>
+              <span class="endpoint-card-desc">{{ entry.description }}</span>
+            </button>
+          </div>
+        </div>
+      </Transition>
+    </div>
+
     <div class="field">
-      <label for="endpointUrl">SPARQL Endpoint URL <span class="required">*</span></label>
+      <label for="endpointUrl">Or enter a SPARQL endpoint URL <span class="required">*</span></label>
       <InputText
         id="endpointUrl"
         v-model="form.endpointUrl"
@@ -11,7 +41,10 @@
         autocomplete="url"
         data-testid="endpoint-url-input"
       />
-      <small v-if="errors.endpointUrl" class="error-msg">{{ errors.endpointUrl }}</small>
+      <small v-if="httpsConverted" class="https-notice">
+        <i class="pi pi-lock" /> URL automatically upgraded to HTTPS
+      </small>
+      <small v-else-if="errors.endpointUrl" class="error-msg">{{ errors.endpointUrl }}</small>
     </div>
 
     <!-- Authentication collapsible -->
@@ -104,7 +137,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
@@ -114,6 +147,8 @@ import { useConnectionStore } from '@/stores/connection'
 import { useSchemaStore } from '@/stores/schema'
 import { executeSelect } from '@/lib/sparql/engine'
 import { loadSchema } from '@/lib/cache/schemaStorage'
+import { ENDPOINT_DIRECTORY } from '@/lib/data/endpointDirectory'
+import type { EndpointEntry } from '@/lib/data/endpointDirectory'
 
 const router = useRouter()
 const connectionStore = useConnectionStore()
@@ -144,6 +179,24 @@ const connectingHost = ref('')
 const connectionError = ref('')
 const showAuth = ref(false)
 const showProxy = ref(false)
+const showSamples = ref(true)
+const httpsConverted = ref(false)
+
+let httpsNoticeTimer: ReturnType<typeof setTimeout> | null = null
+
+watch(
+  () => form.endpointUrl,
+  (val) => {
+    if (val.startsWith('http://') && !val.startsWith('http://localhost')) {
+      form.endpointUrl = 'https://' + val.slice(7)
+      httpsConverted.value = true
+      if (httpsNoticeTimer) clearTimeout(httpsNoticeTimer)
+      httpsNoticeTimer = setTimeout(() => {
+        httpsConverted.value = false
+      }, 4000)
+    }
+  },
+)
 
 // ── Validation ────────────────────────────────────────────────────────────────
 
@@ -173,6 +226,16 @@ function validate(): boolean {
   }
 
   return true
+}
+
+// ── Sample database auto-connect ──────────────────────────────────────────────
+
+async function connectEndpoint(entry: EndpointEntry) {
+  form.endpointUrl = entry.url
+  form.username = ''
+  form.password = ''
+  form.proxyUrl = ''
+  await onSubmit()
 }
 
 // ── Connection ────────────────────────────────────────────────────────────────
@@ -341,5 +404,74 @@ async function onSubmit() {
 
 .connect-btn {
   margin-top: var(--rf-space-1);
+}
+
+/* ── Sample database cards ───────────────────────────────────────────────── */
+
+.endpoint-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--rf-space-3);
+}
+
+@media (max-width: 480px) {
+  .endpoint-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.endpoint-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--rf-space-1);
+  padding: var(--rf-space-3) var(--rf-space-4);
+  background: var(--rf-surface-raised);
+  border: 1px solid var(--rf-border);
+  border-radius: var(--rf-radius-md);
+  cursor: pointer;
+  text-align: left;
+  transition:
+    border-color var(--rf-duration-fast) var(--rf-ease-out),
+    box-shadow var(--rf-duration-fast) var(--rf-ease-out);
+}
+
+.endpoint-card:hover:not(:disabled) {
+  border-color: var(--rf-primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--rf-primary) 15%, transparent);
+}
+
+.endpoint-card:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.endpoint-card-name {
+  font-size: var(--rf-text-sm);
+  font-weight: var(--rf-weight-semibold);
+  color: var(--rf-text);
+}
+
+.endpoint-card-domain {
+  font-size: var(--rf-text-xs);
+  font-weight: var(--rf-weight-semibold);
+  color: var(--rf-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.endpoint-card-desc {
+  font-size: var(--rf-text-xs);
+  color: var(--rf-text-muted);
+  line-height: var(--rf-leading-relaxed);
+}
+
+/* ── HTTPS notice ────────────────────────────────────────────────────────── */
+
+.https-notice {
+  color: var(--rf-success, #22c55e);
+  font-size: var(--rf-text-xs);
+  display: flex;
+  align-items: center;
+  gap: var(--rf-space-1);
 }
 </style>
