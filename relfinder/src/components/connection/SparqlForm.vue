@@ -35,7 +35,7 @@
       <InputText
         id="endpointUrl"
         v-model="form.endpointUrl"
-        placeholder="https://dbpedia.org/sparql"
+        placeholder=""
         :invalid="!!errors.endpointUrl"
         fluid
         autocomplete="url"
