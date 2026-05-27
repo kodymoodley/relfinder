@@ -4,7 +4,9 @@ const ALLOWED_ENDPOINTS = [
     'https://dbpedia.org/sparql',
     'https://agrovoc.fao.org/sparql',
     'https://data.europa.eu/sparql',
-    'https://publications.europa.eu/webapi/rdf/sparql'
+    'https://publications.europa.eu/webapi/rdf/sparql',
+    'https://data.ascdc.tw/sparql',
+    'https://core.kmi.open.ac.uk/squery'
 ];
 
 const ALLOWED_ORIGIN = 'https://kodymoodley.github.io';

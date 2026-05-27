@@ -425,8 +425,8 @@ async function onSubmit() {
   flex-direction: column;
   gap: var(--rf-space-1);
   padding: var(--rf-space-3) var(--rf-space-4);
-  background: var(--rf-surface-raised);
-  border: 1px solid var(--rf-border);
+  background: var(--rf-primary-soft);
+  border: 1px solid color-mix(in srgb, var(--rf-primary) 25%, transparent);
   border-radius: var(--rf-radius-md);
   cursor: pointer;
   text-align: left;

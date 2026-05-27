@@ -183,4 +183,35 @@ export const EXAMPLES: Example[] = [
       language: 'en',
     },
   },
+
+  // ── SPARQL: DBpedia — Marie Curie & Einstein ──────────────────────────────
+  {
+    kind: 'sparql',
+    id: 'dbpedia-curie-einstein',
+    title: 'DBpedia: Curie & Einstein',
+    description:
+      'Finds connections between Marie Curie and Albert Einstein through shared awards, institutions, and the Solvay Conferences.',
+    endpointUrl: 'https://dbpedia.org/sparql',
+    entity1: {
+      iri: 'http://dbpedia.org/resource/Marie_Curie',
+      label: 'Marie Curie',
+      class: 'http://dbpedia.org/ontology/Scientist',
+    },
+    entity2: {
+      iri: 'http://dbpedia.org/resource/Albert_Einstein',
+      label: 'Albert Einstein',
+      class: 'http://dbpedia.org/ontology/Scientist',
+    },
+    options: {
+      maxDistance: 2,
+      ignoredProperties: [
+        ...DEFAULT_IGNORED,
+        'http://www.w3.org/2004/02/skos/core#subject',
+        'http://dbpedia.org/ontology/wikiPageWikiLink',
+        'http://dbpedia.org/ontology/wikiPageRedirects',
+      ],
+      avoidCycles: QCS.NO_INTERMEDIATE_DUPLICATES,
+      language: 'en',
+    },
+  },
 ]
