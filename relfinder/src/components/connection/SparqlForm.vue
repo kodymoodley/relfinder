@@ -179,7 +179,7 @@ const connectingHost = ref('')
 const connectionError = ref('')
 const showAuth = ref(false)
 const showProxy = ref(false)
-const showSamples = ref(true)
+const showSamples = ref(false)
 const httpsConverted = ref(false)
 
 let httpsNoticeTimer: ReturnType<typeof setTimeout> | null = null
