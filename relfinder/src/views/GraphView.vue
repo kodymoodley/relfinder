@@ -85,7 +85,7 @@
             :custom-label-properties="graphOptions.customLabelProperties"
             :initial-entity="presetEntity2"
             instances-only
-            @select="entity2 = $event"
+            @select="onSelectEntity2"
           />
         </section>
 
@@ -368,6 +368,7 @@ watch(
     await nextTick()
     presetEntity1.value = null
     presetEntity2.value = null
+    onFindRelationships()
   },
   { immediate: true },
 )
@@ -421,6 +422,12 @@ async function loadExample(example: Example) {
   await nextTick()
   presetEntity1.value = null
   presetEntity2.value = null
+  onFindRelationships()
+}
+
+function onSelectEntity2(entity: EntitySearchResult | null) {
+  entity2.value = entity
+  if (entity1.value && entity) onFindRelationships()
 }
 
 const graphOptions = ref<GraphOptions>({
@@ -510,6 +517,7 @@ onActivated(async () => {
   await nextTick()
   presetEntity1.value = null
   presetEntity2.value = null
+  if (entity1.value && entity2.value) onFindRelationships()
 })
 onDeactivated(() => document.removeEventListener('keydown', onEscKey))
 onUnmounted(() => document.removeEventListener('keydown', onEscKey))
