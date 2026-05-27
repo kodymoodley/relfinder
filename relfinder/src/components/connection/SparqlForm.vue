@@ -234,7 +234,7 @@ async function connectEndpoint(entry: EndpointEntry) {
   form.endpointUrl = entry.url
   form.username = ''
   form.password = ''
-  form.proxyUrl = ''
+  form.proxyUrl = entry.proxyUrl ?? ''
   await onSubmit()
 }
 

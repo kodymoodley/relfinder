@@ -8,10 +8,17 @@ const ALLOWED_ENDPOINTS = [
     'https://core.kmi.open.ac.uk/squery'
 ];
 
-const ALLOWED_ORIGIN = 'https://kodymoodley.github.io';
+const ALLOWED_ORIGINS = [
+    'https://kodymoodley.github.io',
+    'https://relfinder.vercel.app',
+    'http://localhost:5173',
+    'http://localhost:4173',
+];
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-    res.setHeader('Access-Control-Allow-Origin', ALLOWED_ORIGIN);
+    const origin = (req.headers.origin as string) ?? '';
+    const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+    res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
     res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
 
     if (req.method === 'OPTIONS') return res.status(200).end();
