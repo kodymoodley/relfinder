@@ -244,10 +244,15 @@ async function connectEndpoint(entry: EndpointEntry) {
  * Fires a lightweight ASK query to verify the endpoint is reachable and
  * returns SPARQL results before committing to the connection store.
  */
-async function testConnection(endpointUrl: string, authHeader?: string): Promise<void> {
+async function testConnection(
+  endpointUrl: string,
+  authHeader?: string,
+  proxyBaseUrl?: string,
+): Promise<void> {
   await executeSelect('SELECT * WHERE { ?s ?p ?o } LIMIT 1', {
     endpointUrl,
     authorizationHeader: authHeader,
+    proxyBaseUrl,
   })
 }
 
@@ -257,15 +262,27 @@ async function onSubmit() {
   connecting.value = true
   connectionError.value = ''
 
-  const endpointUrl = form.proxyUrl.trim() || form.endpointUrl.trim()
+  const rawEndpoint = form.endpointUrl.trim()
+  const rawProxy = form.proxyUrl.trim()
+  let endpointUrl: string
+  if (rawProxy && !rawProxy.split('?')[0].endsWith('/api/sparql')) {
+    // Transparent proxy (e.g. Caddy): Comunica hits the proxy URL directly.
+    endpointUrl = rawProxy
+  } else {
+    // No proxy or Vercel proxy: use the real endpoint. The connection store's
+    // queryContext will inject proxyBaseUrl so the engine rewrites fetches.
+    endpointUrl = rawEndpoint
+  }
   try {
-    connectingHost.value = new URL(endpointUrl).hostname
+    connectingHost.value = new URL(rawEndpoint).hostname
   } catch {
-    connectingHost.value = endpointUrl
+    connectingHost.value = rawEndpoint
   }
   const authHeader = form.username.trim()
     ? `Basic ${btoa(`${form.username.trim()}:${form.password}`)}`
     : undefined
+  const proxyPath = rawProxy.split('?')[0]
+  const proxyBaseUrl = proxyPath.endsWith('/api/sparql') ? proxyPath : undefined
 
   try {
     // Skip the round-trip test when a cached schema already exists — the user
@@ -273,7 +290,7 @@ async function onSubmit() {
     // connectivity error if the endpoint is actually unreachable.
     const hasCachedSchema = loadSchema(endpointUrl) !== null
     if (!hasCachedSchema) {
-      await testConnection(endpointUrl, authHeader)
+      await testConnection(endpointUrl, authHeader, proxyBaseUrl)
     }
 
     schemaStore.clear()

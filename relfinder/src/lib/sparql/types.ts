@@ -191,12 +191,19 @@ export interface SchemaGraph {
  */
 export interface QueryContext {
   /**
-   * Effective SPARQL endpoint URL. When the user has configured a CORS
-   * proxy, this should be the proxy URL (e.g. http://localhost:8080/sparql)
-   * rather than the raw endpoint, because the proxy IS the endpoint from
-   * the browser's perspective.
+   * Effective SPARQL endpoint URL. For transparent proxies (Caddy) this is
+   * the proxy URL; for direct connections or Vercel proxies it is the real
+   * endpoint URL.
    */
   endpointUrl: string
   /** Pre-encoded 'Basic <base64>' header value, or undefined if no auth. */
   authorizationHeader?: string
+  /**
+   * Base URL of the Vercel /api/sparql proxy function. When set, all
+   * fetch requests to `endpointUrl` are rewritten so that `endpoint` is
+   * passed as a query parameter and the actual fetch targets the proxy.
+   * Required because the Vercel function is a custom forwarder, not a
+   * transparent HTTP proxy.
+   */
+  proxyBaseUrl?: string
 }

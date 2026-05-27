@@ -32,17 +32,45 @@ const engine = new QueryEngine()
 // ── Auth-aware fetch factory ──────────────────────────────────────────────────
 
 /**
- * Returns a `fetch`-compatible function that injects the Authorization header
- * when `authorizationHeader` is present. Falls back to the global `fetch`
- * when no credentials are configured.
+ * Returns a `fetch`-compatible function that:
+ *  - injects the Authorization header when credentials are configured, and
+ *  - rewrites requests through the Vercel /api/sparql proxy when `proxyBaseUrl`
+ *    is set, passing the real endpoint as `?endpoint=` and preserving the
+ *    SPARQL `query` parameter regardless of GET or POST.
  */
-function makeFetch(authorizationHeader?: string, signal?: AbortSignal): typeof fetch {
-  if (!authorizationHeader && !signal) return fetch
+function makeFetch(
+  authorizationHeader?: string,
+  signal?: AbortSignal,
+  proxyBaseUrl?: string,
+): typeof fetch {
+  if (!authorizationHeader && !signal && !proxyBaseUrl) return fetch
 
   return (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     const headers = new Headers(init?.headers)
     if (authorizationHeader) headers.set('Authorization', authorizationHeader)
-    return fetch(input, { ...init, headers, signal })
+
+    if (!proxyBaseUrl) {
+      return fetch(input, { ...init, headers, signal })
+    }
+
+    // Rewrite the request to go through the Vercel proxy.
+    const method = (init?.method ?? 'GET').toUpperCase()
+    const parsedUrl = new URL(typeof input === 'string' ? input : input.toString())
+    const proxyUrl = new URL(proxyBaseUrl)
+    // The real endpoint is the URL without its query string.
+    proxyUrl.searchParams.set('endpoint', parsedUrl.origin + parsedUrl.pathname)
+
+    if (method === 'POST') {
+      // Comunica POSTs the query as `application/x-www-form-urlencoded` body.
+      // The proxy reads `endpoint` from the URL query string and `query` from
+      // the body — so we just rewrite the URL and keep the body intact.
+      return fetch(proxyUrl.toString(), { ...init, headers, signal })
+    } else {
+      // GET: move `?query=` from the original URL into the proxy URL.
+      const sparqlQuery = parsedUrl.searchParams.get('query') ?? ''
+      proxyUrl.searchParams.set('query', sparqlQuery)
+      return fetch(proxyUrl.toString(), { ...init, method: 'GET', headers, signal })
+    }
   }
 }
 
@@ -87,7 +115,7 @@ export async function executeSelect(
 ): Promise<SparqlBinding[]> {
   const bindingsStream = await engine.queryBindings(query, {
     sources: [{ type: 'sparql', value: context.endpointUrl }],
-    fetch: makeFetch(context.authorizationHeader, signal),
+    fetch: makeFetch(context.authorizationHeader, signal, context.proxyBaseUrl),
   })
 
   const rawBindings = await bindingsStream.toArray()
@@ -141,7 +169,7 @@ export async function executeConstruct(
 ): Promise<RDF.Quad[]> {
   const quadStream = await engine.queryQuads(query, {
     sources: [{ type: 'sparql', value: context.endpointUrl }],
-    fetch: makeFetch(context.authorizationHeader, signal),
+    fetch: makeFetch(context.authorizationHeader, signal, context.proxyBaseUrl),
   })
   return quadStream.toArray()
 }

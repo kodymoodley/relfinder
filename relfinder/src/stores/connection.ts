@@ -80,9 +80,15 @@ export const useConnectionStore = defineStore('connection', () => {
    */
   const queryContext = computed(() => {
     if (source.value?.type !== 'sparql') return null
+    const { endpointUrl, proxyUrl } = source.value
+    // When the proxy is a Vercel /api/sparql function, keep the real endpoint
+    // URL and use the custom fetch rewriter; transparent proxies (Caddy) are
+    // already folded into endpointUrl.
+    const isVercelProxy = !!proxyUrl && proxyUrl.split('?')[0].endsWith('/api/sparql')
     return {
-      endpointUrl: source.value.endpointUrl,
+      endpointUrl,
       authorizationHeader: authorizationHeader.value,
+      proxyBaseUrl: isVercelProxy ? proxyUrl : undefined,
     }
   })
 
