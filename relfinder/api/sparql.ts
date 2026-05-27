@@ -1,7 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 const ALLOWED_ENDPOINTS = [
-    'https://dbpedia.org/sparql',
     'https://agrovoc.fao.org/sparql',
     'https://data.europa.eu/sparql',
     'https://publications.europa.eu/webapi/rdf/sparql',
@@ -23,10 +22,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(403).json({ error: 'Endpoint not allowed' });
     }
 
-    const targetUrl = `${endpoint}?query=${encodeURIComponent(query)}&format=application%2Fsparql-results%2Bjson`;
+    const targetUrl = `${endpoint}?query=${encodeURIComponent(query)}`;
     const response = await fetch(targetUrl, {
         headers: { Accept: 'application/sparql-results+json' },
     });
+
+    if (!response.ok) {
+        return res.status(response.status).json({ error: `Upstream error: ${response.statusText}` });
+    }
 
     const data = await response.json();
     res.status(200).json(data);
