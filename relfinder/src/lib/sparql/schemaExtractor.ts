@@ -27,7 +27,6 @@ import type {
   SchemaDataProp,
 } from './types'
 import { DESCRIPTION_PROPERTIES } from './classDescription'
-import { RDF_TYPE } from './queryBuilder'
 
 export interface SchemaExtractionOptions {
   /** Max classes to discover. Default 40. */
@@ -86,8 +85,7 @@ async function fetchSchemaClasses(
 ): Promise<SchemaNode[]> {
   const query = `
     SELECT DISTINCT ?class WHERE {
-      [] <${RDF_TYPE}> ?class .
-      FILTER(isIRI(?class))
+      [] a ?class .
     } ORDER BY ?class
     LIMIT ${limit}${offset > 0 ? `\n    OFFSET ${offset}` : ''}
   `
@@ -166,9 +164,9 @@ async function fetchEdgesForClass(
   const query = `
     SELECT ?prop ?c2 (COUNT(*) AS ?n) WHERE {
       VALUES ?c2 { ${valuesClause} }
-      ?s <${RDF_TYPE}> <${sourceIri}> .
+      ?s a <${sourceIri}> .
       ?s ?prop ?o .
-      ?o <${RDF_TYPE}> ?c2 .
+      ?o a ?c2 .
       FILTER(?c2 != <${sourceIri}>)
     } GROUP BY ?prop ?c2
     ORDER BY DESC(?n)
@@ -307,7 +305,7 @@ export async function fetchSchemaDataProperties(
 ): Promise<SchemaDataProp[]> {
   const query = `
     SELECT DISTINCT ?prop ?dt WHERE {
-      ?s <${RDF_TYPE}> <${classIri}> .
+      ?s a <${classIri}> .
       ?s ?prop ?val .
       FILTER(isLiteral(?val))
       BIND(DATATYPE(?val) AS ?dt)

@@ -208,7 +208,7 @@ export async function fetchAvailableClasses(
 ): Promise<string[]> {
   const query = `
     SELECT DISTINCT ?type WHERE {
-      ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?type .
+      ?s a ?type .
       FILTER (!isBlank(?type))
     } LIMIT ${limit}
   `
@@ -254,7 +254,7 @@ export async function fetchInstancesByClass(
 
     query = `
       SELECT DISTINCT ?s (COALESCE(?preferredLabel, ?fallbackLabel) AS ?label) WHERE {
-        ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <${classIri}> .
+        ?s a <${classIri}> .
         OPTIONAL {
           VALUES ?lp { ${preferredProps} }
           ?s ?lp ?preferredLabel .
@@ -274,7 +274,7 @@ export async function fetchInstancesByClass(
 
     query = `
       SELECT DISTINCT ?s ?label WHERE {
-        ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <${classIri}> .
+        ?s a <${classIri}> .
         OPTIONAL {
           VALUES ?lp { ${labelProps} }
           ?s ?lp ?label .
@@ -438,7 +438,7 @@ export async function fetchTypes(
   const subqueries = iris
     .map(
       (iri) =>
-        `{ ?o <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?type FILTER(?o = <${iri}> && !isBlank(?type)) }`,
+        `{ ?o a ?type FILTER(?o = <${iri}> && !isBlank(?type)) }`,
     )
     .join('\n    UNION\n    ')
 
