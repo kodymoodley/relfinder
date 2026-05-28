@@ -83,10 +83,13 @@ async function fetchSchemaClasses(
   limit: number,
   offset = 0,
 ): Promise<SchemaNode[]> {
+  // ORDER BY is only needed when paginating (offset > 0) to ensure stable
+  // page boundaries. Skipping it on the first page avoids a full-sort scan
+  // on large endpoints that would otherwise time out.
   const query = `
     SELECT DISTINCT ?class WHERE {
       [] a ?class .
-    } ORDER BY ?class
+    }${offset > 0 ? '\n    ORDER BY ?class' : ''}
     LIMIT ${limit}${offset > 0 ? `\n    OFFSET ${offset}` : ''}
   `
   const rows = await runSelect(query, context, store)
