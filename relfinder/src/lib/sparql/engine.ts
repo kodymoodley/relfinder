@@ -57,7 +57,9 @@ function makeFetch(
     // Rewrite the request to go through the Vercel proxy.
     const method = (init?.method ?? 'GET').toUpperCase()
     const parsedUrl = new URL(typeof input === 'string' ? input : input.toString())
-    const proxyUrl = new URL(proxyBaseUrl)
+    // proxyBaseUrl may be a relative path (e.g. '/api/sparql') on Vercel preview
+    // deploys — resolve it against the current origin so new URL() doesn't throw.
+    const proxyUrl = new URL(proxyBaseUrl, window.location.href)
     // The real endpoint is the URL without its query string.
     proxyUrl.searchParams.set('endpoint', parsedUrl.origin + parsedUrl.pathname)
 
