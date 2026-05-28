@@ -13,7 +13,7 @@ const ALLOWED_ORIGINS = [
     'https://kodymoodley.github.io',
     'https://relfinder.vercel.app',
     'http://localhost:5173',
-    'http://localhost:4173',
+    'http://localhost:4173'
 ];
 
 function isAllowedOrigin(origin: string): boolean {

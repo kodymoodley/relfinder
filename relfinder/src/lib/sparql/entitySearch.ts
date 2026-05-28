@@ -436,10 +436,7 @@ export async function fetchTypes(
   if (iris.length === 0) return new Map()
 
   const subqueries = iris
-    .map(
-      (iri) =>
-        `{ ?o a ?type FILTER(?o = <${iri}> && !isBlank(?type)) }`,
-    )
+    .map((iri) => `{ ?o a ?type FILTER(?o = <${iri}> && !isBlank(?type)) }`)
     .join('\n    UNION\n    ')
 
   const query = `

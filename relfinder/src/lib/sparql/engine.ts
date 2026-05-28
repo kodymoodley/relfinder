@@ -81,9 +81,10 @@ function makeFetch(
         url: res.url,
       })
       if (ct.includes('text/html')) {
-        res.clone().text().then((body) =>
-          console.log('[engine] makeFetch: HTML body preview:', body.slice(0, 400)),
-        )
+        res
+          .clone()
+          .text()
+          .then((body) => console.log('[engine] makeFetch: HTML body preview:', body.slice(0, 400)))
       }
       return res
     }

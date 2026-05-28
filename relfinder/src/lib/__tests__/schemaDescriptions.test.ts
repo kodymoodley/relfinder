@@ -41,7 +41,7 @@ const RDFS_COMMENT = 'http://www.w3.org/2000/01/rdf-schema#comment'
 // ── Row builders ──────────────────────────────────────────────────────────────
 
 const classDiscoveryRow = (iri: string): SparqlBinding => ({
-  class: { value: iri, type: 'uri' },
+  class: { value: iri, type: 'NamedNode' },
 })
 
 const descriptionRow = (classIri: string, text: string, lang: string): SparqlBinding => ({

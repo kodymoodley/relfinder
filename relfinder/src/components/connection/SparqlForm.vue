@@ -228,7 +228,7 @@ function validate(): boolean {
         new URL(proxyVal)
       } catch {
         errors.proxyUrl = 'Proxy URL must be a valid URL.'
-        showProxy.value = true  // expand so the error is visible
+        showProxy.value = true // expand so the error is visible
         return false
       }
     }
@@ -271,7 +271,10 @@ async function testConnection(
 }
 
 async function onSubmit() {
-  console.log('[SparqlForm] onSubmit called', { connecting: connecting.value, url: form.endpointUrl })
+  console.log('[SparqlForm] onSubmit called', {
+    connecting: connecting.value,
+    url: form.endpointUrl,
+  })
   if (!validate()) {
     console.log('[SparqlForm] onSubmit: validation failed', { errors })
     return
