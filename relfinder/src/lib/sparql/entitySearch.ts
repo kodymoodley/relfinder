@@ -607,10 +607,19 @@ export async function findRelationships(
   const queryBlocks = getQueries(queryConfig)
   const pathCollections: PathCollection[] = []
 
-  for (const blocks of queryBlocks.values()) {
+  let queryIndex = 0
+  for (const [distance, blocks] of queryBlocks.entries()) {
     for (const block of blocks) {
-      const paths = await runSelect(block.query, context, options.store)
-      pathCollections.push({ src: block.src, dest: block.dest, paths })
+      queryIndex++
+      console.log(`[findRelationships] query #${queryIndex} (distance=${distance}):\n${block.query}`)
+      try {
+        const paths = await runSelect(block.query, context, options.store)
+        console.log(`[findRelationships] query #${queryIndex} → ${paths.length} row(s)`)
+        pathCollections.push({ src: block.src, dest: block.dest, paths })
+      } catch (err) {
+        console.error(`[findRelationships] query #${queryIndex} FAILED:`, err)
+        throw err
+      }
     }
   }
 
