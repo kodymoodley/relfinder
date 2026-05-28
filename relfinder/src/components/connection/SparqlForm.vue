@@ -239,6 +239,7 @@ async function connectEndpoint(entry: EndpointEntry) {
   form.username = ''
   form.password = ''
   form.proxyUrl = entry.proxyUrl ?? ''
+  console.log('[SparqlForm] connectEndpoint', { id: entry.id, url: entry.url, proxyUrl: entry.proxyUrl })
   await onSubmit()
 }
 
@@ -287,6 +288,8 @@ async function onSubmit() {
     : undefined
   const proxyPath = rawProxy.split('?')[0] ?? ''
   const proxyBaseUrl = proxyPath.endsWith('/api/sparql') ? proxyPath : undefined
+
+  console.log('[SparqlForm] onSubmit', { rawEndpoint, rawProxy, endpointUrl, proxyPath, proxyBaseUrl })
 
   try {
     // Skip the round-trip test when a cached schema already exists — the user

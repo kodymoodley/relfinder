@@ -50,6 +50,7 @@ function makeFetch(
     if (authorizationHeader) headers.set('Authorization', authorizationHeader)
 
     if (!proxyBaseUrl) {
+      console.log('[engine] makeFetch: no proxyBaseUrl, direct fetch to', typeof input === 'string' ? input : input.toString())
       return fetch(input, { ...init, headers, signal })
     }
 
@@ -60,15 +61,19 @@ function makeFetch(
     // The real endpoint is the URL without its query string.
     proxyUrl.searchParams.set('endpoint', parsedUrl.origin + parsedUrl.pathname)
 
+    console.log('[engine] makeFetch: rewriting via proxy', { original: parsedUrl.toString(), method, proxyBase: proxyBaseUrl })
+
     if (method === 'POST') {
       // Comunica POSTs the query as `application/x-www-form-urlencoded` body.
       // The proxy reads `endpoint` from the URL query string and `query` from
       // the body — so we just rewrite the URL and keep the body intact.
+      console.log('[engine] makeFetch: POST → proxy URL', proxyUrl.toString())
       return fetch(proxyUrl.toString(), { ...init, headers, signal })
     } else {
       // GET: move `?query=` from the original URL into the proxy URL.
       const sparqlQuery = parsedUrl.searchParams.get('query') ?? ''
       proxyUrl.searchParams.set('query', sparqlQuery)
+      console.log('[engine] makeFetch: GET → proxy URL', proxyUrl.toString())
       return fetch(proxyUrl.toString(), { ...init, method: 'GET', headers, signal })
     }
   }
