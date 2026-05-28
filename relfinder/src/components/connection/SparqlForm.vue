@@ -221,11 +221,16 @@ function validate(): boolean {
   }
 
   if (form.proxyUrl.trim()) {
-    try {
-      new URL(form.proxyUrl.trim())
-    } catch {
-      errors.proxyUrl = 'Proxy URL must be a valid URL.'
-      return false
+    const proxyVal = form.proxyUrl.trim()
+    // Relative paths (e.g. '/api/sparql') are valid same-origin proxy URLs
+    if (!proxyVal.startsWith('/')) {
+      try {
+        new URL(proxyVal)
+      } catch {
+        errors.proxyUrl = 'Proxy URL must be a valid URL.'
+        showProxy.value = true  // expand so the error is visible
+        return false
+      }
     }
   }
 

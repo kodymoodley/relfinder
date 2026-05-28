@@ -41,6 +41,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method === 'POST') {
         const body = req.body as Record<string, string> | undefined;
         query = body?.query ?? '';
+        console.log('[sparql proxy] POST body query length:', query.length, 'endpoint:', endpoint);
     } else {
         query = (req.query.query as string) ?? '';
     }
@@ -49,28 +50,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(400).json({ error: 'Missing query parameter' });
     }
 
-    let response: Response;
-    if (req.method === 'POST') {
-        response = await fetch(endpoint, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'Accept': 'application/sparql-results+json',
-            },
-            body: `query=${encodeURIComponent(query)}`,
-        });
-    } else {
-        const targetUrl = `${endpoint}?query=${encodeURIComponent(query)}`;
-        response = await fetch(targetUrl, {
-            headers: { Accept: 'application/sparql-results+json' },
-        });
-    }
+    // Always use GET upstream — some endpoints (e.g. ASCDC) return HTML for POST.
+    // Query sizes here are well within URL length limits.
+    const targetUrl = `${endpoint}?query=${encodeURIComponent(query)}`;
+    const response = await fetch(targetUrl, {
+        headers: { Accept: 'application/sparql-results+json' },
+    });
+
+    const contentType = response.headers.get('content-type') ?? 'application/sparql-results+json';
+    console.log('[sparql proxy] upstream response:', response.status, contentType, endpoint);
 
     if (!response.ok) {
+        const body = await response.text();
+        console.log('[sparql proxy] upstream error body (first 400):', body.slice(0, 400));
         return res.status(response.status).json({ error: `Upstream error: ${response.statusText}` });
     }
 
-    const contentType = response.headers.get('content-type') ?? 'application/sparql-results+json';
+    if (contentType.includes('text/html')) {
+        const body = await response.text();
+        console.log('[sparql proxy] upstream returned HTML (first 400):', body.slice(0, 400));
+        // Forward as-is so the client sees the content type and can diagnose
+        res.setHeader('Content-Type', contentType);
+        return res.status(200).send(body);
+    }
+
     res.setHeader('Content-Type', contentType);
     res.status(200).send(await response.text());
 }

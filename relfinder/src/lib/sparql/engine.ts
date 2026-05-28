@@ -74,11 +74,17 @@ function makeFetch(
 
     const logResponse = async (p: Promise<Response>): Promise<Response> => {
       const res = await p
+      const ct = res.headers.get('content-type') ?? ''
       console.log('[engine] makeFetch: response', {
         status: res.status,
-        contentType: res.headers.get('content-type'),
+        contentType: ct,
         url: res.url,
       })
+      if (ct.includes('text/html')) {
+        res.clone().text().then((body) =>
+          console.log('[engine] makeFetch: HTML body preview:', body.slice(0, 400)),
+        )
+      }
       return res
     }
 
