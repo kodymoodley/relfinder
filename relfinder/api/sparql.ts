@@ -70,6 +70,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(response.status).json({ error: `Upstream error: ${response.statusText}` });
     }
 
-    const data = await response.json();
-    res.status(200).json(data);
+    const contentType = response.headers.get('content-type') ?? 'application/sparql-results+json';
+    res.setHeader('Content-Type', contentType);
+    res.status(200).send(await response.text());
 }
