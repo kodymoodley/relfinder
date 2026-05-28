@@ -5,7 +5,9 @@
       <button type="button" class="collapsible-toggle" @click="showSamples = !showSamples">
         <span class="collapsible-label">Sample databases</span>
         <span class="collapsible-badge">click to connect</span>
-        <i :class="['pi', showSamples ? 'pi-chevron-up' : 'pi-chevron-down', 'collapsible-chevron']" />
+        <i
+          :class="['pi', showSamples ? 'pi-chevron-up' : 'pi-chevron-down', 'collapsible-chevron']"
+        />
       </button>
       <Transition name="collapse">
         <div v-show="showSamples" class="collapsible-body">
@@ -31,7 +33,9 @@
     </div>
 
     <div class="field">
-      <label for="endpointUrl">Or enter a SPARQL endpoint URL <span class="required">*</span></label>
+      <label for="endpointUrl"
+        >Or enter a SPARQL endpoint URL <span class="required">*</span></label
+      >
       <InputText
         id="endpointUrl"
         v-model="form.endpointUrl"
@@ -265,7 +269,7 @@ async function onSubmit() {
   const rawEndpoint = form.endpointUrl.trim()
   const rawProxy = form.proxyUrl.trim()
   let endpointUrl: string
-  if (rawProxy && !rawProxy.split('?')[0].endsWith('/api/sparql')) {
+  if (rawProxy && !(rawProxy.split('?')[0] ?? '').endsWith('/api/sparql')) {
     // Transparent proxy (e.g. Caddy): Comunica hits the proxy URL directly.
     endpointUrl = rawProxy
   } else {
@@ -281,7 +285,7 @@ async function onSubmit() {
   const authHeader = form.username.trim()
     ? `Basic ${btoa(`${form.username.trim()}:${form.password}`)}`
     : undefined
-  const proxyPath = rawProxy.split('?')[0]
+  const proxyPath = rawProxy.split('?')[0] ?? ''
   const proxyBaseUrl = proxyPath.endsWith('/api/sparql') ? proxyPath : undefined
 
   try {

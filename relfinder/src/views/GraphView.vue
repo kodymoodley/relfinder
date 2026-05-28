@@ -126,9 +126,13 @@
               @click="loadExample(example)"
             >
               <div class="recent-pair">
-                <span class="recent-entity" :title="example.entity1.label">{{ example.entity1.label }}</span>
+                <span class="recent-entity" :title="example.entity1.label">{{
+                  example.entity1.label
+                }}</span>
                 <i class="pi pi-arrow-right recent-arrow" />
-                <span class="recent-entity" :title="example.entity2.label">{{ example.entity2.label }}</span>
+                <span class="recent-entity" :title="example.entity2.label">{{
+                  example.entity2.label
+                }}</span>
               </div>
             </li>
           </ul>
@@ -273,7 +277,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted, onActivated, onDeactivated, nextTick } from 'vue'
+import {
+  ref,
+  computed,
+  watch,
+  onMounted,
+  onUnmounted,
+  onActivated,
+  onDeactivated,
+  nextTick,
+} from 'vue'
 import { useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import { useSidebar } from '@/composables/useSidebar'

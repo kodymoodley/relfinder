@@ -21,21 +21,24 @@ export const ENDPOINT_DIRECTORY: EndpointEntry[] = [
     id: 'dbpedia',
     name: 'DBpedia',
     url: 'https://dbpedia.org/sparql',
-    description: 'Structured knowledge extracted from Wikipedia — people, places, organisations, and more.',
+    description:
+      'Structured knowledge extracted from Wikipedia — people, places, organisations, and more.',
     domain: 'General Knowledge',
   },
   {
     id: 'lov',
     name: 'Linked Open Vocabularies',
     url: 'https://lov.linkeddata.es/dataset/lov/sparql',
-    description: 'A curated catalogue of reusable vocabularies and ontologies published on the Web.',
+    description:
+      'A curated catalogue of reusable vocabularies and ontologies published on the Web.',
     domain: 'Vocabularies & Ontologies',
   },
   {
     id: 'agrovoc',
     name: 'AGROVOC',
     url: 'https://agrovoc.fao.org/sparql',
-    description: 'FAO\'s multilingual agricultural thesaurus covering food, nutrition, and natural resources.',
+    description:
+      "FAO's multilingual agricultural thesaurus covering food, nutrition, and natural resources.",
     domain: 'Agriculture',
     proxyUrl: VERCEL_PROXY,
   },
