@@ -113,7 +113,7 @@ export async function searchEntities(
       SELECT DISTINCT ?s ?ctype ?label WHERE {
         ?s a ?ctype .
         ?s ?lp ?label .
-        FILTER (isLiteral(?label) && (
+        FILTER (!isBlank(?s) && isLiteral(?label) && (
           datatype(?label) = <http://www.w3.org/2001/XMLSchema#string> ||
           lang(?label) != ''
         ))
@@ -137,6 +137,7 @@ export async function searchEntities(
         `SELECT DISTINCT ?s ?label WHERE {
           ?s a <${allowedClasses[0]}> .
           ?s ?lp ?label .
+          FILTER (!isBlank(?s))
           ${labelPropFilter}
           ${labelFilter}
           ${langFilter}
@@ -171,6 +172,7 @@ export async function searchEntities(
       SELECT DISTINCT ?s ?ctype ?label WHERE {
         ${classPattern}
         ?s ?lp ?label .
+        FILTER (!isBlank(?s))
         ${labelPropFilter}
         ${labelFilter}
         ${langFilter}
@@ -255,6 +257,7 @@ export async function fetchInstancesByClass(
     query = `
       SELECT DISTINCT ?s (COALESCE(?preferredLabel, ?fallbackLabel) AS ?label) WHERE {
         ?s a <${classIri}> .
+        FILTER (!isBlank(?s))
         OPTIONAL {
           VALUES ?lp { ${preferredProps} }
           ?s ?lp ?preferredLabel .
@@ -275,6 +278,7 @@ export async function fetchInstancesByClass(
     query = `
       SELECT DISTINCT ?s ?label WHERE {
         ?s a <${classIri}> .
+        FILTER (!isBlank(?s))
         OPTIONAL {
           VALUES ?lp { ${labelProps} }
           ?s ?lp ?label .
@@ -535,7 +539,11 @@ export async function enrichGraph(
 ): Promise<Map<string, LabelEntry[]>> {
   const propIris = edges.map((e) => e.iri)
   const nodeIris = nodes.map((n) => n.iri)
-  const allLabelIris = [...new Set([...propIris, ...nodeIris])]
+  // Blank nodes (e.g. bc_0_nodeID://...) cannot be queried by IRI — skip them
+  const isAbsoluteIri = (iri: string) =>
+    iri.startsWith('http://') || iri.startsWith('https://') || iri.startsWith('urn:')
+  const allLabelIris = [...new Set([...propIris, ...nodeIris])].filter(isAbsoluteIri)
+  const validNodeIris = nodeIris.filter(isAbsoluteIri)
 
   // Fetch all language tags in one pass per chunk
   const allLabels = new Map<string, LabelEntry[]>()
@@ -553,7 +561,7 @@ export async function enrichGraph(
 
   // Merge chunked type results
   const typesMap = new Map<string, string>()
-  for (const batch of chunk(nodeIris, chunkSize)) {
+  for (const batch of chunk(validNodeIris, chunkSize)) {
     const partial = await fetchTypes(batch, context, ontologyPrefix, store)
     for (const [k, v] of partial) typesMap.set(k, v)
   }
