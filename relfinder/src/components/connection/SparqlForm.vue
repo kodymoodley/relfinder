@@ -318,7 +318,7 @@ async function onSubmit() {
       endpointUrl,
       username: form.username.trim(),
       password: form.password,
-      proxyUrl: form.proxyUrl.trim(),
+      proxyUrl: rawProxy,
     })
 
     router.push({ name: 'browse' })
