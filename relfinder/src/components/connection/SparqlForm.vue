@@ -268,7 +268,10 @@ async function onSubmit() {
   connectionError.value = ''
 
   const rawEndpoint = form.endpointUrl.trim()
-  const rawProxy = form.proxyUrl.trim()
+  // If no proxy was typed, fall back to the directory entry's proxy (covers
+  // the case where the user types a known CORS-restricted URL manually).
+  const directoryProxy = ENDPOINT_DIRECTORY.find(e => e.url === rawEndpoint)?.proxyUrl ?? ''
+  const rawProxy = form.proxyUrl.trim() || directoryProxy
   let endpointUrl: string
   if (rawProxy && !(rawProxy.split('?')[0] ?? '').endsWith('/api/sparql')) {
     // Transparent proxy (e.g. Caddy): Comunica hits the proxy URL directly.
