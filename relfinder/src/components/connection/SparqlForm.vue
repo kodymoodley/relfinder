@@ -239,7 +239,11 @@ async function connectEndpoint(entry: EndpointEntry) {
   form.username = ''
   form.password = ''
   form.proxyUrl = entry.proxyUrl ?? ''
-  console.log('[SparqlForm] connectEndpoint', { id: entry.id, url: entry.url, proxyUrl: entry.proxyUrl })
+  console.log('[SparqlForm] connectEndpoint', {
+    id: entry.id,
+    url: entry.url,
+    proxyUrl: entry.proxyUrl,
+  })
   await onSubmit()
 }
 
@@ -270,7 +274,7 @@ async function onSubmit() {
   const rawEndpoint = form.endpointUrl.trim()
   // If no proxy was typed, fall back to the directory entry's proxy (covers
   // the case where the user types a known CORS-restricted URL manually).
-  const directoryProxy = ENDPOINT_DIRECTORY.find(e => e.url === rawEndpoint)?.proxyUrl ?? ''
+  const directoryProxy = ENDPOINT_DIRECTORY.find((e) => e.url === rawEndpoint)?.proxyUrl ?? ''
   const rawProxy = form.proxyUrl.trim() || directoryProxy
   let endpointUrl: string
   if (rawProxy && !(rawProxy.split('?')[0] ?? '').endsWith('/api/sparql')) {
@@ -292,7 +296,13 @@ async function onSubmit() {
   const proxyPath = rawProxy.split('?')[0] ?? ''
   const proxyBaseUrl = proxyPath.endsWith('/api/sparql') ? proxyPath : undefined
 
-  console.log('[SparqlForm] onSubmit', { rawEndpoint, rawProxy, endpointUrl, proxyPath, proxyBaseUrl })
+  console.log('[SparqlForm] onSubmit', {
+    rawEndpoint,
+    rawProxy,
+    endpointUrl,
+    proxyPath,
+    proxyBaseUrl,
+  })
 
   try {
     // Skip the round-trip test when a cached schema already exists — the user

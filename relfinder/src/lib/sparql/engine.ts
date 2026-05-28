@@ -50,7 +50,10 @@ function makeFetch(
     if (authorizationHeader) headers.set('Authorization', authorizationHeader)
 
     if (!proxyBaseUrl) {
-      console.log('[engine] makeFetch: no proxyBaseUrl, direct fetch to', typeof input === 'string' ? input : input.toString())
+      console.log(
+        '[engine] makeFetch: no proxyBaseUrl, direct fetch to',
+        typeof input === 'string' ? input : input.toString(),
+      )
       return fetch(input, { ...init, headers, signal })
     }
 
@@ -63,7 +66,11 @@ function makeFetch(
     // The real endpoint is the URL without its query string.
     proxyUrl.searchParams.set('endpoint', parsedUrl.origin + parsedUrl.pathname)
 
-    console.log('[engine] makeFetch: rewriting via proxy', { original: parsedUrl.toString(), method, proxyBase: proxyBaseUrl })
+    console.log('[engine] makeFetch: rewriting via proxy', {
+      original: parsedUrl.toString(),
+      method,
+      proxyBase: proxyBaseUrl,
+    })
 
     if (method === 'POST') {
       // Comunica POSTs the query as `application/x-www-form-urlencoded` body.
