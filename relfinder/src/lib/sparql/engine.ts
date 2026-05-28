@@ -72,18 +72,28 @@ function makeFetch(
       proxyBase: proxyBaseUrl,
     })
 
+    const logResponse = async (p: Promise<Response>): Promise<Response> => {
+      const res = await p
+      console.log('[engine] makeFetch: response', {
+        status: res.status,
+        contentType: res.headers.get('content-type'),
+        url: res.url,
+      })
+      return res
+    }
+
     if (method === 'POST') {
       // Comunica POSTs the query as `application/x-www-form-urlencoded` body.
       // The proxy reads `endpoint` from the URL query string and `query` from
       // the body — so we just rewrite the URL and keep the body intact.
       console.log('[engine] makeFetch: POST → proxy URL', proxyUrl.toString())
-      return fetch(proxyUrl.toString(), { ...init, headers, signal })
+      return logResponse(fetch(proxyUrl.toString(), { ...init, headers, signal }))
     } else {
       // GET: move `?query=` from the original URL into the proxy URL.
       const sparqlQuery = parsedUrl.searchParams.get('query') ?? ''
       proxyUrl.searchParams.set('query', sparqlQuery)
       console.log('[engine] makeFetch: GET → proxy URL', proxyUrl.toString())
-      return fetch(proxyUrl.toString(), { ...init, method: 'GET', headers, signal })
+      return logResponse(fetch(proxyUrl.toString(), { ...init, method: 'GET', headers, signal }))
     }
   }
 }

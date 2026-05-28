@@ -266,7 +266,11 @@ async function testConnection(
 }
 
 async function onSubmit() {
-  if (!validate()) return
+  console.log('[SparqlForm] onSubmit called', { connecting: connecting.value, url: form.endpointUrl })
+  if (!validate()) {
+    console.log('[SparqlForm] onSubmit: validation failed', { errors })
+    return
+  }
 
   connecting.value = true
   connectionError.value = ''
@@ -329,6 +333,7 @@ async function onSubmit() {
         ? `Could not reach endpoint: ${err.message}`
         : 'Could not reach the SPARQL endpoint. Check the URL and try again.'
   } finally {
+    console.log('[SparqlForm] onSubmit finally: resetting connecting to false')
     connecting.value = false
   }
 }
