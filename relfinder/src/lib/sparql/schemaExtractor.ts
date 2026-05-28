@@ -94,7 +94,7 @@ async function fetchSchemaClasses(
   `
   const rows = await runSelect(query, context, store)
   return rows
-    .filter((r) => r['class'])
+    .filter((r) => r['class']?.type === 'NamedNode')
     .map((r) => ({ iri: r['class']!.value, label: shortIri(r['class']!.value) }))
 }
 
