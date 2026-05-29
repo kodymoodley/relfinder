@@ -31,6 +31,7 @@ export function useRelationshipSearch(
       const context = connectionStore.queryContext
       const effectiveContext = context ?? { endpointUrl: '' }
 
+      console.log('[useRelationshipSearch] entity IRIs:', entity1.value.iri, entity2.value.iri)
       await connectionStore.waitForSubgraph()
       let store: import('n3').Store | undefined
       if (connectionStore.isFileSource) {
@@ -38,7 +39,9 @@ export function useRelationshipSearch(
       } else if (connectionStore.localRdfStore) {
         store = connectionStore.localRdfStore
       } else if (context) {
+        console.log('[useRelationshipSearch] calling fetchNeighbourhoodStore')
         store = await fetchNeighbourhoodStore(entity1.value.iri, entity2.value.iri, context)
+        console.log('[useRelationshipSearch] fetchNeighbourhoodStore done, store size:', store.size)
       }
 
       graph.value = await findRelationships(

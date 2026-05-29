@@ -94,9 +94,14 @@ export async function fetchNeighbourhoodStore(
   context: QueryContext,
   signal?: AbortSignal,
 ): Promise<Store> {
+  const q1 = neighbourhoodQuery(entity1Iri)
+  const q2 = neighbourhoodQuery(entity2Iri)
+  console.log('[fetchNeighbourhoodStore] e1 IRI:', entity1Iri)
+  console.log('[fetchNeighbourhoodStore] e2 IRI:', entity2Iri)
+  console.log('[fetchNeighbourhoodStore] query1:\n', q1)
   const [quads1, quads2] = await Promise.all([
-    executeConstruct(neighbourhoodQuery(entity1Iri), context, signal),
-    executeConstruct(neighbourhoodQuery(entity2Iri), context, signal),
+    executeConstruct(q1, context, signal),
+    executeConstruct(q2, context, signal),
   ])
   const store = new Store()
   store.addQuads(quads1)
