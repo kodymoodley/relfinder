@@ -106,11 +106,7 @@ export class SparqlClient {
    *    support ordered pagination without full-table-scan timeouts.
    */
   private _rewrite(query: string): string {
-    if (
-      !this.caps.supportsOrderByOffset &&
-      /\bORDER\s+BY\b/i.test(query) &&
-      /\bOFFSET\b/i.test(query)
-    ) {
+    if (!this.caps.supportsOrderByOffset && /\bORDER\s+BY\b/i.test(query)) {
       return query.replace(/\s*\bORDER\s+BY\b[^\n]*/gi, '')
     }
     return query
