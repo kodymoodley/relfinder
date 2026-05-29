@@ -306,12 +306,11 @@ async function runInstanceSparqlSearch(query: string, classIri: string) {
   const seq = ++_searchSeq
   instanceSearchLoading.value = true
   instanceSearchResults.value = []
-  const context = connectionStore.queryContext ?? { endpointUrl: '' }
-  const store = connectionStore.rdfStore ?? connectionStore.localRdfStore ?? undefined
+  const client = connectionStore.sparqlClient
+  if (!client) return
   try {
-    const results = await searchEntities(context, {
+    const results = await searchEntities(client, {
       allowedClasses: [classIri],
-      store,
       limit: 20,
       textFilter: query,
     })
@@ -347,9 +346,8 @@ function toggleExpand(iri: string) {
     next.delete(iri)
   } else {
     next.add(iri)
-    const context = connectionStore.queryContext ?? { endpointUrl: '' }
-    const store = connectionStore.rdfStore ?? connectionStore.localRdfStore ?? undefined
-    schemaStore.fetchEntityPropsForInstance(iri, context, store).catch(() => {})
+    const client = connectionStore.sparqlClient
+    if (client) schemaStore.fetchEntityPropsForInstance(iri, client).catch(() => {})
   }
   expandedInstances.value = next
 }
@@ -388,11 +386,12 @@ watch(
     instanceSearchLoading.value = false
     ++_searchSeq
     if (!node) return
-    const context = connectionStore.queryContext ?? { endpointUrl: '' }
-    const store = connectionStore.rdfStore ?? connectionStore.localRdfStore ?? undefined
-    schemaStore.fetchDataProps(node.iri, context, store).catch(() => {})
-    schemaStore.fetchDescription(node.iri, context, store).catch(() => {})
-    schemaStore.fetchInstances(node.iri, context, store).catch(() => {})
+    const client = connectionStore.sparqlClient
+    if (client) {
+      schemaStore.fetchDataProps(node.iri, client).catch(() => {})
+      schemaStore.fetchDescription(node.iri, client).catch(() => {})
+      schemaStore.fetchInstances(node.iri, client).catch(() => {})
+    }
     recordView(node.iri)
     _dwellIri = node.iri
     _dwellStart = Date.now()

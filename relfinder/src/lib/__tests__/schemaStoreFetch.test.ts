@@ -19,6 +19,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useSchemaStore } from '@/stores/schema'
+import { SparqlClient } from '@/lib/sparql/client'
 import { fetchSchemaDataProperties } from '@/lib/sparql/schemaExtractor'
 import { fetchClassDescription } from '@/lib/sparql/classDescription'
 import { fetchInstancesByClass, fetchEntityProps } from '@/lib/sparql/entitySearch'
@@ -39,6 +40,7 @@ vi.mock('@/lib/sparql/entitySearch', () => ({
 }))
 
 const CTX = { endpointUrl: 'https://dbpedia.org/sparql' }
+const CLIENT = new SparqlClient(CTX)
 const ACTOR_CLASS = 'http://dbpedia.org/ontology/Actor'
 const MURPHY_IRI = 'http://dbpedia.org/resource/Cillian_Murphy'
 
@@ -61,7 +63,7 @@ describe('fetchDataProps', () => {
     vi.mocked(fetchSchemaDataProperties).mockResolvedValue(props)
 
     const store = useSchemaStore()
-    await store.fetchDataProps(ACTOR_CLASS, CTX, undefined)
+    await store.fetchDataProps(ACTOR_CLASS, CLIENT)
 
     expect(store.dataPropsCache.get(ACTOR_CLASS)).toEqual(props)
   })
@@ -70,8 +72,8 @@ describe('fetchDataProps', () => {
     vi.mocked(fetchSchemaDataProperties).mockResolvedValue([])
 
     const store = useSchemaStore()
-    await store.fetchDataProps(ACTOR_CLASS, CTX, undefined)
-    await store.fetchDataProps(ACTOR_CLASS, CTX, undefined) // second call — cache hit
+    await store.fetchDataProps(ACTOR_CLASS, CLIENT)
+    await store.fetchDataProps(ACTOR_CLASS, CLIENT) // second call — cache hit
 
     expect(fetchSchemaDataProperties).toHaveBeenCalledTimes(1)
   })
@@ -80,7 +82,7 @@ describe('fetchDataProps', () => {
     vi.mocked(fetchSchemaDataProperties).mockResolvedValue([])
 
     const store = useSchemaStore()
-    await store.fetchDataProps(ACTOR_CLASS, CTX, undefined)
+    await store.fetchDataProps(ACTOR_CLASS, CLIENT)
 
     expect(store.dataPropsLoading.has(ACTOR_CLASS)).toBe(false)
   })
@@ -89,7 +91,7 @@ describe('fetchDataProps', () => {
     vi.mocked(fetchSchemaDataProperties).mockRejectedValue(new Error('endpoint timeout'))
 
     const store = useSchemaStore()
-    await store.fetchDataProps(ACTOR_CLASS, CTX, undefined).catch(() => {})
+    await store.fetchDataProps(ACTOR_CLASS, CLIENT).catch(() => {})
 
     expect(store.dataPropsLoading.has(ACTOR_CLASS)).toBe(false)
   })
@@ -104,8 +106,8 @@ describe('fetchDataProps', () => {
     )
 
     const store = useSchemaStore()
-    const first = store.fetchDataProps(ACTOR_CLASS, CTX, undefined)
-    const second = store.fetchDataProps(ACTOR_CLASS, CTX, undefined) // duplicate — in-flight guard
+    const first = store.fetchDataProps(ACTOR_CLASS, CLIENT)
+    const second = store.fetchDataProps(ACTOR_CLASS, CLIENT) // duplicate — in-flight guard
 
     resolve([])
     await Promise.all([first, second])
@@ -121,7 +123,7 @@ describe('fetchDescription', () => {
     vi.mocked(fetchClassDescription).mockResolvedValue('Actors are people who perform in films.')
 
     const store = useSchemaStore()
-    await store.fetchDescription(ACTOR_CLASS, CTX, undefined)
+    await store.fetchDescription(ACTOR_CLASS, CLIENT)
 
     expect(store.descriptionCache.get(ACTOR_CLASS)).toBe('Actors are people who perform in films.')
   })
@@ -130,7 +132,7 @@ describe('fetchDescription', () => {
     vi.mocked(fetchClassDescription).mockResolvedValue('')
 
     const store = useSchemaStore()
-    await store.fetchDescription(ACTOR_CLASS, CTX, undefined)
+    await store.fetchDescription(ACTOR_CLASS, CLIENT)
 
     expect(store.descriptionCache.has(ACTOR_CLASS)).toBe(true)
     expect(store.descriptionCache.get(ACTOR_CLASS)).toBe('')
@@ -140,8 +142,8 @@ describe('fetchDescription', () => {
     vi.mocked(fetchClassDescription).mockResolvedValue('Some description')
 
     const store = useSchemaStore()
-    await store.fetchDescription(ACTOR_CLASS, CTX, undefined)
-    await store.fetchDescription(ACTOR_CLASS, CTX, undefined)
+    await store.fetchDescription(ACTOR_CLASS, CLIENT)
+    await store.fetchDescription(ACTOR_CLASS, CLIENT)
 
     expect(fetchClassDescription).toHaveBeenCalledTimes(1)
   })
@@ -150,7 +152,7 @@ describe('fetchDescription', () => {
     vi.mocked(fetchClassDescription).mockResolvedValue('')
 
     const store = useSchemaStore()
-    await store.fetchDescription(ACTOR_CLASS, CTX, undefined)
+    await store.fetchDescription(ACTOR_CLASS, CLIENT)
 
     expect(store.descriptionLoading.has(ACTOR_CLASS)).toBe(false)
   })
@@ -165,8 +167,8 @@ describe('fetchDescription', () => {
     )
 
     const store = useSchemaStore()
-    const first = store.fetchDescription(ACTOR_CLASS, CTX, undefined)
-    const second = store.fetchDescription(ACTOR_CLASS, CTX, undefined)
+    const first = store.fetchDescription(ACTOR_CLASS, CLIENT)
+    const second = store.fetchDescription(ACTOR_CLASS, CLIENT)
 
     resolve('description text')
     await Promise.all([first, second])
@@ -183,7 +185,7 @@ describe('fetchInstances', () => {
     vi.mocked(fetchInstancesByClass).mockResolvedValue(instances)
 
     const store = useSchemaStore()
-    await store.fetchInstances(ACTOR_CLASS, CTX, undefined)
+    await store.fetchInstances(ACTOR_CLASS, CLIENT)
 
     expect(store.instancesCache.get(ACTOR_CLASS)).toEqual(instances)
   })
@@ -192,8 +194,8 @@ describe('fetchInstances', () => {
     vi.mocked(fetchInstancesByClass).mockResolvedValue([])
 
     const store = useSchemaStore()
-    await store.fetchInstances(ACTOR_CLASS, CTX, undefined)
-    await store.fetchInstances(ACTOR_CLASS, CTX, undefined)
+    await store.fetchInstances(ACTOR_CLASS, CLIENT)
+    await store.fetchInstances(ACTOR_CLASS, CLIENT)
 
     expect(fetchInstancesByClass).toHaveBeenCalledTimes(1)
   })
@@ -202,7 +204,7 @@ describe('fetchInstances', () => {
     vi.mocked(fetchInstancesByClass).mockResolvedValue([])
 
     const store = useSchemaStore()
-    await store.fetchInstances(ACTOR_CLASS, CTX, undefined)
+    await store.fetchInstances(ACTOR_CLASS, CLIENT)
 
     expect(store.instancesLoading.has(ACTOR_CLASS)).toBe(false)
   })
@@ -217,8 +219,8 @@ describe('fetchInstances', () => {
     )
 
     const store = useSchemaStore()
-    const first = store.fetchInstances(ACTOR_CLASS, CTX, undefined)
-    const second = store.fetchInstances(ACTOR_CLASS, CTX, undefined)
+    const first = store.fetchInstances(ACTOR_CLASS, CLIENT)
+    const second = store.fetchInstances(ACTOR_CLASS, CLIENT)
 
     resolve([])
     await Promise.all([first, second])
@@ -241,7 +243,7 @@ describe('fetchEntityPropsForInstance', () => {
     vi.mocked(fetchEntityProps).mockResolvedValue(props)
 
     const store = useSchemaStore()
-    await store.fetchEntityPropsForInstance(MURPHY_IRI, CTX, undefined)
+    await store.fetchEntityPropsForInstance(MURPHY_IRI, CLIENT)
 
     expect(store.entityPropsCache.get(MURPHY_IRI)).toEqual(props)
   })
@@ -250,8 +252,8 @@ describe('fetchEntityPropsForInstance', () => {
     vi.mocked(fetchEntityProps).mockResolvedValue([])
 
     const store = useSchemaStore()
-    await store.fetchEntityPropsForInstance(MURPHY_IRI, CTX, undefined)
-    await store.fetchEntityPropsForInstance(MURPHY_IRI, CTX, undefined)
+    await store.fetchEntityPropsForInstance(MURPHY_IRI, CLIENT)
+    await store.fetchEntityPropsForInstance(MURPHY_IRI, CLIENT)
 
     expect(fetchEntityProps).toHaveBeenCalledTimes(1)
   })
@@ -260,7 +262,7 @@ describe('fetchEntityPropsForInstance', () => {
     vi.mocked(fetchEntityProps).mockResolvedValue([])
 
     const store = useSchemaStore()
-    await store.fetchEntityPropsForInstance(MURPHY_IRI, CTX, undefined)
+    await store.fetchEntityPropsForInstance(MURPHY_IRI, CLIENT)
 
     expect(store.entityPropsLoading.has(MURPHY_IRI)).toBe(false)
   })
@@ -275,8 +277,8 @@ describe('fetchEntityPropsForInstance', () => {
     )
 
     const store = useSchemaStore()
-    const first = store.fetchEntityPropsForInstance(MURPHY_IRI, CTX, undefined)
-    const second = store.fetchEntityPropsForInstance(MURPHY_IRI, CTX, undefined)
+    const first = store.fetchEntityPropsForInstance(MURPHY_IRI, CLIENT)
+    const second = store.fetchEntityPropsForInstance(MURPHY_IRI, CLIENT)
 
     resolve([])
     await Promise.all([first, second])
@@ -291,7 +293,7 @@ describe('loadMore() error handling', () => {
   /** Helper: run start() so _context is stored, enabling loadMore() */
   async function connectStore(store: ReturnType<typeof useSchemaStore>) {
     vi.mocked(extractSchema).mockResolvedValue({ nodes: [], edges: [] } as never)
-    await store.start(CTX, undefined, 10, 3)
+    await store.start(CLIENT, 10, 3)
   }
 
   it('sets extractError when loadMore throws a non-abort error', async () => {

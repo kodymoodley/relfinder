@@ -14,6 +14,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useSchemaStore } from '@/stores/schema'
+import { SparqlClient } from '@/lib/sparql/client'
 import { loadSchema, saveSchema } from '@/lib/cache/schemaStorage'
 import type { PersistedSchema } from '@/lib/cache/schemaStorage'
 import { extractSchema } from '@/lib/sparql/schemaExtractor'
@@ -35,6 +36,7 @@ vi.mock('@/lib/sparql/classDescription', () => ({
 
 const ENDPOINT = 'https://example.org/sparql'
 const CONTEXT = { endpointUrl: ENDPOINT }
+const CLIENT = new SparqlClient(CONTEXT)
 const CLASS_LIMIT = 100
 const EDGE_LIMIT = 50
 
@@ -68,7 +70,7 @@ function makeStoredSchema(overrides: Partial<PersistedSchema> = {}): PersistedSc
  */
 function mockFullExtraction(nodes: SchemaNode[] = NODES) {
   vi.mocked(extractSchema).mockImplementation(
-    async (_ctx, _store, _opts, callbacks?: SchemaExtractionCallbacks) => {
+    async (_client, _opts, callbacks?: SchemaExtractionCallbacks) => {
       callbacks?.onClassesLoaded?.(nodes)
       for (let i = 0; i < nodes.length; i++) {
         callbacks?.onEdgesLoaded?.([])
@@ -93,7 +95,7 @@ function mockGatedExtraction(nodes: SchemaNode[] = NODES): () => void {
   })
 
   vi.mocked(extractSchema).mockImplementation(
-    async (_ctx, _store, _opts, callbacks?: SchemaExtractionCallbacks) => {
+    async (_client, _opts, callbacks?: SchemaExtractionCallbacks) => {
       callbacks?.onClassesLoaded?.(nodes)
       await gate
       callbacks?.onProgress?.(1, nodes.length)
@@ -120,7 +122,7 @@ describe('schema store — caching', () => {
     it('runs a fresh extraction and calls extractSchema', async () => {
       mockFullExtraction()
       const store = useSchemaStore()
-      await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      await store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
 
       expect(extractSchema).toHaveBeenCalledOnce()
       expect(store.nodes).toHaveLength(NODES.length)
@@ -128,9 +130,9 @@ describe('schema store — caching', () => {
 
     it('does not pass preloadedNodes or skipClasses on a fresh start', async () => {
       mockFullExtraction()
-      await useSchemaStore().start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      await useSchemaStore().start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
 
-      const opts = vi.mocked(extractSchema).mock.calls[0]![2]!
+      const opts = vi.mocked(extractSchema).mock.calls[0]![1]!
       expect(opts.preloadedNodes).toBeUndefined()
       expect(opts.skipClasses).toBeUndefined()
     })
@@ -140,7 +142,7 @@ describe('schema store — caching', () => {
     it('restores nodes immediately without calling extractSchema', async () => {
       saveSchema(ENDPOINT, makeStoredSchema())
       const store = useSchemaStore()
-      await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      await store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
 
       expect(extractSchema).not.toHaveBeenCalled()
       expect(store.nodes).toHaveLength(NODES.length)
@@ -161,7 +163,7 @@ describe('schema store — caching', () => {
         }),
       )
       const store = useSchemaStore()
-      await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      await store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
 
       expect(store.dataPropsCache.get('http://example.org/A')).toHaveLength(1)
       expect(store.descriptionCache.get('http://example.org/A')).toBe('A class called A')
@@ -170,7 +172,7 @@ describe('schema store — caching', () => {
     it('ignores cache when classLimit differs', async () => {
       mockFullExtraction()
       saveSchema(ENDPOINT, makeStoredSchema({ classLimit: 50 })) // stored with limit 50
-      await useSchemaStore().start(CONTEXT, undefined, 100, EDGE_LIMIT) // request limit 100
+      await useSchemaStore().start(CLIENT, 100, EDGE_LIMIT) // request limit 100
 
       expect(extractSchema).toHaveBeenCalledOnce()
     })
@@ -178,7 +180,7 @@ describe('schema store — caching', () => {
     it('ignores cache when edgeLimit differs', async () => {
       mockFullExtraction()
       saveSchema(ENDPOINT, makeStoredSchema({ edgeLimit: 20 }))
-      await useSchemaStore().start(CONTEXT, undefined, CLASS_LIMIT, 50)
+      await useSchemaStore().start(CLIENT, CLASS_LIMIT, 50)
 
       expect(extractSchema).toHaveBeenCalledOnce()
     })
@@ -189,10 +191,10 @@ describe('schema store — caching', () => {
       mockFullExtraction()
       // Only first node was processed
       saveSchema(ENDPOINT, makeStoredSchema({ processedClassIris: [NODES[0]!.iri] }))
-      await useSchemaStore().start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      await useSchemaStore().start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
 
       expect(extractSchema).toHaveBeenCalledOnce()
-      const opts = vi.mocked(extractSchema).mock.calls[0]![2]!
+      const opts = vi.mocked(extractSchema).mock.calls[0]![1]!
       expect(opts.preloadedNodes).toHaveLength(NODES.length)
       expect(opts.skipClasses?.has(NODES[0]!.iri)).toBe(true)
       expect(opts.skipClasses?.has(NODES[1]!.iri)).toBe(false)
@@ -203,7 +205,7 @@ describe('schema store — caching', () => {
       const openGate = mockGatedExtraction()
       saveSchema(ENDPOINT, makeStoredSchema({ processedClassIris: [NODES[0]!.iri] }))
       const store = useSchemaStore()
-      const done = store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      const done = store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
 
       // Phase 1 (onClassesLoaded) fired synchronously — progress.completed
       // should reflect the already-skipped class, not reset to 0
@@ -219,7 +221,7 @@ describe('schema store — caching', () => {
     it('ignores a valid cache and runs a full extraction', async () => {
       mockFullExtraction()
       saveSchema(ENDPOINT, makeStoredSchema())
-      await useSchemaStore().start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT, true)
+      await useSchemaStore().start(CLIENT, CLASS_LIMIT, EDGE_LIMIT, true)
 
       expect(extractSchema).toHaveBeenCalledOnce()
     })
@@ -227,9 +229,9 @@ describe('schema store — caching', () => {
     it('does not pass preloadedNodes when force=true', async () => {
       mockFullExtraction()
       saveSchema(ENDPOINT, makeStoredSchema())
-      await useSchemaStore().start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT, true)
+      await useSchemaStore().start(CLIENT, CLASS_LIMIT, EDGE_LIMIT, true)
 
-      const opts = vi.mocked(extractSchema).mock.calls[0]![2]!
+      const opts = vi.mocked(extractSchema).mock.calls[0]![1]!
       expect(opts.preloadedNodes).toBeUndefined()
     })
   })
@@ -239,7 +241,7 @@ describe('schema store — caching', () => {
       // Phase 1 runs synchronously in the mock; Phase 2 is gated
       const openGate = mockGatedExtraction()
       const store = useSchemaStore()
-      const done = store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      const done = store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
 
       // At this point Phase 1 (onClassesLoaded) has already fired synchronously
       const saved = loadSchema(ENDPOINT)
@@ -253,7 +255,7 @@ describe('schema store — caching', () => {
 
     it('persists updated processedClassIris after each onClassProcessed (Phase 2)', async () => {
       mockFullExtraction()
-      await useSchemaStore().start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      await useSchemaStore().start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
 
       const saved = loadSchema(ENDPOINT)
       expect(saved!.processedClassIris).toHaveLength(NODES.length)
@@ -262,7 +264,7 @@ describe('schema store — caching', () => {
     it('updates savedAt on each persist so TTL restarts from the last write', async () => {
       const before = Date.now()
       mockFullExtraction()
-      await useSchemaStore().start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      await useSchemaStore().start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
 
       const saved = loadSchema(ENDPOINT)
       expect(saved!.savedAt).toBeGreaterThanOrEqual(before)
@@ -273,7 +275,7 @@ describe('schema store — caching', () => {
     it('does not overwrite valid cached nodes with empty array when clear() races an in-flight callback', async () => {
       const openGate = mockGatedExtraction()
       const store = useSchemaStore()
-      const done = store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      const done = store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
 
       // Phase 1 has completed synchronously — valid nodes are in localStorage
       const savedAfterPhase1 = loadSchema(ENDPOINT)
@@ -296,7 +298,7 @@ describe('schema store — caching', () => {
 
     it('does not persist at all when there were no nodes to begin with', async () => {
       vi.mocked(extractSchema).mockResolvedValue({ nodes: [], edges: [] })
-      await useSchemaStore().start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      await useSchemaStore().start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
 
       // Nothing meaningful to cache — localStorage should stay empty
       expect(loadSchema(ENDPOINT)).toBeNull()
@@ -307,7 +309,7 @@ describe('schema store — caching', () => {
     it('resets all in-memory state', async () => {
       mockFullExtraction()
       const store = useSchemaStore()
-      await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      await store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
       expect(store.nodes).toHaveLength(NODES.length)
 
       store.clear()
@@ -322,7 +324,7 @@ describe('schema store — caching', () => {
     it('does NOT clear localStorage — cached data survives for next session', async () => {
       mockFullExtraction()
       const store = useSchemaStore()
-      await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      await store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
 
       store.clear()
       expect(loadSchema(ENDPOINT)).not.toBeNull()

@@ -511,9 +511,8 @@ function attachHandlers() {
     tooltipVisible.value = true
     // Trigger background data-prop fetch if not yet cached
     if (!schemaStore.dataPropsCache.has(iri) && !schemaStore.dataPropsLoading.has(iri)) {
-      const context = connectionStore.queryContext ?? { endpointUrl: '' }
-      const store = connectionStore.rdfStore ?? undefined
-      schemaStore.fetchDataProps(iri, context, store).catch(() => {})
+      const client = connectionStore.sparqlClient
+      if (client) schemaStore.fetchDataProps(iri, client).catch(() => {})
     }
   })
 
@@ -561,9 +560,8 @@ function attachHandlers() {
     hoveredEdge.value = null
     tooltipVisible.value = true
     if (!schemaStore.dataPropsCache.has(iri) && !schemaStore.dataPropsLoading.has(iri)) {
-      const context = connectionStore.queryContext ?? { endpointUrl: '' }
-      const store = connectionStore.rdfStore ?? undefined
-      schemaStore.fetchDataProps(iri, context, store).catch(() => {})
+      const client = connectionStore.sparqlClient
+      if (client) schemaStore.fetchDataProps(iri, client).catch(() => {})
     }
   })
 

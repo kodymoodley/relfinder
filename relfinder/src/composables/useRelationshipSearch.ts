@@ -4,6 +4,7 @@ import type { GraphOptions } from '@/components/graph/OptionsPanel.vue'
 import type { useConnectionStore } from '@/stores/connection'
 import { findRelationships } from '@/lib/sparql/entitySearch'
 import { fetchNeighbourhoodStore } from '@/lib/sparql/subgraphStrategy'
+import { SparqlClient } from '@/lib/sparql/client'
 import { saveGraph } from '@/lib/cache/graphStorage'
 
 export function useRelationshipSearch(
@@ -28,32 +29,44 @@ export function useRelationshipSearch(
     onSearchStart()
 
     try {
-      const context = connectionStore.queryContext
-      const effectiveContext = context ?? { endpointUrl: '' }
-
       console.log('[useRelationshipSearch] entity IRIs:', entity1.value.iri, entity2.value.iri)
+
       await connectionStore.waitForSubgraph()
-      let store: import('n3').Store | undefined
-      if (connectionStore.isFileSource) {
-        store = connectionStore.rdfStore ?? undefined
-      } else if (connectionStore.localRdfStore) {
-        store = connectionStore.localRdfStore
-      } else if (context) {
-        console.log('[useRelationshipSearch] calling fetchNeighbourhoodStore')
-        store = await fetchNeighbourhoodStore(entity1.value.iri, entity2.value.iri, context)
-        console.log('[useRelationshipSearch] fetchNeighbourhoodStore done, store size:', store.size)
+
+      // Resolve the store to run path-finding queries against.
+      // Priority: local file store → full cached graph → on-demand neighbourhood.
+      let client = connectionStore.sparqlClient
+      if (!client) throw new Error('No active connection')
+
+      if (!client.isFileSource) {
+        if (connectionStore.localRdfStore) {
+          // Small endpoint: full graph was fetched at connect time — wrap it.
+          client = new SparqlClient({ endpointUrl: '' }, connectionStore.localRdfStore)
+        } else {
+          // Large endpoint: fetch 2-hop neighbourhoods around the two entities.
+          console.log('[useRelationshipSearch] calling fetchNeighbourhoodStore')
+          const neighbourStore = await fetchNeighbourhoodStore(
+            entity1.value.iri,
+            entity2.value.iri,
+            client,
+          )
+          console.log(
+            '[useRelationshipSearch] fetchNeighbourhoodStore done, store size:',
+            neighbourStore.size,
+          )
+          client = new SparqlClient({ endpointUrl: '' }, neighbourStore)
+        }
       }
 
       graph.value = await findRelationships(
         entity1.value.iri,
         entity2.value.iri,
         graphOptions.value.maxDistance,
-        effectiveContext,
+        client,
         {
           ignoredProperties: graphOptions.value.ignoredProperties,
           avoidCycles: graphOptions.value.avoidCycles,
           language: graphOptions.value.language,
-          store,
         },
       )
 

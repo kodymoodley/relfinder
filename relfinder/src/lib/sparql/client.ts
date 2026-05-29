@@ -62,10 +62,17 @@ export class SparqlClient {
    * @param store    Populated N3 Store for file-upload mode. Omit for remote endpoints.
    * @param caps     Endpoint capability overrides. Merged with DEFAULT_CAPABILITIES.
    */
+  /**
+   * Stable key that uniquely identifies this source for use in caches.
+   * 'file' for file sources; the endpoint URL for SPARQL sources.
+   */
+  readonly sourceKey: string
+
   constructor(context: QueryContext, store?: Store, caps: Partial<EndpointCapabilities> = {}) {
     this._context = context
     this._store = store
     this.isFileSource = store !== undefined
+    this.sourceKey = store !== undefined ? 'file' : context.endpointUrl
     this.caps = { ...DEFAULT_CAPABILITIES, ...caps }
   }
 

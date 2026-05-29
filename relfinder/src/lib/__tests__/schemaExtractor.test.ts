@@ -14,6 +14,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { extractSchema } from '@/lib/sparql/schemaExtractor'
 import { executeSelect } from '@/lib/sparql/engine'
+import { SparqlClient } from '@/lib/sparql/client'
 import type { SchemaNode, SparqlBinding } from '@/lib/sparql/types'
 import type { SchemaExtractionCallbacks } from '@/lib/sparql/schemaExtractor'
 
@@ -36,6 +37,7 @@ vi.mock('@/lib/sparql/entitySearch', async (importOriginal) => {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const CONTEXT = { endpointUrl: 'https://example.org/sparql' }
+const CLIENT = new SparqlClient(CONTEXT)
 
 const NODES: SchemaNode[] = [
   { iri: 'http://example.org/A', label: 'A' },
@@ -66,13 +68,7 @@ describe('extractSchema — Phase 2 abort guard', () => {
       const controller = new AbortController()
       controller.abort()
 
-      await extractSchema(
-        CONTEXT,
-        undefined,
-        { preloadedNodes: NODES },
-        makeCallbacks(),
-        controller.signal,
-      )
+      await extractSchema(CLIENT, { preloadedNodes: NODES }, makeCallbacks(), controller.signal)
 
       expect(executeSelect).not.toHaveBeenCalled()
     })
@@ -83,7 +79,7 @@ describe('extractSchema — Phase 2 abort guard', () => {
       controller.abort()
 
       const cbs = makeCallbacks()
-      await extractSchema(CONTEXT, undefined, { preloadedNodes: NODES }, cbs, controller.signal)
+      await extractSchema(CLIENT, { preloadedNodes: NODES }, cbs, controller.signal)
 
       expect(cbs.onProgress).not.toHaveBeenCalled()
       expect(cbs.onClassProcessed).not.toHaveBeenCalled()
@@ -95,7 +91,7 @@ describe('extractSchema — Phase 2 abort guard', () => {
       controller.abort()
 
       const cbs = makeCallbacks()
-      await extractSchema(CONTEXT, undefined, { preloadedNodes: NODES }, cbs, controller.signal)
+      await extractSchema(CLIENT, { preloadedNodes: NODES }, cbs, controller.signal)
 
       expect(cbs.onEdgesLoaded).not.toHaveBeenCalled()
       expect(cbs.onClassesLoaded).not.toHaveBeenCalled()
@@ -113,13 +109,7 @@ describe('extractSchema — Phase 2 abort guard', () => {
       vi.mocked(executeSelect).mockReturnValue(slowQuery)
 
       const cbs = makeCallbacks()
-      const done = extractSchema(
-        CONTEXT,
-        undefined,
-        { preloadedNodes: [NODES[0]!] },
-        cbs,
-        controller.signal,
-      )
+      const done = extractSchema(CLIENT, { preloadedNodes: [NODES[0]!] }, cbs, controller.signal)
 
       controller.abort()
       resolveQuery()
@@ -138,13 +128,7 @@ describe('extractSchema — Phase 2 abort guard', () => {
       vi.mocked(executeSelect).mockReturnValue(slowQuery)
 
       const cbs = makeCallbacks()
-      const done = extractSchema(
-        CONTEXT,
-        undefined,
-        { preloadedNodes: [NODES[0]!] },
-        cbs,
-        controller.signal,
-      )
+      const done = extractSchema(CLIENT, { preloadedNodes: [NODES[0]!] }, cbs, controller.signal)
 
       controller.abort()
       resolveQuery()
@@ -170,8 +154,7 @@ describe('extractSchema — Phase 2 abort guard', () => {
 
       const cbs = makeCallbacks()
       const done = extractSchema(
-        CONTEXT,
-        undefined,
+        CLIENT,
         { preloadedNodes: [NODES[0]!], skipClasses: new Set([NODES[1]!.iri]) },
         cbs,
         controller.signal,
@@ -198,8 +181,7 @@ describe('extractSchema — Phase 2 abort guard', () => {
       const cbs = makeCallbacks()
       // concurrency=1 so workers run sequentially, making queue order deterministic
       const done = extractSchema(
-        CONTEXT,
-        undefined,
+        CLIENT,
         { preloadedNodes: NODES, concurrency: 1 },
         cbs,
         controller.signal,
@@ -220,7 +202,7 @@ describe('extractSchema — Phase 2 abort guard', () => {
       const controller = new AbortController()
       const cbs = makeCallbacks()
 
-      await extractSchema(CONTEXT, undefined, { preloadedNodes: NODES }, cbs, controller.signal)
+      await extractSchema(CLIENT, { preloadedNodes: NODES }, cbs, controller.signal)
 
       expect(cbs.onProgress).toHaveBeenCalledTimes(NODES.length)
       expect(cbs.onClassProcessed).toHaveBeenCalledTimes(NODES.length)
@@ -239,7 +221,7 @@ describe('extractSchema — Phase 2 abort guard', () => {
       const controller = new AbortController()
       const cbs = makeCallbacks()
 
-      await extractSchema(CONTEXT, undefined, { preloadedNodes: NODES }, cbs, controller.signal)
+      await extractSchema(CLIENT, { preloadedNodes: NODES }, cbs, controller.signal)
 
       expect(cbs.onEdgesLoaded).toHaveBeenCalledTimes(1)
     })
@@ -250,8 +232,7 @@ describe('extractSchema — Phase 2 abort guard', () => {
       const cbs = makeCallbacks()
 
       await extractSchema(
-        CONTEXT,
-        undefined,
+        CLIENT,
         { preloadedNodes: NODES, skipClasses: new Set([NODES[0]!.iri]) },
         cbs,
         controller.signal,

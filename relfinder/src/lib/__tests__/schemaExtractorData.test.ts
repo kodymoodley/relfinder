@@ -23,6 +23,7 @@ import { executeSelect } from '@/lib/sparql/engine'
 import { fetchLabels } from '@/lib/sparql/entitySearch'
 import type { SchemaNode } from '@/lib/sparql/types'
 import type { SchemaExtractionCallbacks } from '@/lib/sparql/schemaExtractor'
+import { SparqlClient } from '@/lib/sparql/client'
 
 vi.mock('@/lib/sparql/engine', () => {
   const executeSelect = vi.fn()
@@ -39,6 +40,7 @@ vi.mock('@/lib/sparql/entitySearch', async (importOriginal) => {
 })
 
 const CTX = { endpointUrl: 'https://example.org/sparql' }
+const CLIENT = new SparqlClient(CTX)
 const NODES: SchemaNode[] = [
   { iri: 'http://example.org/A', label: 'A' },
   { iri: 'http://example.org/B', label: 'B' },
@@ -64,7 +66,7 @@ describe('extractSchema — Phase 1 returns no classes', () => {
     vi.mocked(executeSelect).mockResolvedValue([])
 
     const cbs = makeCallbacks()
-    const result = await extractSchema(CTX, undefined, {}, cbs)
+    const result = await extractSchema(CLIENT, {}, cbs)
 
     expect(result.nodes).toHaveLength(0)
     expect(result.edges).toHaveLength(0)
@@ -75,7 +77,7 @@ describe('extractSchema — Phase 1 returns no classes', () => {
   it('fires no Phase 2 edge queries when Phase 1 is empty', async () => {
     vi.mocked(executeSelect).mockResolvedValue([])
 
-    await extractSchema(CTX, undefined, {}, makeCallbacks())
+    await extractSchema(CLIENT, {}, makeCallbacks())
 
     // Only the Phase 1 class query should have fired — no edge queries
     expect(executeSelect).toHaveBeenCalledTimes(1)
@@ -92,7 +94,7 @@ describe('extractSchema — Phase 1 returns no classes', () => {
       .mockResolvedValue([])
 
     const cbs = makeCallbacks()
-    const result = await extractSchema(CTX, undefined, {}, cbs)
+    const result = await extractSchema(CLIENT, {}, cbs)
 
     expect(result.nodes).toHaveLength(2)
     expect(cbs.onClassesLoaded).toHaveBeenCalledWith(
@@ -112,8 +114,7 @@ describe('extractSchema — all nodes in skipClasses', () => {
 
     const cbs = makeCallbacks()
     await extractSchema(
-      CTX,
-      undefined,
+      CLIENT,
       { preloadedNodes: NODES, skipClasses: new Set(NODES.map((n) => n.iri)) },
       cbs,
     )
@@ -126,7 +127,7 @@ describe('extractSchema — all nodes in skipClasses', () => {
   it('returns the preloaded nodes unchanged', async () => {
     vi.mocked(executeSelect).mockResolvedValue([])
 
-    const result = await extractSchema(CTX, undefined, {
+    const result = await extractSchema(CLIENT, {
       preloadedNodes: NODES,
       skipClasses: new Set(NODES.map((n) => n.iri)),
     })
@@ -148,7 +149,7 @@ describe('fetchSchemaDataProperties', () => {
   it('returns an empty array when the class has no literal properties', async () => {
     vi.mocked(executeSelect).mockResolvedValue([])
 
-    const props = await fetchSchemaDataProperties(CLASS_IRI, CTX, undefined)
+    const props = await fetchSchemaDataProperties(CLASS_IRI, CLIENT)
 
     expect(props).toHaveLength(0)
   })
@@ -161,7 +162,7 @@ describe('fetchSchemaDataProperties', () => {
       },
     ])
 
-    const props = await fetchSchemaDataProperties(CLASS_IRI, CTX, undefined)
+    const props = await fetchSchemaDataProperties(CLASS_IRI, CLIENT)
 
     expect(props).toHaveLength(1)
     expect(props[0]!.iri).toBe(NAME_PROP)
@@ -178,7 +179,7 @@ describe('fetchSchemaDataProperties', () => {
       },
     ])
 
-    const props = await fetchSchemaDataProperties(CLASS_IRI, CTX, undefined)
+    const props = await fetchSchemaDataProperties(CLASS_IRI, CLIENT)
 
     expect(props).toHaveLength(1)
     expect(props[0]!.datatypes).toHaveLength(2)
@@ -191,7 +192,7 @@ describe('fetchSchemaDataProperties', () => {
       { prop: { value: NAME_PROP, type: 'NamedNode' } }, // no dt binding at all
     ])
 
-    const props = await fetchSchemaDataProperties(CLASS_IRI, CTX, undefined)
+    const props = await fetchSchemaDataProperties(CLASS_IRI, CLIENT)
 
     expect(props[0]!.datatypes).toEqual([])
   })
@@ -205,7 +206,7 @@ describe('fetchSchemaDataProperties', () => {
     ])
     const onStatus = vi.fn()
 
-    await fetchSchemaDataProperties(CLASS_IRI, CTX, undefined, 50, onStatus)
+    await fetchSchemaDataProperties(CLASS_IRI, CLIENT, 50, onStatus)
 
     expect(onStatus).toHaveBeenCalledTimes(2)
   })
@@ -220,7 +221,7 @@ describe('fetchSchemaDataProperties', () => {
     ])
     const onStatus = vi.fn()
 
-    await fetchSchemaDataProperties(CLASS_IRI, CTX, undefined, 50, onStatus)
+    await fetchSchemaDataProperties(CLASS_IRI, CLIENT, 50, onStatus)
 
     expect(onStatus).toHaveBeenCalledWith(expect.stringContaining('rows')) // plural
     expect(onStatus).toHaveBeenCalledWith(expect.stringContaining('properties')) // plural
@@ -235,7 +236,7 @@ describe('fetchSchemaDataProperties', () => {
     ])
     const onStatus = vi.fn()
 
-    await fetchSchemaDataProperties(CLASS_IRI, CTX, undefined, 50, onStatus)
+    await fetchSchemaDataProperties(CLASS_IRI, CLIENT, 50, onStatus)
 
     expect(onStatus).toHaveBeenCalledWith(expect.stringContaining('row')) // singular
     expect(onStatus).toHaveBeenCalledWith(expect.stringContaining('property')) // singular
@@ -244,7 +245,7 @@ describe('fetchSchemaDataProperties', () => {
   it('works without an onStatus callback — no error when omitted', async () => {
     vi.mocked(executeSelect).mockResolvedValue([])
 
-    await expect(fetchSchemaDataProperties(CLASS_IRI, CTX, undefined)).resolves.toEqual([])
+    await expect(fetchSchemaDataProperties(CLASS_IRI, CLIENT)).resolves.toEqual([])
   })
 })
 
@@ -261,7 +262,7 @@ describe('extractSchema — Phase 1 label assignment from fetchLabels', () => {
       new Map([['http://example.org/A', [{ value: 'Class A', lang: 'en' }]]]),
     )
 
-    const result = await extractSchema(CTX, undefined, {})
+    const result = await extractSchema(CLIENT, {})
 
     expect(result.nodes[0]!.label).toBe('Class A')
   })
@@ -275,7 +276,7 @@ describe('extractSchema — additionalClassIris option', () => {
       .mockResolvedValueOnce([{ class: { value: 'http://example.org/A', type: 'NamedNode' } }])
       .mockResolvedValue([]) // descriptions + Phase 2 edges: empty
 
-    const result = await extractSchema(CTX, undefined, {
+    const result = await extractSchema(CLIENT, {
       additionalClassIris: ['http://example.org/PriorClass'],
     })
 

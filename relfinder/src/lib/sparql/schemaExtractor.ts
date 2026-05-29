@@ -9,23 +9,15 @@
  *            with a concurrency cap so the endpoint is not overwhelmed.
  *            Edges arrive incrementally via onEdgesLoaded callback.
  *
- * This is O(n) round-trips vs. LD-VOWL's O(n²), and the per-class queries are
- * simple 2-way joins rather than the expensive 3-way join a single batch needs.
+ * All functions accept a SparqlClient — ORDER BY is expressed in query text and
+ * stripped transparently for endpoints that don't support ordered pagination.
  */
 
-import type { Store } from 'n3'
-import { runSelect } from './engine'
+import type { SparqlClient } from './client'
 import { chunk } from '../utils/array'
 import { fetchLabels, pickLabel } from './entitySearch'
 import { shortIri } from '../utils/iri'
-import type {
-  QueryContext,
-  SchemaNode,
-  SchemaEdge,
-  SchemaGraph,
-  SchemaProp,
-  SchemaDataProp,
-} from './types'
+import type { SchemaNode, SchemaEdge, SchemaGraph, SchemaProp, SchemaDataProp } from './types'
 import { DESCRIPTION_PROPERTIES } from './classDescription'
 
 export interface SchemaExtractionOptions {
@@ -44,20 +36,16 @@ export interface SchemaExtractionOptions {
   preloadedNodes?: SchemaNode[]
   /**
    * Class IRIs to skip in Phase 2 (edges already fetched in a previous run).
-   * The completed counter is initialised to this set's size so progress
-   * reporting stays accurate across resume.
    */
   skipClasses?: Set<string>
   /**
    * Number of classes to skip before fetching the next page.
-   * Requires ORDER BY in the Phase 1 query for deterministic pagination.
    * Default 0 (first page).
    */
   classOffset?: number
   /**
    * Extra class IRIs to include in the Phase 2 VALUES clause as edge targets,
-   * but NOT processed as source classes. Use when loading a new page so that
-   * edges between the new batch and previously-loaded classes are discovered.
+   * but NOT processed as source classes.
    */
   additionalClassIris?: string[]
 }
@@ -78,24 +66,24 @@ export interface SchemaExtractionCallbacks {
 // ── Phase 1 ───────────────────────────────────────────────────────────────────
 
 async function fetchSchemaClasses(
-  context: QueryContext,
-  store: Store | undefined,
+  client: SparqlClient,
   limit: number,
   offset = 0,
 ): Promise<SchemaNode[]> {
-  // ORDER BY is intentionally omitted — on large endpoints (e.g. EU Publications)
-  // a full-sort scan before LIMIT causes multi-second timeouts. Pages may
-  // overlap slightly; callers deduplicate by IRI.
+  // ORDER BY gives deterministic pagination; SparqlClient strips it for
+  // endpoints that time out on full-sort scans (supportsOrderByOffset: false).
+  // Pages may overlap slightly in that case; callers deduplicate by IRI.
   const query = `
     SELECT DISTINCT ?class WHERE {
       [] a ?class .
     }
+    ORDER BY ?class
     LIMIT ${limit}${offset > 0 ? `\n    OFFSET ${offset}` : ''}
   `
   console.log(
     `[schemaExtractor] fetchSchemaClasses query (limit=${limit}, offset=${offset}):\n${query}`,
   )
-  const rows = await runSelect(query, context, store)
+  const rows = await client.select(query)
   const nodes = rows
     .filter((r) => r['class']?.type === 'NamedNode')
     .map((r) => ({ iri: r['class']!.value, label: shortIri(r['class']!.value) }))
@@ -110,8 +98,7 @@ async function fetchSchemaClasses(
 
 async function fetchDescriptionsBatch(
   iris: string[],
-  context: QueryContext,
-  store: Store | undefined,
+  client: SparqlClient,
   language = 'en',
 ): Promise<Map<string, string>> {
   const classValues = iris.map((c) => `<${c}>`).join(' ')
@@ -124,7 +111,7 @@ async function fetchDescriptionsBatch(
       FILTER(isLiteral(?val))
     }
   `
-  const rows = await runSelect(query, context, store)
+  const rows = await client.select(query)
 
   const byClass = new Map<string, Map<string, { value: string; lang: string }[]>>()
   for (const r of rows) {
@@ -140,8 +127,6 @@ async function fetchDescriptionsBatch(
     else byProp.set(prop, [{ value: val, lang }])
   }
 
-  // All queried IRIs get an entry (empty string = no description) so callers
-  // can cache negatives and avoid redundant on-demand fetches.
   const result = new Map<string, string>(iris.map((iri) => [iri, '']))
   for (const [classIri, byProp] of byClass) {
     for (const propIri of DESCRIPTION_PROPERTIES) {
@@ -166,8 +151,7 @@ async function fetchDescriptionsBatch(
 async function fetchEdgesForClass(
   sourceIri: string,
   allClassIris: string[],
-  context: QueryContext,
-  store: Store | undefined,
+  client: SparqlClient,
   limit: number,
   signal?: AbortSignal,
 ): Promise<SchemaEdge[]> {
@@ -183,9 +167,8 @@ async function fetchEdgesForClass(
     ORDER BY DESC(?n)
     LIMIT ${limit}
   `
-  const rows = await runSelect(query, context, store, signal)
+  const rows = await client.select(query, signal)
 
-  // Collapse multiple properties for the same (source, target) pair into one edge
   const byTarget = new Map<string, SchemaProp[]>()
   for (const r of rows) {
     const propIri = r['prop']?.value
@@ -209,8 +192,7 @@ async function fetchEdgesForClass(
 // ── Orchestrator ──────────────────────────────────────────────────────────────
 
 export async function extractSchema(
-  context: QueryContext,
-  store: Store | undefined,
+  client: SparqlClient,
   options: SchemaExtractionOptions = {},
   callbacks: SchemaExtractionCallbacks = {},
   signal?: AbortSignal,
@@ -230,12 +212,10 @@ export async function extractSchema(
   let nodes: SchemaNode[]
   if (preloadedNodes && preloadedNodes.length > 0) {
     nodes = preloadedNodes
-    // Labels and onClassesLoaded already handled by the caller when restoring
   } else {
-    nodes = await fetchSchemaClasses(context, store, classLimit, classOffset)
+    nodes = await fetchSchemaClasses(client, classLimit, classOffset)
     if (signal?.aborted || nodes.length === 0) return { nodes, edges: [] }
 
-    // Run all label + description batches concurrently (2 queries per batch in parallel).
     await Promise.all(
       chunk(
         nodes.map((n) => n.iri),
@@ -243,10 +223,8 @@ export async function extractSchema(
       ).map(async (batch) => {
         if (signal?.aborted) return
         const [labelMap, descMap] = await Promise.all([
-          fetchLabels(batch, context, store),
-          fetchDescriptionsBatch(batch, context, store, language).catch(
-            () => new Map<string, string>(),
-          ),
+          fetchLabels(batch, client),
+          fetchDescriptionsBatch(batch, client, language).catch(() => new Map<string, string>()),
         ])
         if (signal?.aborted) return
         for (const node of nodes) {
@@ -263,12 +241,10 @@ export async function extractSchema(
   }
 
   // ── Phase 2: edges ──────────────────────────────────────────────────────────
-  // Include any extra IRIs (prior pages) so cross-batch edges are discovered.
   const allClassIris = additionalClassIris
     ? [...new Set([...nodes.map((n) => n.iri), ...additionalClassIris])]
     : nodes.map((n) => n.iri)
   const allEdges: SchemaEdge[] = []
-  // Initialise counter at skip count so progress % is accurate when resuming
   let completed = skipClasses?.size ?? 0
   const queue = nodes.filter((n) => !skipClasses?.has(n.iri))
 
@@ -279,14 +255,7 @@ export async function extractSchema(
       if (signal?.aborted) return
       const node = queue.shift()!
       try {
-        const edges = await fetchEdgesForClass(
-          node.iri,
-          allClassIris,
-          context,
-          store,
-          edgeLimit,
-          signal,
-        )
+        const edges = await fetchEdgesForClass(node.iri, allClassIris, client, edgeLimit, signal)
         if (!signal?.aborted && edges.length > 0) {
           allEdges.push(...edges)
           callbacks.onEdgesLoaded?.(edges)
@@ -309,8 +278,7 @@ export async function extractSchema(
 
 export async function fetchSchemaDataProperties(
   classIri: string,
-  context: QueryContext,
-  store: Store | undefined,
+  client: SparqlClient,
   limit = 50,
   onStatus?: (msg: string) => void,
 ): Promise<SchemaDataProp[]> {
@@ -322,7 +290,7 @@ export async function fetchSchemaDataProperties(
       BIND(DATATYPE(?val) AS ?dt)
     } ORDER BY ?prop LIMIT ${limit}
   `
-  const rows = await runSelect(query, context, store)
+  const rows = await client.select(query)
   onStatus?.(`Processing ${rows.length} result row${rows.length === 1 ? '' : 's'}…`)
 
   const byProp = new Map<string, Set<string>>()

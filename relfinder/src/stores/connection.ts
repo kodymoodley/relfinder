@@ -151,19 +151,19 @@ export const useConnectionStore = defineStore('connection', () => {
     tripleCount.value = null
     subgraphStatus.value = 'probing'
 
-    const ctx = queryContext.value
-    if (!ctx) {
+    const client = sparqlClient.value
+    if (!client || client.isFileSource) {
       subgraphStatus.value = 'error'
       return
     }
 
-    const n = await probeTripleCount(ctx, signal)
+    const n = await probeTripleCount(client, signal)
     if (signal.aborted) return
     tripleCount.value = n
 
     if (n <= SMALL_GRAPH_LIMIT) {
       subgraphStatus.value = 'fetching'
-      localRdfStore.value = await fetchFullGraph(ctx, signal)
+      localRdfStore.value = await fetchFullGraph(client, signal)
       if (signal.aborted) {
         localRdfStore.value = null
         return

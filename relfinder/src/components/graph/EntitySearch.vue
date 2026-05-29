@@ -192,21 +192,19 @@ async function runLocalSearch(query: string): Promise<void> {
 }
 
 async function runSparqlSearch(query: string): Promise<void> {
-  const context = connectionStore.queryContext
-  const store = connectionStore.rdfStore ?? undefined
-  const effectiveContext = context ?? { endpointUrl: '' }
+  const client = connectionStore.sparqlClient
+  if (!client) throw new Error('No active connection')
   const lang = props.language ?? 'en'
   const classes = props.allowedClasses ?? []
-  const cacheKey = `search:${effectiveContext.endpointUrl}:${lang}:${classes.join(',')}:${query}`
+  const cacheKey = `search:${client.sourceKey}:${lang}:${classes.join(',')}:${query}`
 
   const cached = cacheGet<EntitySearchResult[]>(cacheKey)
   if (cached) {
     suggestions.value = cached
   } else {
     const results = filterInstances(
-      await searchEntities(effectiveContext, {
+      await searchEntities(client, {
         allowedClasses: classes,
-        store,
         textFilter: query,
         language: lang,
         customLabelProperties: props.customLabelProperties ?? [],

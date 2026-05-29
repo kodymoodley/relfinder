@@ -31,15 +31,22 @@ import {
   SMALL_GRAPH_LIMIT,
 } from '@/lib/sparql/subgraphStrategy'
 import { executeSelect, executeConstruct } from '@/lib/sparql/engine'
+import { SparqlClient } from '@/lib/sparql/client'
 
-vi.mock('@/lib/sparql/engine', () => ({
-  executeSelect: vi.fn(),
-  executeConstruct: vi.fn(),
-}))
+vi.mock('@/lib/sparql/engine', () => {
+  const executeSelect = vi.fn()
+  const executeSelectOnStore = vi.fn().mockResolvedValue([])
+  const executeConstruct = vi.fn()
+  const runSelect = vi.fn((q: string, ctx: unknown, store?: unknown, signal?: unknown) =>
+    store ? executeSelectOnStore(q, store, signal) : executeSelect(q, ctx, signal),
+  )
+  return { executeSelect, executeSelectOnStore, executeConstruct, runSelect }
+})
 
 const { namedNode, quad, defaultGraph } = DataFactory
 
 const CONTEXT = { endpointUrl: 'https://example.org/sparql' }
+const CLIENT = new SparqlClient(CONTEXT)
 
 function makeQuad(s: string, p: string, o: string): Quad {
   return quad(namedNode(s), namedNode(p), namedNode(o), defaultGraph())
@@ -55,7 +62,7 @@ describe('probeTripleCount', () => {
   it('small endpoint: returns count below threshold so full graph is fetched', async () => {
     vi.mocked(executeSelect).mockResolvedValue([{ n: { value: '3500', type: 'Literal' } }])
 
-    const count = await probeTripleCount(CONTEXT)
+    const count = await probeTripleCount(CLIENT)
 
     expect(count).toBe(3500)
     expect(count).toBeLessThanOrEqual(SMALL_GRAPH_LIMIT)
@@ -64,7 +71,7 @@ describe('probeTripleCount', () => {
   it('large endpoint (DBpedia): returns count above threshold so neighbourhood strategy is used', async () => {
     vi.mocked(executeSelect).mockResolvedValue([{ n: { value: '500000000', type: 'Literal' } }])
 
-    const count = await probeTripleCount(CONTEXT)
+    const count = await probeTripleCount(CLIENT)
 
     expect(count).toBe(500_000_000)
     expect(count).toBeGreaterThan(SMALL_GRAPH_LIMIT)
@@ -73,7 +80,7 @@ describe('probeTripleCount', () => {
   it('unreachable endpoint: returns Infinity so path finding still works via neighbourhood fetch', async () => {
     vi.mocked(executeSelect).mockRejectedValue(new Error('fetch failed'))
 
-    const count = await probeTripleCount(CONTEXT)
+    const count = await probeTripleCount(CLIENT)
 
     expect(count).toBe(Infinity)
   })
@@ -81,7 +88,7 @@ describe('probeTripleCount', () => {
   it('endpoint that does not support COUNT(*): empty result treated as Infinity', async () => {
     vi.mocked(executeSelect).mockResolvedValue([])
 
-    const count = await probeTripleCount(CONTEXT)
+    const count = await probeTripleCount(CLIENT)
 
     expect(count).toBe(Infinity)
   })
@@ -89,7 +96,7 @@ describe('probeTripleCount', () => {
   it('malformed COUNT result (non-numeric string): treated as Infinity', async () => {
     vi.mocked(executeSelect).mockResolvedValue([{ n: { value: 'unknown', type: 'Literal' } }])
 
-    const count = await probeTripleCount(CONTEXT)
+    const count = await probeTripleCount(CLIENT)
 
     expect(count).toBe(Infinity)
   })
@@ -101,7 +108,7 @@ describe('probeTripleCount', () => {
     const controller = new AbortController()
     controller.abort()
 
-    const count = await probeTripleCount(CONTEXT, controller.signal)
+    const count = await probeTripleCount(CLIENT, controller.signal)
 
     expect(count).toBe(Infinity)
   })
@@ -126,7 +133,7 @@ describe('fetchFullGraph', () => {
     ]
     vi.mocked(executeConstruct).mockResolvedValue(quads)
 
-    const store = await fetchFullGraph(CONTEXT)
+    const store = await fetchFullGraph(CLIENT)
 
     expect(store.size).toBe(3)
   })
@@ -134,7 +141,7 @@ describe('fetchFullGraph', () => {
   it('returns an empty store when the endpoint has no data', async () => {
     vi.mocked(executeConstruct).mockResolvedValue([])
 
-    const store = await fetchFullGraph(CONTEXT)
+    const store = await fetchFullGraph(CLIENT)
 
     expect(store.size).toBe(0)
   })
@@ -165,7 +172,7 @@ describe('fetchNeighbourhoodStore', () => {
     const store = await fetchNeighbourhoodStore(
       'http://dbpedia.org/resource/Cillian_Murphy',
       'http://dbpedia.org/resource/Christopher_Nolan',
-      CONTEXT,
+      CLIENT,
     )
 
     expect(store.size).toBe(2)
@@ -178,7 +185,7 @@ describe('fetchNeighbourhoodStore', () => {
     await fetchNeighbourhoodStore(
       'http://dbpedia.org/resource/Albert_Einstein',
       'http://dbpedia.org/resource/Niels_Bohr',
-      CONTEXT,
+      CLIENT,
     )
 
     // Both IRIs appear in the respective query strings
@@ -209,7 +216,7 @@ describe('fetchNeighbourhoodStore', () => {
     const store = await fetchNeighbourhoodStore(
       'http://dbpedia.org/resource/Cillian_Murphy',
       'http://dbpedia.org/resource/Christopher_Nolan',
-      CONTEXT,
+      CLIENT,
     )
 
     expect(store.size).toBe(1)
@@ -225,7 +232,7 @@ describe('fetchNeighbourhoodStore', () => {
     const store = await fetchNeighbourhoodStore(
       'http://example.org/Alice',
       'http://example.org/Bob',
-      CONTEXT,
+      CLIENT,
     )
 
     expect(store.size).toBe(1)

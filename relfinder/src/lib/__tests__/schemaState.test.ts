@@ -19,6 +19,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useSchemaStore } from '@/stores/schema'
 import { extractSchema } from '@/lib/sparql/schemaExtractor'
+import { SparqlClient } from '@/lib/sparql/client'
 import { saveSchema } from '@/lib/cache/schemaStorage'
 import type { PersistedSchema } from '@/lib/cache/schemaStorage'
 import type { SchemaNode } from '@/lib/sparql/types'
@@ -42,6 +43,7 @@ vi.mock('@/lib/sparql/classDescription', () => ({
 
 const ENDPOINT = 'https://example.org/sparql'
 const CONTEXT = { endpointUrl: ENDPOINT }
+const CLIENT = new SparqlClient(CONTEXT)
 const CLASS_LIMIT = 100
 const EDGE_LIMIT = 50
 
@@ -72,7 +74,7 @@ function makeStoredSchema(overrides: Partial<PersistedSchema> = {}): PersistedSc
 /** All callbacks fire synchronously; resolves before yielding to caller. */
 function mockFullExtraction(nodes: SchemaNode[] = NODES) {
   vi.mocked(extractSchema).mockImplementation(
-    async (_ctx, _store, _opts, callbacks?: SchemaExtractionCallbacks) => {
+    async (_client, _opts, callbacks?: SchemaExtractionCallbacks) => {
       callbacks?.onClassesLoaded?.(nodes)
       for (let i = 0; i < nodes.length; i++) {
         callbacks?.onEdgesLoaded?.([])
@@ -97,7 +99,7 @@ function mockGatedExtraction(nodes: SchemaNode[] = NODES): () => void {
   })
 
   vi.mocked(extractSchema).mockImplementation(
-    async (_ctx, _store, opts?: SchemaExtractionOptions, callbacks?: SchemaExtractionCallbacks) => {
+    async (_client, opts?: SchemaExtractionOptions, callbacks?: SchemaExtractionCallbacks) => {
       if (!opts?.preloadedNodes) {
         callbacks?.onClassesLoaded?.(nodes)
       }
@@ -122,7 +124,7 @@ function mockFullyGatedExtraction(nodes: SchemaNode[] = NODES): () => void {
   })
 
   vi.mocked(extractSchema).mockImplementation(
-    async (_ctx, _store, opts?: SchemaExtractionOptions, callbacks?: SchemaExtractionCallbacks) => {
+    async (_client, opts?: SchemaExtractionOptions, callbacks?: SchemaExtractionCallbacks) => {
       await gate
       if (!opts?.preloadedNodes) {
         callbacks?.onClassesLoaded?.(nodes)
@@ -159,7 +161,7 @@ describe('schema store — state machine', () => {
     it('is true while extractSchema is awaited', async () => {
       const openGate = mockGatedExtraction()
       const store = useSchemaStore()
-      const done = store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      const done = store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
 
       expect(store.extracting).toBe(true)
 
@@ -170,7 +172,7 @@ describe('schema store — state machine', () => {
     it('is false after normal completion', async () => {
       mockFullExtraction()
       const store = useSchemaStore()
-      await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      await store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
 
       expect(store.extracting).toBe(false)
     })
@@ -178,7 +180,7 @@ describe('schema store — state machine', () => {
     it('is false immediately after cancel() without waiting for workers to finish', async () => {
       const openGate = mockGatedExtraction()
       const store = useSchemaStore()
-      const done = store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      const done = store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
 
       expect(store.extracting).toBe(true)
       store.cancel()
@@ -191,7 +193,7 @@ describe('schema store — state machine', () => {
     it('is false after a non-abort error', async () => {
       vi.mocked(extractSchema).mockRejectedValue(new Error('network error'))
       const store = useSchemaStore()
-      await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      await store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
 
       expect(store.extracting).toBe(false)
     })
@@ -199,7 +201,7 @@ describe('schema store — state machine', () => {
     it('is never set to true for a fully-cached schema', async () => {
       saveSchema(ENDPOINT, makeStoredSchema())
       const store = useSchemaStore()
-      await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      await store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
 
       expect(store.extracting).toBe(false)
       expect(extractSchema).not.toHaveBeenCalled()
@@ -216,7 +218,7 @@ describe('schema store — state machine', () => {
     it('becomes true when nodes are loaded from a fresh extraction', async () => {
       mockFullExtraction()
       const store = useSchemaStore()
-      await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      await store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
 
       expect(store.hasData).toBe(true)
     })
@@ -224,7 +226,7 @@ describe('schema store — state machine', () => {
     it('becomes true synchronously when a cached schema is restored', async () => {
       saveSchema(ENDPOINT, makeStoredSchema())
       const store = useSchemaStore()
-      await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      await store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
 
       expect(store.hasData).toBe(true)
     })
@@ -232,7 +234,7 @@ describe('schema store — state machine', () => {
     it('becomes true when Phase 1 loads nodes, before Phase 2 completes', async () => {
       const openGate = mockGatedExtraction()
       const store = useSchemaStore()
-      const done = store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      const done = store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
 
       // Phase 1 fired synchronously in the mock — nodes are already present
       expect(store.hasData).toBe(true)
@@ -245,7 +247,7 @@ describe('schema store — state machine', () => {
     it('is false after clear()', async () => {
       mockFullExtraction()
       const store = useSchemaStore()
-      await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      await store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
 
       store.clear()
       expect(store.hasData).toBe(false)
@@ -254,7 +256,7 @@ describe('schema store — state machine', () => {
     it('remains true after cancel() — nodes from Phase 1 are kept', async () => {
       const openGate = mockGatedExtraction()
       const store = useSchemaStore()
-      const done = store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      const done = store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
 
       store.cancel()
       expect(store.hasData).toBe(true) // partial schema retained
@@ -276,7 +278,7 @@ describe('schema store — state machine', () => {
     it('"Stop": extracting is true while extraction is in progress', async () => {
       const openGate = mockGatedExtraction()
       const store = useSchemaStore()
-      const done = store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      const done = store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
 
       expect(store.extracting).toBe(true)
 
@@ -287,7 +289,7 @@ describe('schema store — state machine', () => {
     it('"Schema loaded": hasData && !extracting after completion', async () => {
       mockFullExtraction()
       const store = useSchemaStore()
-      await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      await store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
 
       expect(store.hasData).toBe(true)
       expect(store.extracting).toBe(false)
@@ -296,7 +298,7 @@ describe('schema store — state machine', () => {
     it('"Schema loaded" immediately for a fully-cached schema', async () => {
       saveSchema(ENDPOINT, makeStoredSchema())
       const store = useSchemaStore()
-      await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      await store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
 
       expect(store.hasData).toBe(true)
       expect(store.extracting).toBe(false)
@@ -305,7 +307,7 @@ describe('schema store — state machine', () => {
     it('"Schema loaded" after cancel() with partial data — not "Extract Schema"', async () => {
       const openGate = mockGatedExtraction()
       const store = useSchemaStore()
-      const done = store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      const done = store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
 
       store.cancel()
 
@@ -320,7 +322,7 @@ describe('schema store — state machine', () => {
     it('"Extract Schema" returns after clear()', async () => {
       mockFullExtraction()
       const store = useSchemaStore()
-      await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      await store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
 
       store.clear()
 
@@ -336,7 +338,7 @@ describe('schema store — state machine', () => {
       expect(store.hasData).toBe(false)
       expect(store.extracting).toBe(false)
 
-      const done = store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      const done = store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
 
       // State 2: "Stop" (Phase 1 fired; extracting = true)
       expect(store.extracting).toBe(true)
@@ -356,7 +358,7 @@ describe('schema store — state machine', () => {
     it('is "Discovering classes…" before Phase 1 completes on a fresh start', async () => {
       const openGate = mockFullyGatedExtraction()
       const store = useSchemaStore()
-      const done = store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      const done = store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
 
       expect(store.statusMessage).toBe('Discovering classes…')
 
@@ -369,7 +371,7 @@ describe('schema store — state machine', () => {
       saveSchema(ENDPOINT, makeStoredSchema({ processedClassIris: [NODES[0]!.iri] }))
       const openGate = mockGatedExtraction()
       const store = useSchemaStore()
-      const done = store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      const done = store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
 
       // For the partial-cache path extractSchema is called with preloadedNodes,
       // so onClassesLoaded is not fired by the mock → statusMessage stays set
@@ -382,7 +384,7 @@ describe('schema store — state machine', () => {
     it('is cleared to empty after completion', async () => {
       mockFullExtraction()
       const store = useSchemaStore()
-      await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      await store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
 
       expect(store.statusMessage).toBe('')
     })
@@ -390,7 +392,7 @@ describe('schema store — state machine', () => {
     it('is cleared immediately by cancel()', async () => {
       const openGate = mockGatedExtraction()
       const store = useSchemaStore()
-      const done = store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      const done = store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
 
       store.cancel()
       expect(store.statusMessage).toBe('')
@@ -402,7 +404,7 @@ describe('schema store — state machine', () => {
     it('is empty when a fully-cached schema is restored (no extraction needed)', async () => {
       saveSchema(ENDPOINT, makeStoredSchema())
       const store = useSchemaStore()
-      await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      await store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
 
       expect(store.statusMessage).toBe('')
     })
@@ -410,10 +412,10 @@ describe('schema store — state machine', () => {
     it('is cleared at the start of the next start() call regardless of prior state', async () => {
       vi.mocked(extractSchema).mockRejectedValue(new Error('oops'))
       const store = useSchemaStore()
-      await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      await store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
 
       const openGate = mockFullyGatedExtraction()
-      const done = store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT, true)
+      const done = store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT, true)
       // statusMessage is set to 'Discovering classes…', not leftover from error state
       expect(['Discovering classes…', '']).toContain(store.statusMessage)
 
@@ -432,7 +434,7 @@ describe('schema store — state machine', () => {
     it('is set when extractSchema rejects with a non-abort error', async () => {
       vi.mocked(extractSchema).mockRejectedValue(new Error('timeout after 30s'))
       const store = useSchemaStore()
-      await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      await store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
 
       expect(store.extractError).toBe('Extraction failed: timeout after 30s')
     })
@@ -441,7 +443,7 @@ describe('schema store — state machine', () => {
       const abortError = Object.assign(new Error('aborted'), { name: 'AbortError' })
       vi.mocked(extractSchema).mockRejectedValue(abortError)
       const store = useSchemaStore()
-      await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      await store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
 
       expect(store.extractError).toBe('')
     })
@@ -449,7 +451,7 @@ describe('schema store — state machine', () => {
     it('is NOT set when cancel() is called (abort path)', async () => {
       const openGate = mockGatedExtraction()
       const store = useSchemaStore()
-      const done = store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      const done = store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
 
       store.cancel()
       openGate()
@@ -461,18 +463,18 @@ describe('schema store — state machine', () => {
     it('is cleared at the start of a new start() call', async () => {
       vi.mocked(extractSchema).mockRejectedValueOnce(new Error('first error'))
       const store = useSchemaStore()
-      await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      await store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
       expect(store.extractError).not.toBe('')
 
       mockFullExtraction()
-      await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT, true)
+      await store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT, true)
       expect(store.extractError).toBe('')
     })
 
     it('extracting is false even after an error', async () => {
       vi.mocked(extractSchema).mockRejectedValue(new Error('boom'))
       const store = useSchemaStore()
-      await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      await store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
 
       expect(store.extracting).toBe(false)
     })
@@ -490,7 +492,7 @@ describe('schema store — state machine', () => {
     it('completed and total equal nodes.length after full extraction', async () => {
       mockFullExtraction()
       const store = useSchemaStore()
-      await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      await store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
 
       expect(store.progress.completed).toBe(NODES.length)
       expect(store.progress.total).toBe(NODES.length)
@@ -499,7 +501,7 @@ describe('schema store — state machine', () => {
     it('completed never exceeds total', async () => {
       mockFullExtraction()
       const store = useSchemaStore()
-      await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      await store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
 
       expect(store.progress.completed).toBeLessThanOrEqual(store.progress.total)
     })
@@ -508,7 +510,7 @@ describe('schema store — state machine', () => {
       saveSchema(ENDPOINT, makeStoredSchema({ processedClassIris: [NODES[0]!.iri] }))
       const openGate = mockGatedExtraction()
       const store = useSchemaStore()
-      const done = store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      const done = store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
 
       // Before Phase 2 fires: completed = 1 (skipped), total = 3
       expect(store.progress.completed).toBe(1)
@@ -521,7 +523,7 @@ describe('schema store — state machine', () => {
     it('is reset to { 0, 0 } by clear()', async () => {
       mockFullExtraction()
       const store = useSchemaStore()
-      await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      await store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
 
       store.clear()
       expect(store.progress.completed).toBe(0)
@@ -531,7 +533,7 @@ describe('schema store — state machine', () => {
     it('cancel() preserves progress so the user can see where extraction stopped', async () => {
       const openGate = mockGatedExtraction()
       const store = useSchemaStore()
-      const done = store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      const done = store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
 
       expect(store.progress.total).toBe(NODES.length)
       store.cancel()
@@ -556,7 +558,7 @@ describe('schema store — state machine', () => {
       saveSchema(ENDPOINT, makeStoredSchema({ processedClassIris: corruptProcessed }))
 
       const store = useSchemaStore()
-      await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      await store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
 
       expect(extractSchema).not.toHaveBeenCalled()
       expect(store.nodes).toHaveLength(NODES.length)
@@ -568,7 +570,7 @@ describe('schema store — state machine', () => {
       saveSchema(ENDPOINT, makeStoredSchema({ processedClassIris: corruptProcessed }))
 
       const store = useSchemaStore()
-      await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      await store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
 
       // After sanitisation: 3/3 valid processed → fully cached, no extractSchema call
       expect(extractSchema).not.toHaveBeenCalled()
@@ -581,10 +583,10 @@ describe('schema store — state machine', () => {
       saveSchema(ENDPOINT, makeStoredSchema({ processedClassIris: corruptProcessed }))
 
       const store = useSchemaStore()
-      await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      await store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
 
       expect(extractSchema).toHaveBeenCalledOnce()
-      const opts = vi.mocked(extractSchema).mock.calls[0]![2]!
+      const opts = vi.mocked(extractSchema).mock.calls[0]![1]!
       // Only the one valid processed IRI should be in skipClasses
       expect(opts.skipClasses?.size).toBe(1)
       expect(opts.skipClasses?.has(NODES[0]!.iri)).toBe(true)
@@ -596,7 +598,7 @@ describe('schema store — state machine', () => {
       saveSchema(ENDPOINT, makeStoredSchema({ processedClassIris: corruptProcessed }))
 
       const store = useSchemaStore()
-      const done = store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      const done = store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
 
       // 1 valid processed, NOT 11 (10 phantoms discarded)
       expect(store.progress.completed).toBe(1)
@@ -615,7 +617,7 @@ describe('schema store — state machine', () => {
       nodes: SchemaNode[] = NODES,
     ) {
       vi.mocked(extractSchema).mockImplementation(
-        async (_ctx, _store, _opts, callbacks?: SchemaExtractionCallbacks) => {
+        async (_client, _opts, callbacks?: SchemaExtractionCallbacks) => {
           callbacks?.onDescriptionsLoaded?.(descriptions)
           callbacks?.onClassesLoaded?.(nodes)
           for (let i = 0; i < nodes.length; i++) {
@@ -631,7 +633,7 @@ describe('schema store — state machine', () => {
       const descs = new Map([[NODES[0]!.iri, 'First class description']])
       mockExtractionWithDescriptions(descs)
       const store = useSchemaStore()
-      await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      await store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
 
       expect(store.descriptionCache.get(NODES[0]!.iri)).toBe('First class description')
     })
@@ -643,7 +645,7 @@ describe('schema store — state machine', () => {
       ])
       mockExtractionWithDescriptions(descs)
       const store = useSchemaStore()
-      await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      await store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
 
       expect(store.descriptionCache.has(NODES[1]!.iri)).toBe(true)
       expect(store.descriptionCache.get(NODES[1]!.iri)).toBe('')
@@ -651,7 +653,7 @@ describe('schema store — state machine', () => {
 
     it('multiple onDescriptionsLoaded calls are merged into the cache', async () => {
       vi.mocked(extractSchema).mockImplementation(
-        async (_ctx, _store, _opts, callbacks?: SchemaExtractionCallbacks) => {
+        async (_client, _opts, callbacks?: SchemaExtractionCallbacks) => {
           // Simulate two batches
           callbacks?.onDescriptionsLoaded?.(new Map([[NODES[0]!.iri, 'Batch 1']]))
           callbacks?.onDescriptionsLoaded?.(new Map([[NODES[1]!.iri, 'Batch 2']]))
@@ -660,7 +662,7 @@ describe('schema store — state machine', () => {
         },
       )
       const store = useSchemaStore()
-      await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      await store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
 
       expect(store.descriptionCache.get(NODES[0]!.iri)).toBe('Batch 1')
       expect(store.descriptionCache.get(NODES[1]!.iri)).toBe('Batch 2')
@@ -676,7 +678,7 @@ describe('schema store — state machine', () => {
         }),
       )
       vi.mocked(extractSchema).mockImplementation(
-        async (_ctx, _store, _opts, callbacks?: SchemaExtractionCallbacks) => {
+        async (_client, _opts, callbacks?: SchemaExtractionCallbacks) => {
           callbacks?.onDescriptionsLoaded?.(new Map([[NODES[1]!.iri, 'New description']]))
           callbacks?.onProgress?.(1, NODES.length)
           callbacks?.onClassProcessed?.(NODES[1]!.iri)
@@ -684,7 +686,7 @@ describe('schema store — state machine', () => {
         },
       )
       const store = useSchemaStore()
-      await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      await store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
 
       expect(store.descriptionCache.get(NODES[0]!.iri)).toBe('Persisted description')
       expect(store.descriptionCache.get(NODES[1]!.iri)).toBe('New description')
@@ -694,7 +696,7 @@ describe('schema store — state machine', () => {
       const descs = new Map([[NODES[0]!.iri, 'Some description']])
       mockExtractionWithDescriptions(descs)
       const store = useSchemaStore()
-      await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      await store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
 
       store.clear()
       expect(store.descriptionCache.size).toBe(0)
@@ -717,7 +719,7 @@ describe('schema store — state machine', () => {
       ]
       mockFullExtraction(NODES)
       const store = useSchemaStore()
-      await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      await store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
       expect(store.nodes).toHaveLength(NODES.length)
 
       mockFullExtraction(PAGE2)
@@ -730,7 +732,7 @@ describe('schema store — state machine', () => {
       const PAGE2: SchemaNode[] = [{ iri: 'http://example.org/D', label: 'D' }]
       mockFullExtraction(NODES)
       const store = useSchemaStore()
-      await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      await store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
 
       mockFullExtraction(PAGE2)
       await store.loadMore()
@@ -740,33 +742,33 @@ describe('schema store — state machine', () => {
     it('passes classOffset equal to current node count', async () => {
       mockFullExtraction(NODES)
       const store = useSchemaStore()
-      await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      await store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
 
       mockFullExtraction([])
       await store.loadMore()
 
       const calls = vi.mocked(extractSchema).mock.calls
       const loadMoreCall = calls[calls.length - 1]!
-      expect(loadMoreCall[2]!.classOffset).toBe(NODES.length)
+      expect(loadMoreCall[1]!.classOffset).toBe(NODES.length)
     })
 
     it('passes existing node IRIs as additionalClassIris', async () => {
       mockFullExtraction(NODES)
       const store = useSchemaStore()
-      await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      await store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
 
       mockFullExtraction([])
       await store.loadMore()
 
       const calls = vi.mocked(extractSchema).mock.calls
       const loadMoreCall = calls[calls.length - 1]!
-      expect(loadMoreCall[2]!.additionalClassIris).toEqual(NODES.map((n) => n.iri))
+      expect(loadMoreCall[1]!.additionalClassIris).toEqual(NODES.map((n) => n.iri))
     })
 
     it('resets progress to { 0, 0 } at the start of loadMore', async () => {
       mockFullExtraction(NODES)
       const store = useSchemaStore()
-      await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      await store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
       expect(store.progress.completed).toBe(NODES.length)
 
       // Gate the loadMore call so we can inspect progress before it ticks
@@ -774,7 +776,7 @@ describe('schema store — state machine', () => {
       const gate = new Promise<void>((r) => {
         openGate = r
       })
-      vi.mocked(extractSchema).mockImplementation(async (_c, _s, _o, cbs?) => {
+      vi.mocked(extractSchema).mockImplementation(async (_c, _o, cbs?) => {
         await gate
         cbs?.onClassesLoaded?.([])
         return { nodes: [], edges: [] }
@@ -790,7 +792,7 @@ describe('schema store — state machine', () => {
     it('is a no-op when an extraction is already in progress', async () => {
       const openGate = mockGatedExtraction()
       const store = useSchemaStore()
-      const done = store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      const done = store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
 
       // Try loadMore while extracting — should be ignored
       await store.loadMore()
@@ -803,7 +805,7 @@ describe('schema store — state machine', () => {
     it('lastBatchSize is reset to 0 by clear()', async () => {
       mockFullExtraction(NODES)
       const store = useSchemaStore()
-      await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      await store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
       expect(store.lastBatchSize).toBeGreaterThan(0)
 
       store.clear()
@@ -817,7 +819,7 @@ describe('schema store — state machine', () => {
     it('does not leave extracting=true when the gate fires after cancel()', async () => {
       const openGate = mockGatedExtraction()
       const store = useSchemaStore()
-      const done = store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      const done = store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
 
       store.cancel()
       openGate()
@@ -829,18 +831,18 @@ describe('schema store — state machine', () => {
     it('a second start() after cancel() clears extractError from the first run', async () => {
       vi.mocked(extractSchema).mockRejectedValueOnce(new Error('first error'))
       const store = useSchemaStore()
-      await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      await store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
       expect(store.extractError).not.toBe('')
 
       mockFullExtraction()
-      await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT, true)
+      await store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT, true)
       expect(store.extractError).toBe('')
     })
 
     it('clear() resets all state simultaneously', async () => {
       mockFullExtraction()
       const store = useSchemaStore()
-      await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT)
+      await store.start(CLIENT, CLASS_LIMIT, EDGE_LIMIT)
 
       store.clear()
 

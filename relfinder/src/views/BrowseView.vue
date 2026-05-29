@@ -322,11 +322,11 @@ const displayNodes = computed(() => {
 function startExtraction(force = false) {
   selectedNode.value = null
   selectedEdge.value = null
-  const context = connectionStore.queryContext ?? { endpointUrl: '' }
-  const store = connectionStore.rdfStore ?? undefined
+  const client = connectionStore.sparqlClient
+  if (!client) return
   // File sources are fully in-memory — fetch all classes at once.
   const effectiveClassLimit = connectionStore.isFileSource ? 10_000 : classLimit.value
-  schemaStore.start(context, store, effectiveClassLimit, edgeLimit.value, force)
+  schemaStore.start(client, effectiveClassLimit, edgeLimit.value, force)
 }
 
 // ── Node / edge selection ─────────────────────────────────────────────────────

@@ -97,19 +97,10 @@ watch(
     loadingProps.value = true
 
     try {
-      const context = connectionStore.queryContext
-      const store = connectionStore.rdfStore ?? undefined
-      // When store is set (file mode), context is null. The empty endpointUrl
-      // fallback is never used — Comunica queries the store directly.
-      const effectiveContext = context ?? { endpointUrl: '' }
+      const client = connectionStore.sparqlClient
+      if (!client) throw new Error('No active connection')
 
-      dataProps.value = await fetchDataProperties(
-        node.iri,
-        effectiveContext,
-        50,
-        store,
-        props.language ?? 'en',
-      )
+      dataProps.value = await fetchDataProperties(node.iri, client, 50, props.language ?? 'en')
     } catch {
       propsError.value = 'Could not load properties for this node.'
     } finally {
