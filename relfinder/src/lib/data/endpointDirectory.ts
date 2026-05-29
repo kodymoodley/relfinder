@@ -1,3 +1,5 @@
+import type { EndpointCapabilities } from '@/lib/sparql/client'
+
 export interface EndpointEntry {
   id: string
   name: string
@@ -6,6 +8,11 @@ export interface EndpointEntry {
   domain: string
   /** Vercel proxy URL to use instead of hitting the endpoint directly (for CORS-restricted endpoints). */
   proxyUrl?: string
+  /**
+   * Endpoint-specific capability overrides. Merged with DEFAULT_CAPABILITIES in SparqlClient.
+   * Only set fields that differ from the conservative defaults.
+   */
+  capabilities?: Partial<EndpointCapabilities>
 }
 
 // On Vercel (production or any preview deploy) the proxy is same-origin — use a

@@ -12,6 +12,8 @@ import type { Store } from 'n3'
 import { cacheInvalidate } from '@/lib/cache/queryCache'
 import { usePinnedStore } from './pinned'
 import { probeTripleCount, fetchFullGraph, SMALL_GRAPH_LIMIT } from '@/lib/sparql/subgraphStrategy'
+import { SparqlClient } from '@/lib/sparql/client'
+import { ENDPOINT_DIRECTORY } from '@/lib/data/endpointDirectory'
 
 export type SubgraphStatus = 'idle' | 'probing' | 'fetching' | 'ready' | 'error'
 
@@ -98,6 +100,26 @@ export const useConnectionStore = defineStore('connection', () => {
   const rdfStore = computed(() => {
     if (source.value?.type !== 'file') return null
     return source.value.store
+  })
+
+  /**
+   * A SparqlClient for the active connection, or null when disconnected.
+   *
+   * This is the preferred way to issue SPARQL queries — it encapsulates all
+   * endpoint-specific quirks (capability rewrites, CONSTRUCT support, etc.)
+   * so callers never need to know about individual endpoint behaviours.
+   */
+  const sparqlClient = computed<SparqlClient | null>(() => {
+    if (source.value?.type === 'sparql' && queryContext.value) {
+      const caps = ENDPOINT_DIRECTORY.find(
+        (e) => e.url === (source.value as SparqlSource).endpointUrl,
+      )?.capabilities
+      return new SparqlClient(queryContext.value, undefined, caps)
+    }
+    if (source.value?.type === 'file') {
+      return new SparqlClient({ endpointUrl: '' }, rdfStore.value ?? undefined)
+    }
+    return null
   })
 
   // ── Actions ────────────────────────────────────────────────────────────────
@@ -215,6 +237,7 @@ export const useConnectionStore = defineStore('connection', () => {
     authorizationHeader,
     queryContext,
     rdfStore,
+    sparqlClient,
     localRdfStore,
     subgraphStatus,
     tripleCount,

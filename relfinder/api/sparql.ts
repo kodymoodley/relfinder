@@ -54,9 +54,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Always use GET upstream — some endpoints (e.g. ASCDC) return HTML for POST.
     // Query sizes here are well within URL length limits.
+    // Forward the Accept header from Comunica so CONSTRUCT queries get RDF back,
+    // not SPARQL results JSON (which Comunica can't parse as RDF).
+    const acceptHeader = (req.headers.accept as string | undefined) || 'application/sparql-results+json';
     const targetUrl = `${endpoint}?query=${encodeURIComponent(query)}`;
     const response = await fetch(targetUrl, {
-        headers: { Accept: 'application/sparql-results+json' },
+        headers: { Accept: acceptHeader },
     });
 
     const contentType = response.headers.get('content-type') ?? 'application/sparql-results+json';
