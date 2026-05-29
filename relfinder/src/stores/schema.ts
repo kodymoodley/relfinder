@@ -255,7 +255,11 @@ export const useSchemaStore = defineStore('schema', () => {
    * No-ops when an extraction is already in progress or no context is stored.
    */
   async function loadMore() {
-    if (!_context || extracting.value) return
+    console.log('[schemaStore] loadMore called', { hasContext: !!_context, extracting: extracting.value, nodeCount: nodes.value.length })
+    if (!_context || extracting.value) {
+      console.log('[schemaStore] loadMore bailed out early', { hasContext: !!_context, extracting: extracting.value })
+      return
+    }
 
     const context = _context
     const n3Store = _n3Store
@@ -265,6 +269,8 @@ export const useSchemaStore = defineStore('schema', () => {
     const existingIris = nodes.value.map((n) => n.iri)
     const isFileSource = n3Store !== undefined
     const endpointUrl = isFileSource ? '' : context.endpointUrl || '__file__'
+
+    console.log('[schemaStore] loadMore starting', { offset, classLimit, edgeLimit, existingCount: existingIris.length, endpoint: context.endpointUrl })
 
     abortController = new AbortController()
     extracting.value = true
@@ -287,8 +293,11 @@ export const useSchemaStore = defineStore('schema', () => {
             for (const [k, v] of map) descriptionCache.value.set(k, v)
           },
           onClassesLoaded(incoming) {
-            lastBatchSize.value = incoming.length
-            nodes.value.push(...incoming)
+            const existingIris = new Set(nodes.value.map((n) => n.iri))
+            const novel = incoming.filter((n) => !existingIris.has(n.iri))
+            console.log(`[schemaStore] loadMore onClassesLoaded: ${incoming.length} returned, ${novel.length} novel`)
+            lastBatchSize.value = novel.length
+            nodes.value.push(...novel)
             progress.value = { completed: _processedSet.size, total: nodes.value.length }
             statusMessage.value = ''
             if (!isFileSource) persist(endpointUrl)
@@ -297,9 +306,11 @@ export const useSchemaStore = defineStore('schema', () => {
             edges.value.push(...incoming)
           },
           onProgress(completed, total) {
+            console.log(`[schemaStore] loadMore progress: ${completed}/${total}`)
             progress.value = { completed, total }
           },
           onClassProcessed(classIri) {
+            console.log('[schemaStore] loadMore onClassProcessed:', classIri)
             _processedSet.add(classIri)
             fetchInstances(classIri, context, n3Store).catch(() => {})
             fetchDataProps(classIri, context, n3Store).catch(() => {})
@@ -308,7 +319,9 @@ export const useSchemaStore = defineStore('schema', () => {
         },
         abortController.signal,
       )
+      console.log('[schemaStore] loadMore extractSchema resolved')
     } catch (err) {
+      console.error('[schemaStore] loadMore error:', err)
       if ((err as Error)?.name !== 'AbortError') {
         extractError.value =
           err instanceof Error
@@ -316,6 +329,7 @@ export const useSchemaStore = defineStore('schema', () => {
             : 'An unexpected error occurred.'
       }
     } finally {
+      console.log('[schemaStore] loadMore finally: resetting extracting, nodeCount now', nodes.value.length)
       extracting.value = false
       statusMessage.value = ''
     }

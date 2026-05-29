@@ -6,7 +6,8 @@ const ALLOWED_ENDPOINTS = [
     'https://publications.europa.eu/webapi/rdf/sparql',
     'https://data.ascdc.tw/sparql',
     'https://core.kmi.open.ac.uk/squery',
-    'https://query.wikidata.org/sparql'
+    'https://query.wikidata.org/sparql',
+    'https://vocabulary.semantic-web.at/PoolParty/sparql'
 ];
 
 const ALLOWED_ORIGINS = [

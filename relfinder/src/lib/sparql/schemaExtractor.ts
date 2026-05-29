@@ -83,19 +83,22 @@ async function fetchSchemaClasses(
   limit: number,
   offset = 0,
 ): Promise<SchemaNode[]> {
-  // ORDER BY is only needed when paginating (offset > 0) to ensure stable
-  // page boundaries. Skipping it on the first page avoids a full-sort scan
-  // on large endpoints that would otherwise time out.
+  // ORDER BY is intentionally omitted — on large endpoints (e.g. EU Publications)
+  // a full-sort scan before LIMIT causes multi-second timeouts. Pages may
+  // overlap slightly; callers deduplicate by IRI.
   const query = `
     SELECT DISTINCT ?class WHERE {
       [] a ?class .
-    }${offset > 0 ? '\n    ORDER BY ?class' : ''}
+    }
     LIMIT ${limit}${offset > 0 ? `\n    OFFSET ${offset}` : ''}
   `
+  console.log(`[schemaExtractor] fetchSchemaClasses query (limit=${limit}, offset=${offset}):\n${query}`)
   const rows = await runSelect(query, context, store)
-  return rows
+  const nodes = rows
     .filter((r) => r['class']?.type === 'NamedNode')
     .map((r) => ({ iri: r['class']!.value, label: shortIri(r['class']!.value) }))
+  console.log(`[schemaExtractor] fetchSchemaClasses → ${nodes.length} classes (${rows.length} raw rows, ${rows.length - nodes.length} filtered out)`, nodes.map(n => n.iri))
+  return nodes
 }
 
 // ── Phase 1b: descriptions ────────────────────────────────────────────────────
