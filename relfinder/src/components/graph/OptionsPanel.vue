@@ -199,13 +199,10 @@ async function loadClasses() {
   classLoadError.value = ''
 
   try {
-    const context = connectionStore.queryContext
-    const store = connectionStore.rdfStore ?? undefined
-    // In file mode context is null; the empty URL fallback is never used
-    // because Comunica queries the in-memory store directly.
-    const effectiveContext = context ?? { endpointUrl: '' }
+    const client = connectionStore.sparqlClient
+    if (!client) throw new Error('No active connection')
 
-    const iris = await fetchAvailableClasses(effectiveContext, 50, store)
+    const iris = await fetchAvailableClasses(client, 50)
     _endpointClasses.value = iris
       .map((iri) => ({ iri, label: shortIri(iri) }))
       .sort((a, b) => a.label.localeCompare(b.label))

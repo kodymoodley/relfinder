@@ -85,7 +85,7 @@
             :custom-label-properties="graphOptions.customLabelProperties"
             :initial-entity="presetEntity2"
             instances-only
-            @select="entity2 = $event"
+            @select="onSelectEntity2"
           />
         </section>
 
@@ -110,6 +110,32 @@
           >
             {{ searchError }}
           </Message>
+        </section>
+
+        <!-- Example queries -->
+        <section v-if="relevantExamples.length > 0" class="sidebar-section">
+          <p class="section-label collapsible" @click="examplesOpen = !examplesOpen">
+            <i :class="['pi', examplesOpen ? 'pi-chevron-down' : 'pi-chevron-right']" />
+            Examples ({{ relevantExamples.length }})
+          </p>
+          <ul v-if="examplesOpen" class="recent-list">
+            <li
+              v-for="example in relevantExamples"
+              :key="example.id"
+              class="recent-item"
+              @click="loadExample(example)"
+            >
+              <div class="recent-pair">
+                <span class="recent-entity" :title="example.entity1.label">{{
+                  example.entity1.label
+                }}</span>
+                <i class="pi pi-arrow-right recent-arrow" />
+                <span class="recent-entity" :title="example.entity2.label">{{
+                  example.entity2.label
+                }}</span>
+              </div>
+            </li>
+          </ul>
         </section>
 
         <!-- Recent graphs -->
@@ -251,7 +277,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted, onActivated, onDeactivated, nextTick } from 'vue'
+import {
+  ref,
+  computed,
+  watch,
+  onMounted,
+  onUnmounted,
+  onActivated,
+  onDeactivated,
+  nextTick,
+} from 'vue'
 import { useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import { useSidebar } from '@/composables/useSidebar'
@@ -280,6 +315,8 @@ import FirstRunTip from '@/components/common/FirstRunTip.vue'
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
 import { storeToRefs } from 'pinia'
 import { useNavigationStore } from '@/stores/navigation'
+import { EXAMPLES } from '@/lib/examples'
+import type { Example } from '@/lib/examples'
 
 const router = useRouter()
 const connectionStore = useConnectionStore()
@@ -344,6 +381,7 @@ watch(
     await nextTick()
     presetEntity1.value = null
     presetEntity2.value = null
+    onFindRelationships()
   },
   { immediate: true },
 )
@@ -365,6 +403,45 @@ useKeyboardShortcuts({
 
 const { recentOpen, recentGraphs, endpointKey, refreshRecent, onDeleteRecent } =
   useRecentGraphs(connectionStore)
+
+const examplesOpen = ref(true)
+const relevantExamples = computed(() => {
+  const src = connectionStore.source
+  if (!src) return []
+  if (src.type === 'sparql') {
+    return EXAMPLES.filter(
+      (e): e is Extract<Example, { kind: 'sparql' }> =>
+        e.kind === 'sparql' && src.endpointUrl.includes(new URL(e.endpointUrl).hostname),
+    ).slice(0, 3)
+  }
+  if (src.type === 'file') {
+    return EXAMPLES.filter(
+      (e): e is Extract<Example, { kind: 'ttl' }> =>
+        e.kind === 'ttl' && e.fileName === src.fileName,
+    ).slice(0, 3)
+  }
+  return []
+})
+
+async function loadExample(example: Example) {
+  const e1 = example.entity1
+  const e2 = example.entity2
+  presetEntity1.value = e1
+  entity1.value = e1
+  entity1SearchKey.value++
+  presetEntity2.value = e2
+  entity2.value = e2
+  entity2SearchKey.value++
+  await nextTick()
+  presetEntity1.value = null
+  presetEntity2.value = null
+  onFindRelationships()
+}
+
+function onSelectEntity2(entity: EntitySearchResult | null) {
+  entity2.value = entity
+  if (entity1.value && entity) onFindRelationships()
+}
 
 const graphOptions = ref<GraphOptions>({
   maxDistance: 2,
@@ -453,6 +530,7 @@ onActivated(async () => {
   await nextTick()
   presetEntity1.value = null
   presetEntity2.value = null
+  if (entity1.value && entity2.value) onFindRelationships()
 })
 onDeactivated(() => document.removeEventListener('keydown', onEscKey))
 onUnmounted(() => document.removeEventListener('keydown', onEscKey))

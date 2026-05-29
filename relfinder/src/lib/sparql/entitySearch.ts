@@ -1,20 +1,12 @@
 /**
  * Entity search and metadata enrichment.
  *
- * Ported from:
- *   - SPARQLEndpoint.entities()            → searchEntities()
- *   - SPARQLEndpoint.label_for_entities()  → fetchLabels()
- *   - SPARQLEndpoint.type_for_entities()   → fetchTypes()
- *   - SPARQLEndpoint.entity_data_properties() → fetchDataProperties()
- *   - add_type_label()                     → enrichGraph() (calls fetchLabels + fetchTypes)
- *
- * All functions accept a `QueryContext` (endpoint URL + optional auth header)
- * and an optional N3.js `Store` for local-file mode. When `store` is provided,
- * `context` is ignored and queries run in-memory via Comunica.
+ * All functions accept a SparqlClient which encapsulates the connection
+ * (endpoint URL, credentials, local N3 store for file-upload mode) and any
+ * endpoint-specific quirks. Callers never need to pass (context, store?) pairs.
  */
 
-import type { Store } from 'n3'
-import { runSelect } from './engine'
+import { SparqlClient } from './client'
 import { chunk } from '../utils/array'
 import { getQueries, RDF_TYPE, SKOS_SUBJECT } from './queryBuilder'
 import { buildRelationshipsGraph, mergeEdgeDuplicates, applyLabelsAndTypes } from './graphBuilder'
@@ -23,7 +15,6 @@ import { cacheGet, cacheSet } from '../cache/queryCache'
 import type { LabelEntry } from './types'
 import {
   QueryCyclesStrategy,
-  type QueryContext,
   type EntitySearchResult,
   type DataProperty,
   type GraphNode,
@@ -45,11 +36,6 @@ const LABEL_PREDICATES = [
   'http://purl.org/dc/terms/title',
 ]
 
-/**
- * Returns a SPARQL FILTER clause that restricts `?label` to the given language
- * tag while also accepting untagged plain literals (lang = '').
- * Returns an empty string when `language` is empty (accept any language).
- */
 function langFilterClause(variable: string, language: string): string {
   return language ? `FILTER (lang(${variable}) = '${language}' || lang(${variable}) = '')` : ''
 }
@@ -59,8 +45,6 @@ function langFilterClause(variable: string, language: string): string {
 export interface SearchEntitiesOptions {
   /** Class IRIs to filter by. Empty array = any class. Default: []. */
   allowedClasses?: string[]
-  /** Local N3 Store for file-upload mode. Omit for remote endpoint queries. */
-  store?: Store
   /** Maximum result rows. Default: 50. */
   limit?: number
   /** Case-insensitive prefix filter applied to labels. Default: ''. */
@@ -71,31 +55,23 @@ export interface SearchEntitiesOptions {
   customLabelProperties?: string[]
 }
 
-/**
- * Retrieves entities of the given RDF classes from the endpoint.
- *
- * Ported from `SPARQLEndpoint.entities()`. Pass `options.allowedClasses` to
- * restrict results to specific types; an empty array returns any class.
- */
 export async function searchEntities(
-  context: QueryContext,
+  client: SparqlClient,
   options: SearchEntitiesOptions = {},
 ): Promise<EntitySearchResult[]> {
   const {
     allowedClasses = [],
-    store,
     limit = 50,
     textFilter = '',
     language = 'en',
     customLabelProperties = [],
   } = options
+
   const classFilter =
     allowedClasses.length > 0
       ? `FILTER (?ctype IN (${allowedClasses.map((c) => `<${c}>`).join(', ')}))`
       : ''
 
-  // Escape backslashes and double-quotes so the string is safe inside a SPARQL
-  // string literal, then wrap in STRSTARTS for case-insensitive prefix match.
   const labelFilter = textFilter.trim()
     ? `FILTER (STRSTARTS(LCASE(STR(?label)), LCASE("${textFilter.trim().replace(/\\/g, '\\\\').replace(/"/g, '\\"')}")))`
     : ''
@@ -104,16 +80,12 @@ export async function searchEntities(
 
   let query: string
 
-  if (store) {
-    // Local in-memory store: scan any xsd:string / lang-tagged predicate as a
-    // label. This handles custom vocabularies (e.g. :hasName, :hasTitle) without
-    // requiring the user to configure every predicate manually. Numeric and other
-    // non-string datatypes are excluded by the FILTER.
+  if (client.isFileSource) {
     query = `
       SELECT DISTINCT ?s ?ctype ?label WHERE {
         ?s a ?ctype .
         ?s ?lp ?label .
-        FILTER (isLiteral(?label) && (
+        FILTER (!isBlank(?s) && isLiteral(?label) && (
           datatype(?label) = <http://www.w3.org/2001/XMLSchema#string> ||
           lang(?label) != ''
         ))
@@ -123,25 +95,19 @@ export async function searchEntities(
       } LIMIT ${limit}
     `
   } else {
-    // Remote endpoint: restrict to a known set of label predicates.
-    // Use FILTER(?lp IN (...)) instead of VALUES because Virtuoso rejects
-    // inline VALUES inside a WHERE block (SP030 syntax error).
     const allLabelProps = [...new Set([...LABEL_PREDICATES, ...customLabelProperties])]
     const labelPropFilter = `FILTER(?lp IN (${allLabelProps.map((p) => `<${p}>`).join(', ')}))`
 
-    // Single-class fast path: omit ?ctype from SELECT entirely so that Virtuoso's
-    // failure to propagate BIND-inside-subgroup variables cannot silently drop all
-    // results. The class IRI is injected from allowedClasses[0] directly.
     if (allowedClasses.length === 1) {
-      const rows = await runSelect(
+      const rows = await client.select(
         `SELECT DISTINCT ?s ?label WHERE {
           ?s a <${allowedClasses[0]}> .
           ?s ?lp ?label .
+          FILTER (!isBlank(?s))
           ${labelPropFilter}
           ${labelFilter}
           ${langFilter}
         } LIMIT ${limit}`,
-        context,
       )
       const seen = new Set<string>()
       return rows
@@ -156,8 +122,6 @@ export async function searchEntities(
         }, [])
     }
 
-    // Multi-class or unrestricted: bind the type so the engine can use the
-    // rdf:type index rather than a full subject scan.
     let classPattern: string
     if (allowedClasses.length === 0) {
       classPattern = '?s a ?ctype .'
@@ -171,6 +135,7 @@ export async function searchEntities(
       SELECT DISTINCT ?s ?ctype ?label WHERE {
         ${classPattern}
         ?s ?lp ?label .
+        FILTER (!isBlank(?s))
         ${labelPropFilter}
         ${labelFilter}
         ${langFilter}
@@ -178,10 +143,8 @@ export async function searchEntities(
     `
   }
 
-  const bindings = await runSelect(query, context, store)
+  const bindings = await client.select(query)
 
-  // Deduplicate by IRI — an entity may have multiple matching string predicates
-  // (e.g. both :hasName and :hasNationality), keep the first match only.
   const seen = new Set<string>()
   return bindings
     .filter((b) => b['s'] && b['label'] && b['ctype'])
@@ -197,47 +160,26 @@ export async function searchEntities(
 
 // ── Available class discovery ─────────────────────────────────────────────────
 
-/**
- * Queries the endpoint for distinct `rdf:type` values used by any subject,
- * up to `limit` results. Used to populate the class-filter dropdown in the UI.
- */
-export async function fetchAvailableClasses(
-  context: QueryContext,
-  limit = 50,
-  store?: Store,
-): Promise<string[]> {
+export async function fetchAvailableClasses(client: SparqlClient, limit = 50): Promise<string[]> {
   const query = `
     SELECT DISTINCT ?type WHERE {
-      ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?type .
+      ?s a ?type .
       FILTER (!isBlank(?type))
     } LIMIT ${limit}
   `
-
-  const bindings = await runSelect(query, context, store)
-
+  const bindings = await client.select(query)
   return bindings.filter((b) => b['type']).map((b) => b['type']!.value)
 }
 
 // ── Instance loading ──────────────────────────────────────────────────────────
 
-/**
- * Fetches up to `limit` instances of a given class with their preferred label.
- *
- * Falls back to `shortIri()` when no label is found. Results are cached for
- * the session so repeated expand/collapse cycles are free.
- *
- * @param limit  300 gives a comfortable working set while staying well within
- *   the default result-size limits of public endpoints.
- */
 export async function fetchInstancesByClass(
   classIri: string,
-  context: QueryContext,
-  store?: Store,
+  client: SparqlClient,
   limit = 300,
   language = 'en',
 ): Promise<Array<{ iri: string; label: string }>> {
-  const sourceKey = store ? 'file' : context.endpointUrl
-  const cacheKey = `instances:${sourceKey}:${classIri}`
+  const cacheKey = `instances:${client.sourceKey}:${classIri}`
   const cached = cacheGet<Array<{ iri: string; label: string }>>(cacheKey)
   if (cached) return cached
 
@@ -245,16 +187,14 @@ export async function fetchInstancesByClass(
 
   let query: string
 
-  if (store) {
-    // Preferred label predicates tried first; any string literal is the fallback
-    // so custom vocabularies still produce a human-readable label.
+  if (client.isFileSource) {
     const preferredProps = LABEL_PREDICATES.map((p) => `<${p}>`).join('\n          ')
-
     const preferredLangFilter = langFilterClause('?preferredLabel', language)
 
     query = `
       SELECT DISTINCT ?s (COALESCE(?preferredLabel, ?fallbackLabel) AS ?label) WHERE {
-        ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <${classIri}> .
+        ?s a <${classIri}> .
+        FILTER (!isBlank(?s))
         OPTIONAL {
           VALUES ?lp { ${preferredProps} }
           ?s ?lp ?preferredLabel .
@@ -274,7 +214,8 @@ export async function fetchInstancesByClass(
 
     query = `
       SELECT DISTINCT ?s ?label WHERE {
-        ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <${classIri}> .
+        ?s a <${classIri}> .
+        FILTER (!isBlank(?s))
         OPTIONAL {
           VALUES ?lp { ${labelProps} }
           ?s ?lp ?label .
@@ -284,39 +225,25 @@ export async function fetchInstancesByClass(
     `
   }
 
-  const toInstances = (bindings: Awaited<ReturnType<typeof runSelect>>) => {
-    const seen = new Set<string>()
-    const out: Array<{ iri: string; label: string }> = []
-    for (const b of bindings) {
-      const s = b['s']
-      if (!s) continue
-      if (seen.has(s.value)) continue
-      seen.add(s.value)
-      out.push({ iri: s.value, label: b['label']?.value ?? shortIri(s.value) })
-    }
-    return out
+  const seen = new Set<string>()
+  const out: Array<{ iri: string; label: string }> = []
+  for (const b of await client.select(query)) {
+    const s = b['s']
+    if (!s) continue
+    if (seen.has(s.value)) continue
+    seen.add(s.value)
+    out.push({ iri: s.value, label: b['label']?.value ?? shortIri(s.value) })
   }
 
-  const result = toInstances(await runSelect(query, context, store))
-
-  cacheSet(cacheKey, result)
-  return result
+  cacheSet(cacheKey, out)
+  return out
 }
 
 // ── Entity property details ───────────────────────────────────────────────────
 
-/**
- * Fetches all literal properties of a single entity for display in the
- * instance detail panel.
- *
- * Unlike `fetchDataProperties`, this does not require predicates to carry
- * an rdfs:label — the local IRI name is used as a fallback so custom
- * vocabularies and file-based graphs still produce readable output.
- */
 export async function fetchEntityProps(
   entityIri: string,
-  context: QueryContext,
-  store?: Store,
+  client: SparqlClient,
   limit = 20,
 ): Promise<Array<{ predIri: string; predLabel: string; value: string }>> {
   const query = `
@@ -327,7 +254,7 @@ export async function fetchEntityProps(
     } LIMIT ${limit}
   `
 
-  const bindings = await runSelect(query, context, store)
+  const bindings = await client.select(query)
 
   const seen = new Map<string, { predIri: string; predLabel: string; value: string }>()
   for (const b of bindings) {
@@ -349,20 +276,9 @@ export async function fetchEntityProps(
 
 // ── Label fetching ────────────────────────────────────────────────────────────
 
-/**
- * Fetches label values for a batch of IRIs across ALL language tags.
- *
- * Returning every available language in one query lets the UI switch display
- * language purely client-side without re-running the path traversal.
- *
- * Uses UNION subqueries rather than VALUES for broad endpoint compatibility.
- *
- * @returns A map of IRI → all label entries (value + lang tag).
- */
 export async function fetchLabels(
   iris: string[],
-  context: QueryContext,
-  store?: Store,
+  client: SparqlClient,
 ): Promise<Map<string, LabelEntry[]>> {
   if (iris.length === 0) return new Map()
 
@@ -378,7 +294,7 @@ export async function fetchLabels(
     }
   `
 
-  const bindings = await runSelect(query, context, store)
+  const bindings = await client.select(query)
 
   const labelsMap = new Map<string, LabelEntry[]>()
   for (const b of bindings) {
@@ -415,31 +331,15 @@ export function pickLabel(entries: LabelEntry[], language: string): string | und
 
 // ── Type fetching ─────────────────────────────────────────────────────────────
 
-/**
- * Fetches the most specific `rdf:type` for a batch of entity IRIs.
- *
- * When multiple types are returned for the same entity the last one is kept.
- * For endpoints like GraphDB that return types in hierarchical order this
- * produces the most specific type. Optionally filtered by `ontologyPrefix`
- * so that only types from the target ontology are considered.
- *
- * Pass an empty string for `ontologyPrefix` to accept types from any namespace.
- *
- * Ported from `SPARQLEndpoint.type_for_entities()`.
- */
 export async function fetchTypes(
   iris: string[],
-  context: QueryContext,
+  client: SparqlClient,
   ontologyPrefix = '',
-  store?: Store,
 ): Promise<Map<string, string>> {
   if (iris.length === 0) return new Map()
 
   const subqueries = iris
-    .map(
-      (iri) =>
-        `{ ?o <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?type FILTER(?o = <${iri}> && !isBlank(?type)) }`,
-    )
+    .map((iri) => `{ ?o a ?type FILTER(?o = <${iri}> && !isBlank(?type)) }`)
     .join('\n    UNION\n    ')
 
   const query = `
@@ -448,7 +348,7 @@ export async function fetchTypes(
     }
   `
 
-  const bindings = await runSelect(query, context, store)
+  const bindings = await client.select(query)
 
   const typesMap = new Map<string, string>()
   for (const b of bindings) {
@@ -466,17 +366,10 @@ export async function fetchTypes(
 
 // ── Data properties ───────────────────────────────────────────────────────────
 
-/**
- * Fetches literal data properties for a single entity — used to populate
- * the node detail panel in the UI.
- *
- * Ported from `SPARQLEndpoint.entity_data_properties()`.
- */
 export async function fetchDataProperties(
   entityIri: string,
-  context: QueryContext,
+  client: SparqlClient,
   limit = 50,
-  store?: Store,
   language = 'en',
 ): Promise<DataProperty[]> {
   const effectiveLang = language || 'en'
@@ -494,7 +387,7 @@ export async function fetchDataProperties(
     } LIMIT ${limit}
   `
 
-  const bindings = await runSelect(query, context, store)
+  const bindings = await client.select(query)
 
   const seen = new Map<string, DataProperty>()
   for (const b of bindings) {
@@ -512,52 +405,36 @@ export async function fetchDataProperties(
 
 // ── Graph enrichment ──────────────────────────────────────────────────────────
 
-/**
- * Fetches `rdfs:label` and `rdf:type` for all nodes and edge properties,
- * then updates them in-place via `applyLabelsAndTypes` from `graphBuilder.ts`.
- *
- * Requests are chunked (default: 50 IRIs per query) to stay within the URL
- * and query-complexity limits of most SPARQL endpoints.
- *
- * This is the TypeScript equivalent of `add_type_label()` from
- * relfinder-api/api/helpers/sparql/__init__.py.
- *
- * @param ontologyPrefix  Only types whose IRI starts with this string are
- *   recorded. Pass an empty string to accept types from any namespace.
- * @param chunkSize  IRIs per label/type query batch. 50 keeps each UNION subquery
- *   within the complexity limits of most public SPARQL endpoints.
- */
 export async function enrichGraph(
   nodes: GraphNode[],
   edges: { iri: string; label: string }[],
-  context: QueryContext,
+  client: SparqlClient,
   ontologyPrefix = '',
   chunkSize = 50,
-  store?: Store,
   language = 'en',
 ): Promise<Map<string, LabelEntry[]>> {
   const propIris = edges.map((e) => e.iri)
   const nodeIris = nodes.map((n) => n.iri)
-  const allLabelIris = [...new Set([...propIris, ...nodeIris])]
+  const isAbsoluteIri = (iri: string) =>
+    iri.startsWith('http://') || iri.startsWith('https://') || iri.startsWith('urn:')
+  const allLabelIris = [...new Set([...propIris, ...nodeIris])].filter(isAbsoluteIri)
+  const validNodeIris = nodeIris.filter(isAbsoluteIri)
 
-  // Fetch all language tags in one pass per chunk
   const allLabels = new Map<string, LabelEntry[]>()
   for (const batch of chunk(allLabelIris, chunkSize)) {
-    const partial = await fetchLabels(batch, context, store)
+    const partial = await fetchLabels(batch, client)
     for (const [k, v] of partial) allLabels.set(k, v)
   }
 
-  // Resolve to a single label per IRI for the requested language
   const resolvedLabels = new Map<string, string>()
   for (const [iri, entries] of allLabels) {
     const label = pickLabel(entries, language)
     if (label) resolvedLabels.set(iri, label)
   }
 
-  // Merge chunked type results
   const typesMap = new Map<string, string>()
-  for (const batch of chunk(nodeIris, chunkSize)) {
-    const partial = await fetchTypes(batch, context, ontologyPrefix, store)
+  for (const batch of chunk(validNodeIris, chunkSize)) {
+    const partial = await fetchTypes(batch, client, ontologyPrefix)
     for (const [k, v] of partial) typesMap.set(k, v)
   }
 
@@ -566,26 +443,19 @@ export async function enrichGraph(
   return allLabels
 }
 
-/**
- * Convenience wrapper: executes all relationship queries, assembles the graph,
- * enriches labels/types, merges duplicate edges, and returns the final
- * `RelationshipGraph` ready for the UI.
- *
- * This consolidates the logic that was spread across the Flask `/query` route
- * and the `SPARQLEndpoint.find_relationships()` method.
- */
+// ── Relationship path finding ─────────────────────────────────────────────────
+
 export async function findRelationships(
   entity1: string,
   entity2: string,
   maxDistance: number,
-  context: QueryContext,
+  client: SparqlClient,
   options: {
     ignoredProperties?: string[]
     ignoredObjects?: string[]
     allowedObjectProperties?: string[]
     ontologyPrefix?: string
     avoidCycles?: QueryCyclesStrategy
-    store?: Store
     language?: string
   } = {},
 ): Promise<RelationshipGraph> {
@@ -602,10 +472,21 @@ export async function findRelationships(
   const queryBlocks = getQueries(queryConfig)
   const pathCollections: PathCollection[] = []
 
-  for (const blocks of queryBlocks.values()) {
+  let queryIndex = 0
+  for (const [distance, blocks] of queryBlocks.entries()) {
     for (const block of blocks) {
-      const paths = await runSelect(block.query, context, options.store)
-      pathCollections.push({ src: block.src, dest: block.dest, paths })
+      queryIndex++
+      console.log(
+        `[findRelationships] query #${queryIndex} (distance=${distance}):\n${block.query}`,
+      )
+      try {
+        const paths = await client.select(block.query)
+        console.log(`[findRelationships] query #${queryIndex} → ${paths.length} row(s)`)
+        pathCollections.push({ src: block.src, dest: block.dest, paths })
+      } catch (err) {
+        console.error(`[findRelationships] query #${queryIndex} FAILED:`, err)
+        throw err
+      }
     }
   }
 
@@ -619,10 +500,9 @@ export async function findRelationships(
   const allLabels = await enrichGraph(
     nodes,
     edges,
-    context,
+    client,
     options.ontologyPrefix ?? '',
     50,
-    options.store,
     options.language ?? 'en',
   )
 
@@ -636,9 +516,6 @@ export async function findRelationships(
  * Re-applies display labels to all nodes and edges in an existing graph for a
  * different language tag — no network calls, uses the `allLabels` map stored
  * at query time.
- *
- * Call this instead of re-running `findRelationships` when only the language
- * preference changes.
  */
 export function refreshGraphLabels(graph: RelationshipGraph, language: string): void {
   for (const node of graph.nodes) {

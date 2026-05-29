@@ -7,9 +7,7 @@
  * user's language, then English, then untagged, then any language.
  */
 
-import type { Store } from 'n3'
-import { runSelect } from './engine'
-import type { QueryContext } from './types'
+import { SparqlClient } from './client'
 
 // Priority order: most precise/standard first, dataset-specific last.
 export const DESCRIPTION_PROPERTIES = [
@@ -26,8 +24,7 @@ export const DESCRIPTION_PROPERTIES = [
 
 export async function fetchClassDescription(
   classIri: string,
-  context: QueryContext,
-  store: Store | undefined,
+  client: SparqlClient,
   language = 'en',
 ): Promise<string> {
   const valuesClause = DESCRIPTION_PROPERTIES.map((p) => `<${p}>`).join(' ')
@@ -38,7 +35,7 @@ export async function fetchClassDescription(
       FILTER(isLiteral(?val))
     }
   `
-  const rows = await runSelect(query, context, store)
+  const rows = await client.select(query)
   if (rows.length === 0) return ''
 
   // Group by property IRI, collecting all (value, lang) pairs

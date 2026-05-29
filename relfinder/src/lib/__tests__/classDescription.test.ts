@@ -18,6 +18,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Store } from 'n3'
 import { fetchClassDescription } from '@/lib/sparql/classDescription'
 import { executeSelect, executeSelectOnStore } from '@/lib/sparql/engine'
+import { SparqlClient } from '@/lib/sparql/client'
 
 vi.mock('@/lib/sparql/engine', () => {
   const executeSelect = vi.fn()
@@ -29,6 +30,7 @@ vi.mock('@/lib/sparql/engine', () => {
 })
 
 const CTX = { endpointUrl: 'https://dbpedia.org/sparql' }
+const CLIENT = new SparqlClient(CTX)
 const ACTOR_CLASS = 'http://dbpedia.org/ontology/Actor'
 
 const RDFS_COMMENT = 'http://www.w3.org/2000/01/rdf-schema#comment'
@@ -47,7 +49,7 @@ describe('fetchClassDescription', () => {
   it('returns an empty string when the endpoint has no description for the class', async () => {
     vi.mocked(executeSelect).mockResolvedValue([])
 
-    expect(await fetchClassDescription(ACTOR_CLASS, CTX, undefined)).toBe('')
+    expect(await fetchClassDescription(ACTOR_CLASS, CLIENT)).toBe('')
   })
 
   it('returns the rdfs:comment value when it is available in the requested language', async () => {
@@ -55,15 +57,16 @@ describe('fetchClassDescription', () => {
       row(RDFS_COMMENT, 'A person who performs in films.', 'en'),
     ])
 
-    expect(await fetchClassDescription(ACTOR_CLASS, CTX, undefined)).toBe(
-      'A person who performs in films.',
-    )
+    expect(await fetchClassDescription(ACTOR_CLASS, CLIENT)).toBe('A person who performs in films.')
   })
 
   it('uses executeSelectOnStore for file uploads — no network call made', async () => {
     vi.mocked(executeSelectOnStore).mockResolvedValue([row(RDFS_COMMENT, 'An actor.', 'en')])
 
-    const desc = await fetchClassDescription(ACTOR_CLASS, CTX, new Store())
+    const desc = await fetchClassDescription(
+      ACTOR_CLASS,
+      new SparqlClient({ endpointUrl: '' }, new Store()),
+    )
 
     expect(executeSelectOnStore).toHaveBeenCalledTimes(1)
     expect(executeSelect).not.toHaveBeenCalled()
@@ -78,19 +81,19 @@ describe('fetchClassDescription', () => {
       row(RDFS_COMMENT, 'rdfs comment for Actor.', 'en'),
     ])
 
-    expect(await fetchClassDescription(ACTOR_CLASS, CTX, undefined)).toBe('rdfs comment for Actor.')
+    expect(await fetchClassDescription(ACTOR_CLASS, CLIENT)).toBe('rdfs comment for Actor.')
   })
 
   it('falls back to skos:definition when rdfs:comment is absent', async () => {
     vi.mocked(executeSelect).mockResolvedValue([row(SKOS_DEF, 'A definition of Actor.', 'en')])
 
-    expect(await fetchClassDescription(ACTOR_CLASS, CTX, undefined)).toBe('A definition of Actor.')
+    expect(await fetchClassDescription(ACTOR_CLASS, CLIENT)).toBe('A definition of Actor.')
   })
 
   it('falls back to dbo:abstract when higher-priority properties are absent', async () => {
     vi.mocked(executeSelect).mockResolvedValue([row(DBO_ABSTRACT, 'DBpedia abstract text.', 'en')])
 
-    expect(await fetchClassDescription(ACTOR_CLASS, CTX, undefined)).toBe('DBpedia abstract text.')
+    expect(await fetchClassDescription(ACTOR_CLASS, CLIENT)).toBe('DBpedia abstract text.')
   })
 
   // ── Language priority ─────────────────────────────────────────────────────────
@@ -101,21 +104,19 @@ describe('fetchClassDescription', () => {
       row(RDFS_COMMENT, 'Ein Schauspieler.', 'de'),
     ])
 
-    expect(await fetchClassDescription(ACTOR_CLASS, CTX, undefined, 'de')).toBe('Ein Schauspieler.')
+    expect(await fetchClassDescription(ACTOR_CLASS, CLIENT, 'de')).toBe('Ein Schauspieler.')
   })
 
   it('falls back to English when the requested language has no match', async () => {
     vi.mocked(executeSelect).mockResolvedValue([row(RDFS_COMMENT, 'An actor.', 'en')])
 
-    expect(await fetchClassDescription(ACTOR_CLASS, CTX, undefined, 'de')).toBe('An actor.')
+    expect(await fetchClassDescription(ACTOR_CLASS, CLIENT, 'de')).toBe('An actor.')
   })
 
   it('falls back to an untagged literal when neither requested language nor English is available', async () => {
     vi.mocked(executeSelect).mockResolvedValue([row(RDFS_COMMENT, 'Untagged description.', '')])
 
-    expect(await fetchClassDescription(ACTOR_CLASS, CTX, undefined, 'de')).toBe(
-      'Untagged description.',
-    )
+    expect(await fetchClassDescription(ACTOR_CLASS, CLIENT, 'de')).toBe('Untagged description.')
   })
 
   it('falls back to the first available language when no other match exists', async () => {
@@ -124,7 +125,7 @@ describe('fetchClassDescription', () => {
     ])
 
     // Requested 'de', no 'en', no untagged → picks 'fr' as first available
-    expect(await fetchClassDescription(ACTOR_CLASS, CTX, undefined, 'de')).toBe('Un acteur.')
+    expect(await fetchClassDescription(ACTOR_CLASS, CLIENT, 'de')).toBe('Un acteur.')
   })
 
   it('deduplicates rows for the same property — stores only unique (value, lang) pairs', async () => {
@@ -134,6 +135,6 @@ describe('fetchClassDescription', () => {
     ])
 
     // First English entry wins
-    expect(await fetchClassDescription(ACTOR_CLASS, CTX, undefined)).toBe('An actor.')
+    expect(await fetchClassDescription(ACTOR_CLASS, CLIENT)).toBe('An actor.')
   })
 })

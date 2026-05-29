@@ -11,7 +11,7 @@ import {
 import { BrowsePage } from './pages/BrowsePage'
 
 const SMALL_TTL = fileURLToPath(new URL('./fixtures/small-graph.ttl', import.meta.url))
-const MOCK_ENDPOINT = 'http://mock.sparql.test/sparql'
+const MOCK_ENDPOINT = 'https://mock.sparql.test/sparql'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

@@ -12,6 +12,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { extractSchema } from '@/lib/sparql/schemaExtractor'
 import { executeSelect } from '@/lib/sparql/engine'
+import { SparqlClient } from '@/lib/sparql/client'
 import type { SparqlBinding } from '@/lib/sparql/types'
 import type { SchemaExtractionCallbacks } from '@/lib/sparql/schemaExtractor'
 
@@ -34,6 +35,7 @@ vi.mock('@/lib/sparql/entitySearch', async (importOriginal) => {
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const CONTEXT = { endpointUrl: 'https://example.org/sparql' }
+const CLIENT = new SparqlClient(CONTEXT)
 const CLASS_A = 'http://example.org/A'
 const CLASS_B = 'http://example.org/B'
 const RDFS_COMMENT = 'http://www.w3.org/2000/01/rdf-schema#comment'
@@ -41,7 +43,7 @@ const RDFS_COMMENT = 'http://www.w3.org/2000/01/rdf-schema#comment'
 // ── Row builders ──────────────────────────────────────────────────────────────
 
 const classDiscoveryRow = (iri: string): SparqlBinding => ({
-  class: { value: iri, type: 'uri' },
+  class: { value: iri, type: 'NamedNode' },
 })
 
 const descriptionRow = (classIri: string, text: string, lang: string): SparqlBinding => ({
@@ -89,7 +91,7 @@ describe('extractSchema — Phase 1 description fetching', () => {
     it('is called when descriptions are returned by the endpoint', async () => {
       routeSelect([classDiscoveryRow(CLASS_A)], [descriptionRow(CLASS_A, 'A class', 'en')])
       const cbs = makeCallbacks()
-      await extractSchema(CONTEXT, undefined, {}, cbs)
+      await extractSchema(CLIENT, {}, cbs)
 
       expect(cbs.onDescriptionsLoaded).toHaveBeenCalled()
     })
@@ -97,7 +99,7 @@ describe('extractSchema — Phase 1 description fetching', () => {
     it('passes a Map with the description text for matching classes', async () => {
       routeSelect([classDiscoveryRow(CLASS_A)], [descriptionRow(CLASS_A, 'A class', 'en')])
       const cbs = makeCallbacks()
-      await extractSchema(CONTEXT, undefined, {}, cbs)
+      await extractSchema(CLIENT, {}, cbs)
 
       const [map] = vi.mocked(cbs.onDescriptionsLoaded!).mock.calls[0]!
       expect(map.get(CLASS_A)).toBe('A class')
@@ -109,7 +111,7 @@ describe('extractSchema — Phase 1 description fetching', () => {
         [descriptionRow(CLASS_A, 'Only A has one', 'en')],
       )
       const cbs = makeCallbacks()
-      await extractSchema(CONTEXT, undefined, {}, cbs)
+      await extractSchema(CLIENT, {}, cbs)
 
       const [map] = vi.mocked(cbs.onDescriptionsLoaded!).mock.calls[0]!
       expect(map.has(CLASS_B)).toBe(true)
@@ -119,12 +121,7 @@ describe('extractSchema — Phase 1 description fetching', () => {
     it('is NOT called when extraction uses preloadedNodes (Phase 1 skipped)', async () => {
       vi.mocked(executeSelect).mockResolvedValue([])
       const cbs = makeCallbacks()
-      await extractSchema(
-        CONTEXT,
-        undefined,
-        { preloadedNodes: [{ iri: CLASS_A, label: 'A' }] },
-        cbs,
-      )
+      await extractSchema(CLIENT, { preloadedNodes: [{ iri: CLASS_A, label: 'A' }] }, cbs)
 
       expect(cbs.onDescriptionsLoaded).not.toHaveBeenCalled()
     })
@@ -134,7 +131,7 @@ describe('extractSchema — Phase 1 description fetching', () => {
       const iris = Array.from({ length: 21 }, (_, i) => `http://example.org/C${i}`)
       routeSelect(iris.map(classDiscoveryRow), [])
       const cbs = makeCallbacks()
-      await extractSchema(CONTEXT, undefined, {}, cbs)
+      await extractSchema(CLIENT, {}, cbs)
 
       // Two batches → two onDescriptionsLoaded calls
       expect(cbs.onDescriptionsLoaded).toHaveBeenCalledTimes(2)
@@ -150,7 +147,7 @@ describe('extractSchema — Phase 1 description fetching', () => {
         [descriptionRow(CLASS_A, 'In English', 'en'), descriptionRow(CLASS_A, 'Auf Deutsch', 'de')],
       )
       const cbs = makeCallbacks()
-      await extractSchema(CONTEXT, undefined, { language: 'de' }, cbs)
+      await extractSchema(CLIENT, { language: 'de' }, cbs)
 
       const [map] = vi.mocked(cbs.onDescriptionsLoaded!).mock.calls[0]!
       expect(map.get(CLASS_A)).toBe('Auf Deutsch')
@@ -162,7 +159,7 @@ describe('extractSchema — Phase 1 description fetching', () => {
         [descriptionRow(CLASS_A, 'In English', 'en'), descriptionRow(CLASS_A, 'Untagged', '')],
       )
       const cbs = makeCallbacks()
-      await extractSchema(CONTEXT, undefined, { language: 'fr' }, cbs)
+      await extractSchema(CLIENT, { language: 'fr' }, cbs)
 
       const [map] = vi.mocked(cbs.onDescriptionsLoaded!).mock.calls[0]!
       expect(map.get(CLASS_A)).toBe('In English')
@@ -171,7 +168,7 @@ describe('extractSchema — Phase 1 description fetching', () => {
     it('falls back to untagged when neither preferred nor English is available', async () => {
       routeSelect([classDiscoveryRow(CLASS_A)], [descriptionRow(CLASS_A, 'Untagged', '')])
       const cbs = makeCallbacks()
-      await extractSchema(CONTEXT, undefined, { language: 'fr' }, cbs)
+      await extractSchema(CLIENT, { language: 'fr' }, cbs)
 
       const [map] = vi.mocked(cbs.onDescriptionsLoaded!).mock.calls[0]!
       expect(map.get(CLASS_A)).toBe('Untagged')
@@ -180,7 +177,7 @@ describe('extractSchema — Phase 1 description fetching', () => {
     it('falls back to any available language as a last resort', async () => {
       routeSelect([classDiscoveryRow(CLASS_A)], [descriptionRow(CLASS_A, 'Auf Deutsch', 'de')])
       const cbs = makeCallbacks()
-      await extractSchema(CONTEXT, undefined, { language: 'fr' }, cbs)
+      await extractSchema(CLIENT, { language: 'fr' }, cbs)
 
       const [map] = vi.mocked(cbs.onDescriptionsLoaded!).mock.calls[0]!
       expect(map.get(CLASS_A)).toBe('Auf Deutsch')
@@ -197,7 +194,7 @@ describe('extractSchema — Phase 1 description fetching', () => {
         return []
       })
       const cbs = makeCallbacks()
-      await extractSchema(CONTEXT, undefined, {}, cbs)
+      await extractSchema(CLIENT, {}, cbs)
 
       expect(cbs.onClassesLoaded).toHaveBeenCalledOnce()
     })
@@ -205,7 +202,7 @@ describe('extractSchema — Phase 1 description fetching', () => {
     it('extraction returns correctly when all description queries return empty', async () => {
       routeSelect([classDiscoveryRow(CLASS_A), classDiscoveryRow(CLASS_B)], [])
       const cbs = makeCallbacks()
-      const result = await extractSchema(CONTEXT, undefined, {}, cbs)
+      const result = await extractSchema(CLIENT, {}, cbs)
 
       expect(result.nodes).toHaveLength(2)
       expect(cbs.onClassesLoaded).toHaveBeenCalledOnce()
@@ -226,7 +223,7 @@ describe('extractSchema — Phase 1 description fetching', () => {
         return []
       })
       const cbs = makeCallbacks()
-      await extractSchema(CONTEXT, undefined, {}, cbs)
+      await extractSchema(CLIENT, {}, cbs)
 
       expect(cbs.onEdgesLoaded).toHaveBeenCalled()
     })

@@ -21,6 +21,7 @@ import { parseRdfContent } from '../rdf/parser'
 import { findRelationships } from '../sparql/entitySearch'
 import { EXAMPLES } from '../examples'
 import type { TtlExample, SparqlExample } from '../examples'
+import { SparqlClient } from '../sparql/client'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -43,16 +44,16 @@ describe('TTL examples — node count between 10 and 50', () => {
       example.title,
       async () => {
         const store = await parseRdfContent(example.ttlContent, 'text/turtle')
+        const client = new SparqlClient({ endpointUrl: '' }, store)
 
         const graph = await findRelationships(
           example.entity1.iri,
           example.entity2.iri,
           example.options.maxDistance,
-          { endpointUrl: '' },
+          client,
           {
             ignoredProperties: example.options.ignoredProperties,
             avoidCycles: example.options.avoidCycles,
-            store,
             language: example.options.language,
           },
         )
@@ -82,11 +83,12 @@ describe.skipIf(!process.env['INTEGRATION'])(
       it(
         example.title,
         async () => {
+          const client = new SparqlClient({ endpointUrl: example.endpointUrl })
           const graph = await findRelationships(
             example.entity1.iri,
             example.entity2.iri,
             example.options.maxDistance,
-            { endpointUrl: example.endpointUrl },
+            client,
             {
               ignoredProperties: example.options.ignoredProperties,
               avoidCycles: example.options.avoidCycles,

@@ -12,6 +12,8 @@ import type { Store } from 'n3'
 import { cacheInvalidate } from '@/lib/cache/queryCache'
 import { usePinnedStore } from './pinned'
 import { probeTripleCount, fetchFullGraph, SMALL_GRAPH_LIMIT } from '@/lib/sparql/subgraphStrategy'
+import { SparqlClient } from '@/lib/sparql/client'
+import { ENDPOINT_DIRECTORY } from '@/lib/data/endpointDirectory'
 
 export type SubgraphStatus = 'idle' | 'probing' | 'fetching' | 'ready' | 'error'
 
@@ -80,9 +82,15 @@ export const useConnectionStore = defineStore('connection', () => {
    */
   const queryContext = computed(() => {
     if (source.value?.type !== 'sparql') return null
+    const { endpointUrl, proxyUrl } = source.value
+    // When the proxy is a Vercel /api/sparql function, keep the real endpoint
+    // URL and use the custom fetch rewriter; transparent proxies (Caddy) are
+    // already folded into endpointUrl.
+    const isVercelProxy = !!proxyUrl && (proxyUrl.split('?')[0] ?? '').endsWith('/api/sparql')
     return {
-      endpointUrl: source.value.endpointUrl,
+      endpointUrl,
       authorizationHeader: authorizationHeader.value,
+      proxyBaseUrl: isVercelProxy ? proxyUrl : undefined,
     }
   })
 
@@ -92,6 +100,26 @@ export const useConnectionStore = defineStore('connection', () => {
   const rdfStore = computed(() => {
     if (source.value?.type !== 'file') return null
     return source.value.store
+  })
+
+  /**
+   * A SparqlClient for the active connection, or null when disconnected.
+   *
+   * This is the preferred way to issue SPARQL queries — it encapsulates all
+   * endpoint-specific quirks (capability rewrites, CONSTRUCT support, etc.)
+   * so callers never need to know about individual endpoint behaviours.
+   */
+  const sparqlClient = computed<SparqlClient | null>(() => {
+    if (source.value?.type === 'sparql' && queryContext.value) {
+      const caps = ENDPOINT_DIRECTORY.find(
+        (e) => e.url === (source.value as SparqlSource).endpointUrl,
+      )?.capabilities
+      return new SparqlClient(queryContext.value, undefined, caps)
+    }
+    if (source.value?.type === 'file') {
+      return new SparqlClient({ endpointUrl: '' }, rdfStore.value ?? undefined)
+    }
+    return null
   })
 
   // ── Actions ────────────────────────────────────────────────────────────────
@@ -123,19 +151,19 @@ export const useConnectionStore = defineStore('connection', () => {
     tripleCount.value = null
     subgraphStatus.value = 'probing'
 
-    const ctx = queryContext.value
-    if (!ctx) {
+    const client = sparqlClient.value
+    if (!client || client.isFileSource) {
       subgraphStatus.value = 'error'
       return
     }
 
-    const n = await probeTripleCount(ctx, signal)
+    const n = await probeTripleCount(client, signal)
     if (signal.aborted) return
     tripleCount.value = n
 
     if (n <= SMALL_GRAPH_LIMIT) {
       subgraphStatus.value = 'fetching'
-      localRdfStore.value = await fetchFullGraph(ctx, signal)
+      localRdfStore.value = await fetchFullGraph(client, signal)
       if (signal.aborted) {
         localRdfStore.value = null
         return
@@ -209,6 +237,7 @@ export const useConnectionStore = defineStore('connection', () => {
     authorizationHeader,
     queryContext,
     rdfStore,
+    sparqlClient,
     localRdfStore,
     subgraphStatus,
     tripleCount,

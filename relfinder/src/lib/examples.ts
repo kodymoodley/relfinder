@@ -65,6 +65,11 @@ const DEFAULT_IGNORED = [
   'http://www.w3.org/2002/07/owl#sameAs',
 ]
 
+const LOV_IGNORED = [
+  ...DEFAULT_IGNORED,
+  'http://purl.org/dc/terms/language', // "both in English" is a trivial path
+]
+
 // ── Example definitions ───────────────────────────────────────────────────────
 
 export const EXAMPLES: Example[] = [
@@ -169,6 +174,115 @@ export const EXAMPLES: Example[] = [
     entity2: {
       iri: 'http://dbpedia.org/resource/Niels_Bohr',
       label: 'Niels Bohr',
+      class: 'http://dbpedia.org/ontology/Scientist',
+    },
+    options: {
+      maxDistance: 2,
+      ignoredProperties: [
+        ...DEFAULT_IGNORED,
+        'http://www.w3.org/2004/02/skos/core#subject',
+        'http://dbpedia.org/ontology/wikiPageWikiLink',
+        'http://dbpedia.org/ontology/wikiPageRedirects',
+      ],
+      avoidCycles: QCS.NO_INTERMEDIATE_DUPLICATES,
+      language: 'en',
+    },
+  },
+
+  // ── SPARQL: LOV — FOAF & Schema.org ──────────────────────────────────────
+  {
+    kind: 'sparql',
+    id: 'lov-foaf-schema',
+    title: 'LOV: FOAF & Schema.org',
+    description:
+      'Discovers how the FOAF vocabulary and Schema.org are linked through Dan Brickley, who created FOAF and contributed to Schema.org.',
+    endpointUrl: 'https://lov.linkeddata.es/dataset/lov/sparql',
+    entity1: {
+      iri: 'http://xmlns.com/foaf/0.1/',
+      label: 'FOAF',
+      class: 'http://purl.org/vocommons/voaf#Vocabulary',
+    },
+    entity2: {
+      iri: 'http://schema.org/',
+      label: 'Schema.org',
+      class: 'http://purl.org/vocommons/voaf#Vocabulary',
+    },
+    options: {
+      maxDistance: 2,
+      ignoredProperties: LOV_IGNORED,
+      avoidCycles: QCS.NO_INTERMEDIATE_DUPLICATES,
+      language: 'en',
+    },
+  },
+
+  // ── SPARQL: LOV — FOAF & SemWeb Vocab Status ─────────────────────────────
+  {
+    kind: 'sparql',
+    id: 'lov-foaf-vs',
+    title: 'LOV: FOAF & Vocab Status',
+    description:
+      'Shows that FOAF and the SemWeb Vocab Status vocabulary share the same two creators: Libby Miller and Dan Brickley.',
+    endpointUrl: 'https://lov.linkeddata.es/dataset/lov/sparql',
+    entity1: {
+      iri: 'http://xmlns.com/foaf/0.1/',
+      label: 'FOAF',
+      class: 'http://purl.org/vocommons/voaf#Vocabulary',
+    },
+    entity2: {
+      iri: 'http://www.w3.org/2003/06/sw-vocab-status/ns',
+      label: 'SemWeb Vocab Status',
+      class: 'http://purl.org/vocommons/voaf#Vocabulary',
+    },
+    options: {
+      maxDistance: 2,
+      ignoredProperties: LOV_IGNORED,
+      avoidCycles: QCS.NO_INTERMEDIATE_DUPLICATES,
+      language: 'en',
+    },
+  },
+
+  // ── SPARQL: LOV — SKOS & PROV-O ──────────────────────────────────────────
+  {
+    kind: 'sparql',
+    id: 'lov-skos-prov',
+    title: 'LOV: SKOS & PROV-O',
+    description:
+      'Maps the connection between the SKOS knowledge-organisation vocabulary and the PROV-O provenance ontology through their shared W3C publisher.',
+    endpointUrl: 'https://lov.linkeddata.es/dataset/lov/sparql',
+    entity1: {
+      iri: 'http://www.w3.org/2004/02/skos/core',
+      label: 'SKOS',
+      class: 'http://purl.org/vocommons/voaf#Vocabulary',
+    },
+    entity2: {
+      iri: 'http://www.w3.org/ns/prov#',
+      label: 'PROV-O',
+      class: 'http://purl.org/vocommons/voaf#Vocabulary',
+    },
+    options: {
+      maxDistance: 2,
+      ignoredProperties: LOV_IGNORED,
+      avoidCycles: QCS.NO_INTERMEDIATE_DUPLICATES,
+      language: 'en',
+    },
+  },
+
+  // ── SPARQL: DBpedia — Marie Curie & Einstein ──────────────────────────────
+  {
+    kind: 'sparql',
+    id: 'dbpedia-curie-einstein',
+    title: 'DBpedia: Curie & Einstein',
+    description:
+      'Finds connections between Marie Curie and Albert Einstein through shared awards, institutions, and the Solvay Conferences.',
+    endpointUrl: 'https://dbpedia.org/sparql',
+    entity1: {
+      iri: 'http://dbpedia.org/resource/Marie_Curie',
+      label: 'Marie Curie',
+      class: 'http://dbpedia.org/ontology/Scientist',
+    },
+    entity2: {
+      iri: 'http://dbpedia.org/resource/Albert_Einstein',
+      label: 'Albert Einstein',
       class: 'http://dbpedia.org/ontology/Scientist',
     },
     options: {

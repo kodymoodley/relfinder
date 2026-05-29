@@ -8,13 +8,12 @@
  *   Option 1 (> 50 000 triples): fetch 2-hop neighbourhoods of both entities
  *     just before each path-finding query.
  *
- * Both functions return a populated N3 Store ready for Comunica's
- * executeSelectOnStore. No Vue dependencies — pure TypeScript lib.
+ * All functions accept a SparqlClient so endpoint-specific quirks
+ * (CONSTRUCT support, COUNT reliability) are handled transparently.
  */
 
 import { Store } from 'n3'
-import type { QueryContext } from './types'
-import { executeConstruct, executeSelect } from './engine'
+import type { SparqlClient } from './client'
 
 export const SMALL_GRAPH_LIMIT = 50_000
 
@@ -23,24 +22,21 @@ export const SMALL_GRAPH_LIMIT = 50_000
 /**
  * Estimates the total triple count of a SPARQL endpoint via COUNT(*).
  *
- * Returns Infinity on any error or timeout so the caller safely falls back to
- * Option 1 (neighbourhood fetch).
+ * Returns Infinity on any error, timeout, or when the endpoint reports
+ * `supportsCount: false` so the caller safely falls back to Option 1.
  */
 export async function probeTripleCount(
-  context: QueryContext,
+  client: SparqlClient,
   signal?: AbortSignal,
 ): Promise<number> {
+  if (!client.caps.supportsCount) return Infinity
+
   const ac = new AbortController()
   const timer = setTimeout(() => ac.abort(), 10_000)
-  // Honour both the caller's signal and the 10 s timeout — whichever fires first.
   const combinedSignal = signal ? AbortSignal.any([signal, ac.signal]) : ac.signal
 
   try {
-    const rows = await executeSelect(
-      'SELECT (COUNT(*) AS ?n) WHERE { ?s ?p ?o }',
-      context,
-      combinedSignal,
-    )
+    const rows = await client.select('SELECT (COUNT(*) AS ?n) WHERE { ?s ?p ?o }', combinedSignal)
     const n = parseInt(rows[0]?.['n']?.value ?? '', 10)
     return isNaN(n) ? Infinity : n
   } catch {
@@ -56,10 +52,9 @@ export async function probeTripleCount(
  * Fetches up to SMALL_GRAPH_LIMIT triples from the endpoint and returns them
  * as a populated N3 Store. Used when the endpoint has ≤ 50 000 triples.
  */
-export async function fetchFullGraph(context: QueryContext, signal?: AbortSignal): Promise<Store> {
-  const quads = await executeConstruct(
+export async function fetchFullGraph(client: SparqlClient, signal?: AbortSignal): Promise<Store> {
+  const quads = await client.construct(
     `CONSTRUCT { ?s ?p ?o } WHERE { ?s ?p ?o } LIMIT ${SMALL_GRAPH_LIMIT}`,
-    context,
     signal,
   )
   const store = new Store()
@@ -91,12 +86,17 @@ function neighbourhoodQuery(entityIri: string): string {
 export async function fetchNeighbourhoodStore(
   entity1Iri: string,
   entity2Iri: string,
-  context: QueryContext,
+  client: SparqlClient,
   signal?: AbortSignal,
 ): Promise<Store> {
+  const q1 = neighbourhoodQuery(entity1Iri)
+  const q2 = neighbourhoodQuery(entity2Iri)
+  console.log('[fetchNeighbourhoodStore] e1 IRI:', entity1Iri)
+  console.log('[fetchNeighbourhoodStore] e2 IRI:', entity2Iri)
+  console.log('[fetchNeighbourhoodStore] query1:\n', q1)
   const [quads1, quads2] = await Promise.all([
-    executeConstruct(neighbourhoodQuery(entity1Iri), context, signal),
-    executeConstruct(neighbourhoodQuery(entity2Iri), context, signal),
+    client.construct(q1, signal),
+    client.construct(q2, signal),
   ])
   const store = new Store()
   store.addQuads(quads1)

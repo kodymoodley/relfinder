@@ -1,12 +1,12 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
-import type { Store } from 'n3'
 import { extractSchema, fetchSchemaDataProperties } from '@/lib/sparql/schemaExtractor'
 import { fetchInstancesByClass, fetchEntityProps } from '@/lib/sparql/entitySearch'
 import { fetchClassDescription } from '@/lib/sparql/classDescription'
 import { loadSchema, saveSchema } from '@/lib/cache/schemaStorage'
 import type { PersistedSchema } from '@/lib/cache/schemaStorage'
-import type { SchemaNode, SchemaEdge, SchemaDataProp, QueryContext } from '@/lib/sparql/types'
+import type { SchemaNode, SchemaEdge, SchemaDataProp } from '@/lib/sparql/types'
+import { SparqlClient } from '@/lib/sparql/client'
 import { cacheAdd } from '@/lib/search/entityCache'
 import type { CachedEntity } from '@/lib/search/types'
 import type { Ref } from 'vue'
@@ -107,8 +107,7 @@ export const useSchemaStore = defineStore('schema', () => {
   // Shared across start() and loadMore() calls within the same store instance.
   let abortController: AbortController | null = null
   const _processedSet = new Set<string>()
-  let _context: QueryContext | null = null
-  let _n3Store: Store | undefined = undefined
+  let _client: SparqlClient | null = null
   let _classLimit = 40
   let _edgeLimit = 10
 
@@ -121,7 +120,7 @@ export const useSchemaStore = defineStore('schema', () => {
   }
 
   /** Snapshot current reactive state into the localStorage schema entry. */
-  function persist(endpointUrl: string) {
+  function persist(endpointUrl: string): void {
     if (nodes.value.length === 0) return
     const entry: PersistedSchema = {
       version: 1,
@@ -141,29 +140,21 @@ export const useSchemaStore = defineStore('schema', () => {
   // ── Extraction ───────────────────────────────────────────────────────────────
 
   /**
-   * Start (or resume) schema extraction for the given endpoint.
+   * Start (or resume) schema extraction for the given connection.
    * @param force  When true, ignore any cached schema and extract from scratch.
    */
-  async function start(
-    context: QueryContext,
-    n3Store: Store | undefined,
-    classLimit: number,
-    edgeLimit: number,
-    force = false,
-  ) {
+  async function start(client: SparqlClient, classLimit: number, edgeLimit: number, force = false) {
     abortController = new AbortController()
     extractError.value = ''
-    _context = context
-    _n3Store = n3Store
+    _client = client
     _classLimit = classLimit
     _edgeLimit = edgeLimit
     _processedSet.clear()
 
-    // File sources (N3 Store) are never cached — extraction is in-memory and
-    // fast, and using a shared '__file__' key would cause different uploads to
-    // collide in localStorage.
-    const isFileSource = n3Store !== undefined
-    const endpointUrl = isFileSource ? '' : context.endpointUrl || '__file__'
+    // File sources are never cached — extraction is in-memory and fast, and
+    // using a shared key would cause different uploads to collide in localStorage.
+    const isFileSource = client.isFileSource
+    const endpointUrl = isFileSource ? '' : client.sourceKey || '__file__'
 
     // ── Try to restore from persistent storage ──────────────────────────────
     const saved = force || isFileSource ? null : loadSchema(endpointUrl)
@@ -202,8 +193,7 @@ export const useSchemaStore = defineStore('schema', () => {
 
     try {
       await extractSchema(
-        context,
-        n3Store,
+        client,
         {
           classLimit,
           edgeLimit,
@@ -229,8 +219,11 @@ export const useSchemaStore = defineStore('schema', () => {
           },
           onClassProcessed(classIri) {
             _processedSet.add(classIri)
-            fetchInstances(classIri, context, n3Store).catch(() => {})
-            fetchDataProps(classIri, context, n3Store).catch(() => {})
+            const c = _client
+            if (c) {
+              fetchInstances(classIri, c).catch(() => {})
+              fetchDataProps(classIri, c).catch(() => {})
+            }
             if (!isFileSource) persist(endpointUrl)
           },
         },
@@ -255,16 +248,34 @@ export const useSchemaStore = defineStore('schema', () => {
    * No-ops when an extraction is already in progress or no context is stored.
    */
   async function loadMore() {
-    if (!_context || extracting.value) return
+    console.log('[schemaStore] loadMore called', {
+      hasClient: !!_client,
+      extracting: extracting.value,
+      nodeCount: nodes.value.length,
+    })
+    if (!_client || extracting.value) {
+      console.log('[schemaStore] loadMore bailed out early', {
+        hasClient: !!_client,
+        extracting: extracting.value,
+      })
+      return
+    }
 
-    const context = _context
-    const n3Store = _n3Store
+    const client = _client
     const classLimit = _classLimit
     const edgeLimit = _edgeLimit
     const offset = nodes.value.length
     const existingIris = nodes.value.map((n) => n.iri)
-    const isFileSource = n3Store !== undefined
-    const endpointUrl = isFileSource ? '' : context.endpointUrl || '__file__'
+    const isFileSource = client.isFileSource
+    const endpointUrl = isFileSource ? '' : client.sourceKey || '__file__'
+
+    console.log('[schemaStore] loadMore starting', {
+      offset,
+      classLimit,
+      edgeLimit,
+      existingCount: existingIris.length,
+      endpoint: client.sourceKey,
+    })
 
     abortController = new AbortController()
     extracting.value = true
@@ -274,8 +285,7 @@ export const useSchemaStore = defineStore('schema', () => {
 
     try {
       await extractSchema(
-        context,
-        n3Store,
+        client,
         {
           classLimit,
           edgeLimit,
@@ -287,8 +297,13 @@ export const useSchemaStore = defineStore('schema', () => {
             for (const [k, v] of map) descriptionCache.value.set(k, v)
           },
           onClassesLoaded(incoming) {
-            lastBatchSize.value = incoming.length
-            nodes.value.push(...incoming)
+            const existingIris = new Set(nodes.value.map((n) => n.iri))
+            const novel = incoming.filter((n) => !existingIris.has(n.iri))
+            console.log(
+              `[schemaStore] loadMore onClassesLoaded: ${incoming.length} returned, ${novel.length} novel`,
+            )
+            lastBatchSize.value = novel.length
+            nodes.value.push(...novel)
             progress.value = { completed: _processedSet.size, total: nodes.value.length }
             statusMessage.value = ''
             if (!isFileSource) persist(endpointUrl)
@@ -297,18 +312,25 @@ export const useSchemaStore = defineStore('schema', () => {
             edges.value.push(...incoming)
           },
           onProgress(completed, total) {
+            console.log(`[schemaStore] loadMore progress: ${completed}/${total}`)
             progress.value = { completed, total }
           },
           onClassProcessed(classIri) {
+            console.log('[schemaStore] loadMore onClassProcessed:', classIri)
             _processedSet.add(classIri)
-            fetchInstances(classIri, context, n3Store).catch(() => {})
-            fetchDataProps(classIri, context, n3Store).catch(() => {})
+            const c = _client
+            if (c) {
+              fetchInstances(classIri, c).catch(() => {})
+              fetchDataProps(classIri, c).catch(() => {})
+            }
             if (!isFileSource) persist(endpointUrl)
           },
         },
         abortController.signal,
       )
+      console.log('[schemaStore] loadMore extractSchema resolved')
     } catch (err) {
+      console.error('[schemaStore] loadMore error:', err)
       if ((err as Error)?.name !== 'AbortError') {
         extractError.value =
           err instanceof Error
@@ -316,6 +338,10 @@ export const useSchemaStore = defineStore('schema', () => {
             : 'An unexpected error occurred.'
       }
     } finally {
+      console.log(
+        '[schemaStore] loadMore finally: resetting extracting, nodeCount now',
+        nodes.value.length,
+      )
       extracting.value = false
       statusMessage.value = ''
     }
@@ -345,24 +371,19 @@ export const useSchemaStore = defineStore('schema', () => {
     instancesLoading.value.clear()
     entityPropsLoading.value.clear()
     _processedSet.clear()
-    _context = null
-    _n3Store = undefined
+    _client = null
   }
 
   // ── Per-class data properties ─────────────────────────────────────────────
 
-  async function fetchDataProps(
-    classIri: string,
-    context: QueryContext,
-    n3Store: Store | undefined,
-  ) {
+  async function fetchDataProps(classIri: string, client: SparqlClient) {
     await withLoadingGuard(
       classIri,
       dataPropsCache,
       dataPropsLoading,
       () => {
         setDataPropsStatus(classIri, 'Querying endpoint…')
-        return fetchSchemaDataProperties(classIri, context, n3Store, 50, (msg) =>
+        return fetchSchemaDataProperties(classIri, client, 50, (msg) =>
           setDataPropsStatus(classIri, msg),
         )
       },
@@ -372,18 +393,14 @@ export const useSchemaStore = defineStore('schema', () => {
 
   // ── Per-class descriptions ────────────────────────────────────────────────
 
-  async function fetchDescription(
-    classIri: string,
-    context: QueryContext,
-    n3Store: Store | undefined,
-  ) {
+  async function fetchDescription(classIri: string, client: SparqlClient) {
     await withLoadingGuard(
       classIri,
       descriptionCache,
       descriptionLoading,
       () => {
         setDescriptionStatus(classIri, 'Fetching description…')
-        return fetchClassDescription(classIri, context, n3Store)
+        return fetchClassDescription(classIri, client)
       },
       descriptionStatus,
     )
@@ -391,16 +408,12 @@ export const useSchemaStore = defineStore('schema', () => {
 
   // ── Per-class instances ───────────────────────────────────────────────────
 
-  async function fetchInstances(
-    classIri: string,
-    context: QueryContext,
-    n3Store: Store | undefined,
-  ) {
+  async function fetchInstances(classIri: string, client: SparqlClient) {
     await withLoadingGuard(
       classIri,
       instancesCache,
       instancesLoading,
-      () => fetchInstancesByClass(classIri, context, n3Store, 20),
+      () => fetchInstancesByClass(classIri, client, 20),
       undefined,
       (items) => {
         if (items.length > 0) {
@@ -428,13 +441,9 @@ export const useSchemaStore = defineStore('schema', () => {
 
   // ── Per-instance entity properties ───────────────────────────────────────
 
-  async function fetchEntityPropsForInstance(
-    entityIri: string,
-    context: QueryContext,
-    n3Store: Store | undefined,
-  ) {
+  async function fetchEntityPropsForInstance(entityIri: string, client: SparqlClient) {
     await withLoadingGuard(entityIri, entityPropsCache, entityPropsLoading, () =>
-      fetchEntityProps(entityIri, context, n3Store),
+      fetchEntityProps(entityIri, client),
     )
   }
 

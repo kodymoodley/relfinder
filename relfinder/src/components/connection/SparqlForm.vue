@@ -1,17 +1,54 @@
 <template>
   <form class="sparql-form" @submit.prevent="onSubmit">
+    <!-- Sample databases collapsible (expanded by default) -->
+    <div class="collapsible">
+      <button type="button" class="collapsible-toggle" @click="showSamples = !showSamples">
+        <span class="collapsible-label">Sample databases</span>
+        <span class="collapsible-badge">click to connect</span>
+        <i
+          :class="['pi', showSamples ? 'pi-chevron-up' : 'pi-chevron-down', 'collapsible-chevron']"
+        />
+      </button>
+      <Transition name="collapse">
+        <div v-show="showSamples" class="collapsible-body">
+          <p class="fieldset-hint">
+            Select any database below to connect instantly — no configuration needed.
+          </p>
+          <div class="endpoint-grid">
+            <button
+              v-for="entry in ENDPOINT_DIRECTORY"
+              :key="entry.id"
+              type="button"
+              class="endpoint-card"
+              :disabled="connecting"
+              @click="connectEndpoint(entry)"
+            >
+              <span class="endpoint-card-name">{{ entry.name }}</span>
+              <span class="endpoint-card-domain">{{ entry.domain }}</span>
+              <span class="endpoint-card-desc">{{ entry.description }}</span>
+            </button>
+          </div>
+        </div>
+      </Transition>
+    </div>
+
     <div class="field">
-      <label for="endpointUrl">SPARQL Endpoint URL <span class="required">*</span></label>
+      <label for="endpointUrl"
+        >Or enter a SPARQL endpoint URL <span class="required">*</span></label
+      >
       <InputText
         id="endpointUrl"
         v-model="form.endpointUrl"
-        placeholder="https://dbpedia.org/sparql"
+        placeholder=""
         :invalid="!!errors.endpointUrl"
         fluid
         autocomplete="url"
         data-testid="endpoint-url-input"
       />
-      <small v-if="errors.endpointUrl" class="error-msg">{{ errors.endpointUrl }}</small>
+      <small v-if="httpsConverted" class="https-notice">
+        <i class="pi pi-lock" /> URL automatically upgraded to HTTPS
+      </small>
+      <small v-else-if="errors.endpointUrl" class="error-msg">{{ errors.endpointUrl }}</small>
     </div>
 
     <!-- Authentication collapsible -->
@@ -104,7 +141,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
@@ -114,6 +151,8 @@ import { useConnectionStore } from '@/stores/connection'
 import { useSchemaStore } from '@/stores/schema'
 import { executeSelect } from '@/lib/sparql/engine'
 import { loadSchema } from '@/lib/cache/schemaStorage'
+import { ENDPOINT_DIRECTORY } from '@/lib/data/endpointDirectory'
+import type { EndpointEntry } from '@/lib/data/endpointDirectory'
 
 const router = useRouter()
 const connectionStore = useConnectionStore()
@@ -144,6 +183,24 @@ const connectingHost = ref('')
 const connectionError = ref('')
 const showAuth = ref(false)
 const showProxy = ref(false)
+const showSamples = ref(false)
+const httpsConverted = ref(false)
+
+let httpsNoticeTimer: ReturnType<typeof setTimeout> | null = null
+
+watch(
+  () => form.endpointUrl,
+  (val) => {
+    if (val.startsWith('http://') && !val.startsWith('http://localhost')) {
+      form.endpointUrl = 'https://' + val.slice(7)
+      httpsConverted.value = true
+      if (httpsNoticeTimer) clearTimeout(httpsNoticeTimer)
+      httpsNoticeTimer = setTimeout(() => {
+        httpsConverted.value = false
+      }, 4000)
+    }
+  },
+)
 
 // ── Validation ────────────────────────────────────────────────────────────────
 
@@ -164,15 +221,35 @@ function validate(): boolean {
   }
 
   if (form.proxyUrl.trim()) {
-    try {
-      new URL(form.proxyUrl.trim())
-    } catch {
-      errors.proxyUrl = 'Proxy URL must be a valid URL.'
-      return false
+    const proxyVal = form.proxyUrl.trim()
+    // Relative paths (e.g. '/api/sparql') are valid same-origin proxy URLs
+    if (!proxyVal.startsWith('/')) {
+      try {
+        new URL(proxyVal)
+      } catch {
+        errors.proxyUrl = 'Proxy URL must be a valid URL.'
+        showProxy.value = true // expand so the error is visible
+        return false
+      }
     }
   }
 
   return true
+}
+
+// ── Sample database auto-connect ──────────────────────────────────────────────
+
+async function connectEndpoint(entry: EndpointEntry) {
+  form.endpointUrl = entry.url
+  form.username = ''
+  form.password = ''
+  form.proxyUrl = entry.proxyUrl ?? ''
+  console.log('[SparqlForm] connectEndpoint', {
+    id: entry.id,
+    url: entry.url,
+    proxyUrl: entry.proxyUrl,
+  })
+  await onSubmit()
 }
 
 // ── Connection ────────────────────────────────────────────────────────────────
@@ -181,28 +258,63 @@ function validate(): boolean {
  * Fires a lightweight ASK query to verify the endpoint is reachable and
  * returns SPARQL results before committing to the connection store.
  */
-async function testConnection(endpointUrl: string, authHeader?: string): Promise<void> {
+async function testConnection(
+  endpointUrl: string,
+  authHeader?: string,
+  proxyBaseUrl?: string,
+): Promise<void> {
   await executeSelect('SELECT * WHERE { ?s ?p ?o } LIMIT 1', {
     endpointUrl,
     authorizationHeader: authHeader,
+    proxyBaseUrl,
   })
 }
 
 async function onSubmit() {
-  if (!validate()) return
+  console.log('[SparqlForm] onSubmit called', {
+    connecting: connecting.value,
+    url: form.endpointUrl,
+  })
+  if (!validate()) {
+    console.log('[SparqlForm] onSubmit: validation failed', { errors })
+    return
+  }
 
   connecting.value = true
   connectionError.value = ''
 
-  const endpointUrl = form.proxyUrl.trim() || form.endpointUrl.trim()
+  const rawEndpoint = form.endpointUrl.trim()
+  // If no proxy was typed, fall back to the directory entry's proxy (covers
+  // the case where the user types a known CORS-restricted URL manually).
+  const directoryProxy = ENDPOINT_DIRECTORY.find((e) => e.url === rawEndpoint)?.proxyUrl ?? ''
+  const rawProxy = form.proxyUrl.trim() || directoryProxy
+  let endpointUrl: string
+  if (rawProxy && !(rawProxy.split('?')[0] ?? '').endsWith('/api/sparql')) {
+    // Transparent proxy (e.g. Caddy): Comunica hits the proxy URL directly.
+    endpointUrl = rawProxy
+  } else {
+    // No proxy or Vercel proxy: use the real endpoint. The connection store's
+    // queryContext will inject proxyBaseUrl so the engine rewrites fetches.
+    endpointUrl = rawEndpoint
+  }
   try {
-    connectingHost.value = new URL(endpointUrl).hostname
+    connectingHost.value = new URL(rawEndpoint).hostname
   } catch {
-    connectingHost.value = endpointUrl
+    connectingHost.value = rawEndpoint
   }
   const authHeader = form.username.trim()
     ? `Basic ${btoa(`${form.username.trim()}:${form.password}`)}`
     : undefined
+  const proxyPath = rawProxy.split('?')[0] ?? ''
+  const proxyBaseUrl = proxyPath.endsWith('/api/sparql') ? proxyPath : undefined
+
+  console.log('[SparqlForm] onSubmit', {
+    rawEndpoint,
+    rawProxy,
+    endpointUrl,
+    proxyPath,
+    proxyBaseUrl,
+  })
 
   try {
     // Skip the round-trip test when a cached schema already exists — the user
@@ -210,7 +322,7 @@ async function onSubmit() {
     // connectivity error if the endpoint is actually unreachable.
     const hasCachedSchema = loadSchema(endpointUrl) !== null
     if (!hasCachedSchema) {
-      await testConnection(endpointUrl, authHeader)
+      await testConnection(endpointUrl, authHeader, proxyBaseUrl)
     }
 
     schemaStore.clear()
@@ -218,7 +330,7 @@ async function onSubmit() {
       endpointUrl,
       username: form.username.trim(),
       password: form.password,
-      proxyUrl: form.proxyUrl.trim(),
+      proxyUrl: rawProxy,
     })
 
     router.push({ name: 'browse' })
@@ -229,6 +341,7 @@ async function onSubmit() {
         ? `Could not reach endpoint: ${err.message}`
         : 'Could not reach the SPARQL endpoint. Check the URL and try again.'
   } finally {
+    console.log('[SparqlForm] onSubmit finally: resetting connecting to false')
     connecting.value = false
   }
 }
@@ -341,5 +454,74 @@ async function onSubmit() {
 
 .connect-btn {
   margin-top: var(--rf-space-1);
+}
+
+/* ── Sample database cards ───────────────────────────────────────────────── */
+
+.endpoint-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--rf-space-3);
+}
+
+@media (max-width: 480px) {
+  .endpoint-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.endpoint-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--rf-space-1);
+  padding: var(--rf-space-3) var(--rf-space-4);
+  background: var(--rf-primary-soft);
+  border: 1px solid color-mix(in srgb, var(--rf-primary) 25%, transparent);
+  border-radius: var(--rf-radius-md);
+  cursor: pointer;
+  text-align: left;
+  transition:
+    border-color var(--rf-duration-fast) var(--rf-ease-out),
+    box-shadow var(--rf-duration-fast) var(--rf-ease-out);
+}
+
+.endpoint-card:hover:not(:disabled) {
+  border-color: var(--rf-primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--rf-primary) 15%, transparent);
+}
+
+.endpoint-card:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.endpoint-card-name {
+  font-size: var(--rf-text-sm);
+  font-weight: var(--rf-weight-semibold);
+  color: var(--rf-text);
+}
+
+.endpoint-card-domain {
+  font-size: var(--rf-text-xs);
+  font-weight: var(--rf-weight-semibold);
+  color: var(--rf-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.endpoint-card-desc {
+  font-size: var(--rf-text-xs);
+  color: var(--rf-text-muted);
+  line-height: var(--rf-leading-relaxed);
+}
+
+/* ── HTTPS notice ────────────────────────────────────────────────────────── */
+
+.https-notice {
+  color: var(--rf-success, #22c55e);
+  font-size: var(--rf-text-xs);
+  display: flex;
+  align-items: center;
+  gap: var(--rf-space-1);
 }
 </style>
