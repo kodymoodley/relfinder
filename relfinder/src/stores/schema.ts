@@ -255,9 +255,16 @@ export const useSchemaStore = defineStore('schema', () => {
    * No-ops when an extraction is already in progress or no context is stored.
    */
   async function loadMore() {
-    console.log('[schemaStore] loadMore called', { hasContext: !!_context, extracting: extracting.value, nodeCount: nodes.value.length })
+    console.log('[schemaStore] loadMore called', {
+      hasContext: !!_context,
+      extracting: extracting.value,
+      nodeCount: nodes.value.length,
+    })
     if (!_context || extracting.value) {
-      console.log('[schemaStore] loadMore bailed out early', { hasContext: !!_context, extracting: extracting.value })
+      console.log('[schemaStore] loadMore bailed out early', {
+        hasContext: !!_context,
+        extracting: extracting.value,
+      })
       return
     }
 
@@ -270,7 +277,13 @@ export const useSchemaStore = defineStore('schema', () => {
     const isFileSource = n3Store !== undefined
     const endpointUrl = isFileSource ? '' : context.endpointUrl || '__file__'
 
-    console.log('[schemaStore] loadMore starting', { offset, classLimit, edgeLimit, existingCount: existingIris.length, endpoint: context.endpointUrl })
+    console.log('[schemaStore] loadMore starting', {
+      offset,
+      classLimit,
+      edgeLimit,
+      existingCount: existingIris.length,
+      endpoint: context.endpointUrl,
+    })
 
     abortController = new AbortController()
     extracting.value = true
@@ -295,7 +308,9 @@ export const useSchemaStore = defineStore('schema', () => {
           onClassesLoaded(incoming) {
             const existingIris = new Set(nodes.value.map((n) => n.iri))
             const novel = incoming.filter((n) => !existingIris.has(n.iri))
-            console.log(`[schemaStore] loadMore onClassesLoaded: ${incoming.length} returned, ${novel.length} novel`)
+            console.log(
+              `[schemaStore] loadMore onClassesLoaded: ${incoming.length} returned, ${novel.length} novel`,
+            )
             lastBatchSize.value = novel.length
             nodes.value.push(...novel)
             progress.value = { completed: _processedSet.size, total: nodes.value.length }
@@ -329,7 +344,10 @@ export const useSchemaStore = defineStore('schema', () => {
             : 'An unexpected error occurred.'
       }
     } finally {
-      console.log('[schemaStore] loadMore finally: resetting extracting, nodeCount now', nodes.value.length)
+      console.log(
+        '[schemaStore] loadMore finally: resetting extracting, nodeCount now',
+        nodes.value.length,
+      )
       extracting.value = false
       statusMessage.value = ''
     }

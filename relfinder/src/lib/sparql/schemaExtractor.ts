@@ -92,12 +92,17 @@ async function fetchSchemaClasses(
     }
     LIMIT ${limit}${offset > 0 ? `\n    OFFSET ${offset}` : ''}
   `
-  console.log(`[schemaExtractor] fetchSchemaClasses query (limit=${limit}, offset=${offset}):\n${query}`)
+  console.log(
+    `[schemaExtractor] fetchSchemaClasses query (limit=${limit}, offset=${offset}):\n${query}`,
+  )
   const rows = await runSelect(query, context, store)
   const nodes = rows
     .filter((r) => r['class']?.type === 'NamedNode')
     .map((r) => ({ iri: r['class']!.value, label: shortIri(r['class']!.value) }))
-  console.log(`[schemaExtractor] fetchSchemaClasses → ${nodes.length} classes (${rows.length} raw rows, ${rows.length - nodes.length} filtered out)`, nodes.map(n => n.iri))
+  console.log(
+    `[schemaExtractor] fetchSchemaClasses → ${nodes.length} classes (${rows.length} raw rows, ${rows.length - nodes.length} filtered out)`,
+    nodes.map((n) => n.iri),
+  )
   return nodes
 }
 

@@ -611,7 +611,9 @@ export async function findRelationships(
   for (const [distance, blocks] of queryBlocks.entries()) {
     for (const block of blocks) {
       queryIndex++
-      console.log(`[findRelationships] query #${queryIndex} (distance=${distance}):\n${block.query}`)
+      console.log(
+        `[findRelationships] query #${queryIndex} (distance=${distance}):\n${block.query}`,
+      )
       try {
         const paths = await runSelect(block.query, context, options.store)
         console.log(`[findRelationships] query #${queryIndex} → ${paths.length} row(s)`)
