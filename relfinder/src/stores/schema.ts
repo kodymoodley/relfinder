@@ -111,6 +111,7 @@ export const useSchemaStore = defineStore('schema', () => {
   let _n3Store: Store | undefined = undefined
   let _classLimit = 40
   let _edgeLimit = 10
+  let _includeDeclaredClasses = false
 
   function setDataPropsStatus(classIri: string, msg: string) {
     dataPropsStatus.value.set(classIri, msg)
@@ -129,6 +130,7 @@ export const useSchemaStore = defineStore('schema', () => {
       savedAt: Date.now(),
       classLimit: _classLimit,
       edgeLimit: _edgeLimit,
+      includeDeclaredClasses: _includeDeclaredClasses,
       nodes: nodes.value,
       edges: edges.value,
       processedClassIris: Array.from(_processedSet),
@@ -143,6 +145,8 @@ export const useSchemaStore = defineStore('schema', () => {
   /**
    * Start (or resume) schema extraction for the given endpoint.
    * @param force  When true, ignore any cached schema and extract from scratch.
+   * @param includeDeclaredClasses  When true, also discover classes declared as
+   *   owl:Class / rdfs:Class that have no instances (default: instances only).
    */
   async function start(
     context: QueryContext,
@@ -150,6 +154,7 @@ export const useSchemaStore = defineStore('schema', () => {
     classLimit: number,
     edgeLimit: number,
     force = false,
+    includeDeclaredClasses = false,
   ) {
     abortController = new AbortController()
     extractError.value = ''
@@ -157,6 +162,7 @@ export const useSchemaStore = defineStore('schema', () => {
     _n3Store = n3Store
     _classLimit = classLimit
     _edgeLimit = edgeLimit
+    _includeDeclaredClasses = includeDeclaredClasses
     _processedSet.clear()
 
     // File sources (N3 Store) are never cached — extraction is in-memory and
@@ -168,7 +174,10 @@ export const useSchemaStore = defineStore('schema', () => {
     // ── Try to restore from persistent storage ──────────────────────────────
     const saved = force || isFileSource ? null : loadSchema(endpointUrl)
     const canResume =
-      saved !== null && saved.classLimit === classLimit && saved.edgeLimit === edgeLimit
+      saved !== null &&
+      saved.classLimit === classLimit &&
+      saved.edgeLimit === edgeLimit &&
+      (saved.includeDeclaredClasses ?? false) === includeDeclaredClasses
 
     if (canResume && saved) {
       nodes.value = saved.nodes
@@ -207,6 +216,7 @@ export const useSchemaStore = defineStore('schema', () => {
         {
           classLimit,
           edgeLimit,
+          includeDeclaredClasses,
           preloadedNodes: canResume && saved ? saved.nodes : undefined,
           skipClasses: _processedSet.size > 0 ? new Set(_processedSet) : undefined,
         },
@@ -279,6 +289,9 @@ export const useSchemaStore = defineStore('schema', () => {
         {
           classLimit,
           edgeLimit,
+          // Pagination relies on ORDER BY over the same discovery query, so the
+          // flag must match the initial extraction for offsets to stay stable.
+          includeDeclaredClasses: _includeDeclaredClasses,
           classOffset: offset,
           additionalClassIris: existingIris,
         },
