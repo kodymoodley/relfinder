@@ -20,6 +20,11 @@ export interface PersistedSchema {
   savedAt: number
   classLimit: number
   edgeLimit: number
+  /**
+   * Whether declared (T-Box-only) classes were included in discovery.
+   * Absent in entries saved before this option existed (treated as false).
+   */
+  includeDeclaredClasses?: boolean
   nodes: SchemaNode[]
   edges: SchemaEdge[]
   /** IRIs of classes whose Phase-2 edge query has completed. */

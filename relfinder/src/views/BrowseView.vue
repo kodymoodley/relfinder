@@ -55,15 +55,27 @@
         <!-- Extract action — three exclusive states -->
         <section class="sidebar-section">
           <!-- State 1: no schema yet -->
-          <Button
-            v-if="!schemaStore.hasData && !schemaStore.extracting"
-            label="Extract Schema"
-            icon="pi pi-sitemap"
-            severity="primary"
-            fluid
-            data-testid="extract-schema-btn"
-            @click="startExtraction()"
-          />
+          <template v-if="!schemaStore.hasData && !schemaStore.extracting">
+            <Button
+              label="Extract Schema"
+              icon="pi pi-sitemap"
+              severity="primary"
+              fluid
+              data-testid="extract-schema-btn"
+              @click="startExtraction()"
+            />
+            <div class="option-row">
+              <label class="option-label option-label--wrap" for="include-declared-pre">
+                Include classes without instances
+              </label>
+              <Checkbox
+                v-model="includeClassesWithoutInstances"
+                input-id="include-declared-pre"
+                binary
+                data-testid="include-declared-checkbox"
+              />
+            </div>
+          </template>
 
           <!-- State 2: actively extracting -->
           <Button
@@ -178,6 +190,17 @@
               />
             </div>
             <div class="option-row">
+              <label class="option-label option-label--wrap" for="include-declared">
+                Include classes without instances
+              </label>
+              <Checkbox
+                v-model="includeClassesWithoutInstances"
+                input-id="include-declared"
+                binary
+                data-testid="include-declared-checkbox-options"
+              />
+            </div>
+            <div class="option-row">
               <label class="option-label" for="hide-orphans">Hide orphan nodes</label>
               <ToggleButton
                 v-model="schemaStore.hideOrphans"
@@ -261,6 +284,7 @@ import ProgressBar from 'primevue/progressbar'
 import Divider from 'primevue/divider'
 import InputNumber from 'primevue/inputnumber'
 import ToggleButton from 'primevue/togglebutton'
+import Checkbox from 'primevue/checkbox'
 import { useSidebar } from '@/composables/useSidebar'
 import { useConnectionStore } from '@/stores/connection'
 import { useSchemaStore } from '@/stores/schema'
@@ -301,6 +325,9 @@ useKeyboardShortcuts({
 
 const classLimit = ref(10)
 const edgeLimit = ref(3)
+// When true, Phase 1 also discovers classes declared as owl:Class / rdfs:Class
+// that have no instances. Default: only classes something is typed with.
+const includeClassesWithoutInstances = ref(false)
 
 // True when the last discovered batch was a full page — more classes likely exist
 const canLoadMore = computed(
@@ -326,7 +353,14 @@ function startExtraction(force = false) {
   const store = connectionStore.rdfStore ?? undefined
   // File sources are fully in-memory — fetch all classes at once.
   const effectiveClassLimit = connectionStore.isFileSource ? 10_000 : classLimit.value
-  schemaStore.start(context, store, effectiveClassLimit, edgeLimit.value, force)
+  schemaStore.start(
+    context,
+    store,
+    effectiveClassLimit,
+    edgeLimit.value,
+    force,
+    includeClassesWithoutInstances.value,
+  )
 }
 
 // ── Node / edge selection ─────────────────────────────────────────────────────
@@ -660,6 +694,12 @@ onUnmounted(() => {
   font-size: var(--rf-text-sm);
   color: var(--rf-text-muted);
   flex-shrink: 0;
+}
+
+/* Long labels (e.g. next to a checkbox) may shrink and wrap instead of overflowing. */
+.option-label--wrap {
+  flex-shrink: 1;
+  min-width: 0;
 }
 
 :deep(.option-row .p-inputnumber) {

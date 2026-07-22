@@ -51,6 +51,10 @@ export const DEFAULT_PREFIXES: Record<string, string> = {
 export const RDF_TYPE = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type'
 export const SKOS_SUBJECT = 'http://www.w3.org/2004/02/skos/core#subject'
 
+/** Class meta-types used to discover explicitly declared (T-Box) classes. */
+export const OWL_CLASS = 'http://www.w3.org/2002/07/owl#Class'
+export const RDFS_CLASS = 'http://www.w3.org/2000/01/rdf-schema#Class'
+
 /**
  * Returns true if `local` is safe to use as the local part of a SPARQL prefixed name.
  *

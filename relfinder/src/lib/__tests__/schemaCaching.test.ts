@@ -182,6 +182,28 @@ describe('schema store — caching', () => {
 
       expect(extractSchema).toHaveBeenCalledOnce()
     })
+
+    it('ignores cache when includeDeclaredClasses differs', async () => {
+      mockFullExtraction()
+      saveSchema(ENDPOINT, makeStoredSchema()) // stored without the flag (pre-flag entry)
+      await useSchemaStore().start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT, false, true)
+
+      expect(extractSchema).toHaveBeenCalledOnce()
+      const opts = vi.mocked(extractSchema).mock.calls[0]![2]!
+      expect(opts.includeDeclaredClasses).toBe(true)
+      expect(opts.preloadedNodes).toBeUndefined()
+    })
+
+    it('resumes from cache when includeDeclaredClasses matches a flagged entry', async () => {
+      mockFullExtraction()
+      saveSchema(ENDPOINT, makeStoredSchema({ includeDeclaredClasses: true }))
+      const store = useSchemaStore()
+      await store.start(CONTEXT, undefined, CLASS_LIMIT, EDGE_LIMIT, false, true)
+
+      // Fully cached — no extraction round-trip needed
+      expect(extractSchema).not.toHaveBeenCalled()
+      expect(store.nodes).toHaveLength(NODES.length)
+    })
   })
 
   describe('start() with a partially-cached schema', () => {

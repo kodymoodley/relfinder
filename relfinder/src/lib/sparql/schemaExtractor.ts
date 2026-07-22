@@ -27,7 +27,7 @@ import type {
   SchemaDataProp,
 } from './types'
 import { DESCRIPTION_PROPERTIES } from './classDescription'
-import { RDF_TYPE } from './queryBuilder'
+import { RDF_TYPE, OWL_CLASS, RDFS_CLASS } from './queryBuilder'
 
 export interface SchemaExtractionOptions {
   /** Max classes to discover. Default 40. */
@@ -36,6 +36,12 @@ export interface SchemaExtractionOptions {
   edgeLimit?: number
   /** Max concurrent Phase-2 queries. Default 5. */
   concurrency?: number
+  /**
+   * Also discover classes explicitly declared as owl:Class or rdfs:Class,
+   * even when no instances are typed with them. Default false — discovery is
+   * purely instance-driven, so T-Box-only classes are invisible.
+   */
+  includeDeclaredClasses?: boolean
   /** Preferred language for labels. Default 'en'. */
   language?: string
   /**
@@ -83,10 +89,20 @@ async function fetchSchemaClasses(
   store: Store | undefined,
   limit: number,
   offset = 0,
+  includeDeclaredClasses = false,
 ): Promise<SchemaNode[]> {
+  // Instance-driven discovery: a class is anything something is typed with.
+  const patterns = [`{ [] <${RDF_TYPE}> ?class . }`]
+  if (includeDeclaredClasses) {
+    // Declaration-driven discovery: also pick up T-Box classes with no instances.
+    patterns.push(
+      `{ ?class <${RDF_TYPE}> <${OWL_CLASS}> . }`,
+      `{ ?class <${RDF_TYPE}> <${RDFS_CLASS}> . }`,
+    )
+  }
   const query = `
     SELECT DISTINCT ?class WHERE {
-      [] <${RDF_TYPE}> ?class .
+      ${patterns.join('\n      UNION\n      ')}
       FILTER(isIRI(?class))
     } ORDER BY ?class
     LIMIT ${limit}${offset > 0 ? `\n    OFFSET ${offset}` : ''}
@@ -211,6 +227,7 @@ export async function extractSchema(
     edgeLimit = 3,
     concurrency = 5,
     language = 'en',
+    includeDeclaredClasses = false,
     preloadedNodes,
     skipClasses,
     classOffset = 0,
@@ -223,7 +240,13 @@ export async function extractSchema(
     nodes = preloadedNodes
     // Labels and onClassesLoaded already handled by the caller when restoring
   } else {
-    nodes = await fetchSchemaClasses(context, store, classLimit, classOffset)
+    nodes = await fetchSchemaClasses(
+      context,
+      store,
+      classLimit,
+      classOffset,
+      includeDeclaredClasses,
+    )
     if (signal?.aborted || nodes.length === 0) return { nodes, edges: [] }
 
     // Run all label + description batches concurrently (2 queries per batch in parallel).
