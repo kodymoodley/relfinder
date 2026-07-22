@@ -18,6 +18,7 @@ It is a modernised, fully client-side, partial rewrite of the [original RelFinde
 - **Quick-start examples** — four built-in examples (film industry and physics pioneers, both as bundled Turtle datasets and as live DBpedia queries) that load instantly with no setup
 - **Interactive force-directed graph** — springy D3-physics simulation via Cytoscape.js; drag nodes to explore, double-click to fix in place, box-select subgraphs, and crop the view to a selection
 - **Node detail panel** — inspect any node's IRI, RDF type, and data properties
+- **Schema visualisation** — extract and explore the class schema of the connected dataset, including class-to-class relationships, data properties, and instances
 
 ## Usage
 
@@ -32,6 +33,12 @@ Click any of the built-in examples on the connection screen to load a bundled da
 3. **Optionally filter** — open *Query Options* to restrict by class, language, path length, or ignored properties.
 4. **Find relationships** — click *Find Relationships*. The graph renders all discovered paths between the two entities.
 5. **Explore** — drag nodes, click them for detail, zoom and pan, toggle edge labels, box-select a subgraph to crop the view, or re-run the layout with the toolbar buttons.
+
+### Schema view
+
+The *Schema* tab extracts and visualises the class schema of the connected dataset. By default, discovery is **instance-driven**: a class is only shown if at least one resource in the data is typed with it (i.e. it appears as the object of an `rdf:type` triple). This works well for instance-heavy datasets, but classes that are merely *declared* (as `owl:Class` or `rdfs:Class`) without having any instances — common in ontology/T-Box-only files — are not picked up.
+
+To include those as well, tick **Include classes without instances** in the sidebar before extraction (the same option is available under *Options* when re-extracting). Changing the option invalidates any cached schema for the endpoint, so the next extraction runs fresh.
 
 ### Example endpoints
 
