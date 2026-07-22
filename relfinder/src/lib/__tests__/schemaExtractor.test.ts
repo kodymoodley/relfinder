@@ -265,3 +265,56 @@ describe('extractSchema — Phase 2 abort guard', () => {
     })
   })
 })
+
+// ── Phase 1: class discovery query ────────────────────────────────────────────
+
+describe('extractSchema — Phase 1 class discovery', () => {
+  const OWL_CLASS = 'http://www.w3.org/2002/07/owl#Class'
+  const RDFS_CLASS = 'http://www.w3.org/2000/01/rdf-schema#Class'
+
+  function phase1Query(): string {
+    expect(executeSelect).toHaveBeenCalled()
+    return vi.mocked(executeSelect).mock.calls[0]![0] as string
+  }
+
+  it('discovers classes from instance data only by default', async () => {
+    vi.mocked(executeSelect).mockResolvedValue([])
+
+    await extractSchema(CONTEXT, undefined, {}, makeCallbacks())
+
+    const query = phase1Query()
+    expect(query).not.toContain('UNION')
+    expect(query).not.toContain(OWL_CLASS)
+    expect(query).not.toContain(RDFS_CLASS)
+  })
+
+  it('also discovers declared classes when includeDeclaredClasses is set', async () => {
+    vi.mocked(executeSelect).mockResolvedValue([])
+
+    await extractSchema(CONTEXT, undefined, { includeDeclaredClasses: true }, makeCallbacks())
+
+    const query = phase1Query()
+    expect(query).toContain('UNION')
+    expect(query).toContain(
+      `?class <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <${OWL_CLASS}>`,
+    )
+    expect(query).toContain(
+      `?class <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <${RDFS_CLASS}>`,
+    )
+  })
+
+  it('returns declared classes found by the extended query as schema nodes', async () => {
+    vi.mocked(executeSelect)
+      .mockResolvedValueOnce([{ class: { type: 'uri', value: 'http://example.org/DeclaredOnly' } }])
+      .mockResolvedValue([])
+
+    const result = await extractSchema(
+      CONTEXT,
+      undefined,
+      { includeDeclaredClasses: true },
+      makeCallbacks(),
+    )
+
+    expect(result.nodes.map((n) => n.iri)).toContain('http://example.org/DeclaredOnly')
+  })
+})
