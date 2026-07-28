@@ -78,6 +78,15 @@ export const useSchemaStore = defineStore('schema', () => {
   // ── Display options ───────────────────────────────────────────────────────────
 
   const hideOrphans = ref(false)
+  // Toggle visibility of declared (T-Box) relations. All default on; these are
+  // display filters over already-extracted data — toggling never re-extracts.
+  const showSubClassEdges = ref(true)
+  const showObjectPropEdges = ref(true)
+  const showDataPropBadges = ref(true)
+
+  // ── Declared datatype properties cache (per class, from rdfs:domain) ──────────
+
+  const declaredDataPropsCache = ref(new Map<string, SchemaDataProp[]>())
 
   // ── Data properties cache ────────────────────────────────────────────────────
 
@@ -234,6 +243,9 @@ export const useSchemaStore = defineStore('schema', () => {
           onEdgesLoaded(incoming) {
             edges.value.push(...incoming)
           },
+          onDeclaredDataProps(map) {
+            for (const [k, v] of map) declaredDataPropsCache.value.set(k, v)
+          },
           onProgress(completed, total) {
             progress.value = { completed, total }
           },
@@ -309,6 +321,9 @@ export const useSchemaStore = defineStore('schema', () => {
           onEdgesLoaded(incoming) {
             edges.value.push(...incoming)
           },
+          onDeclaredDataProps(map) {
+            for (const [k, v] of map) declaredDataPropsCache.value.set(k, v)
+          },
           onProgress(completed, total) {
             progress.value = { completed, total }
           },
@@ -352,6 +367,7 @@ export const useSchemaStore = defineStore('schema', () => {
     dataPropsCache.value.clear()
     dataPropsLoading.value.clear()
     dataPropsStatus.value.clear()
+    declaredDataPropsCache.value.clear()
     descriptionCache.value.clear()
     descriptionLoading.value.clear()
     descriptionStatus.value.clear()
@@ -466,10 +482,14 @@ export const useSchemaStore = defineStore('schema', () => {
     lastBatchSize,
     // options
     hideOrphans,
+    showSubClassEdges,
+    showObjectPropEdges,
+    showDataPropBadges,
     // data props
     dataPropsCache,
     dataPropsLoading,
     dataPropsStatus,
+    declaredDataPropsCache,
     // descriptions
     descriptionCache,
     descriptionLoading,
