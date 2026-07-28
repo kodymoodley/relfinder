@@ -33,6 +33,7 @@ import {
   RDFS_CLASS,
   RDFS_SUBCLASSOF,
   OWL_OBJECT_PROPERTY,
+  OWL_DATATYPE_PROPERTY,
   RDFS_DOMAIN,
   RDFS_RANGE,
 } from './queryBuilder'
@@ -86,6 +87,8 @@ export interface SchemaExtractionCallbacks {
   onSubClassEdges?: (edges: SchemaEdge[]) => void
   /** Called once with declared object-property domain→range edges between known classes. */
   onDeclaredObjectEdges?: (edges: SchemaEdge[]) => void
+  /** Called once with declared datatype properties grouped by their rdfs:domain class. */
+  onDeclaredDataProps?: (byClass: Map<string, SchemaDataProp[]>) => void
   /** Called after every class query completes (including skipped ones). */
   onProgress?: (completed: number, total: number) => void
   /** Called after each class finishes Phase 2 — use to persist incremental state. */
@@ -300,6 +303,49 @@ async function fetchDeclaredObjectEdges(
   return Array.from(byPair.values())
 }
 
+/** Declared datatype properties (owl:DatatypeProperty) grouped by their rdfs:domain class. */
+async function fetchDeclaredDataProps(
+  classIris: string[],
+  context: QueryContext,
+  store: Store | undefined,
+  signal?: AbortSignal,
+): Promise<Map<string, SchemaDataProp[]>> {
+  if (classIris.length === 0) return new Map()
+  const values = classIris.map((c) => `<${c}>`).join(' ')
+  const query = `
+    SELECT ?d ?prop ?r WHERE {
+      VALUES ?d { ${values} }
+      ?prop <${RDF_TYPE}> <${OWL_DATATYPE_PROPERTY}> ;
+            <${RDFS_DOMAIN}> ?d .
+      OPTIONAL { ?prop <${RDFS_RANGE}> ?r }
+    }
+  `
+  const rows = await runSelect(query, context, store, signal)
+  const byClass = new Map<string, Map<string, Set<string>>>()
+  for (const r of rows) {
+    const d = r['d']?.value
+    const propIri = r['prop']?.value
+    if (!d || !propIri) continue
+    if (!byClass.has(d)) byClass.set(d, new Map())
+    const byProp = byClass.get(d)!
+    if (!byProp.has(propIri)) byProp.set(propIri, new Set())
+    const rr = r['r']?.value
+    if (rr) byProp.get(propIri)!.add(rr)
+  }
+  const result = new Map<string, SchemaDataProp[]>()
+  for (const [classIri, byProp] of byClass) {
+    result.set(
+      classIri,
+      Array.from(byProp.entries()).map(([iri, dts]) => ({
+        iri,
+        label: shortIri(iri),
+        datatypes: [...dts].map(shortIri),
+      })),
+    )
+  }
+  return result
+}
+
 // ── Orchestrator ──────────────────────────────────────────────────────────────
 
 export async function extractSchema(
@@ -376,6 +422,9 @@ export async function extractSchema(
 
     const objectEdges = await fetchDeclaredObjectEdges(allClassIris, context, store, signal)
     if (!signal?.aborted && objectEdges.length > 0) callbacks.onDeclaredObjectEdges?.(objectEdges)
+
+    const dataProps = await fetchDeclaredDataProps(allClassIris, context, store, signal)
+    if (!signal?.aborted && dataProps.size > 0) callbacks.onDeclaredDataProps?.(dataProps)
   }
   if (signal?.aborted) return { nodes, edges: [] }
 
