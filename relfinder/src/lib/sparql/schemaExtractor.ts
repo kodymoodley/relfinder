@@ -25,6 +25,7 @@ import type {
   SchemaGraph,
   SchemaProp,
   SchemaDataProp,
+  LabelEntry,
 } from './types'
 import { DESCRIPTION_PROPERTIES } from './classDescription'
 import {
@@ -230,6 +231,24 @@ async function fetchEdgesForClass(
 
 // ── Phase 1.5: declared (T-Box) relations ──────────────────────────────────────
 
+/** Overwrite each item's `label` with its best-language rdfs:label when one exists. */
+async function enrichLabels(
+  items: { iri: string; label: string }[],
+  context: QueryContext,
+  store: Store | undefined,
+  language: string,
+): Promise<void> {
+  const iris = [...new Set(items.map((i) => i.iri))]
+  if (iris.length === 0) return
+  const labelMap = await fetchLabels(iris, context, store).catch(
+    (): Map<string, LabelEntry[]> => new Map(),
+  )
+  for (const item of items) {
+    const best = pickLabel(labelMap.get(item.iri) ?? [], language)
+    if (best !== undefined) item.label = best
+  }
+}
+
 /** All `?sub rdfs:subClassOf ?super` pairs where both ends are known classes. */
 async function fetchSubClassEdges(
   classIris: string[],
@@ -421,10 +440,21 @@ export async function extractSchema(
     if (!signal?.aborted && subClassEdges.length > 0) callbacks.onSubClassEdges?.(subClassEdges)
 
     const objectEdges = await fetchDeclaredObjectEdges(allClassIris, context, store, signal)
-    if (!signal?.aborted && objectEdges.length > 0) callbacks.onDeclaredObjectEdges?.(objectEdges)
+    if (!signal?.aborted && objectEdges.length > 0) {
+      await enrichLabels(
+        objectEdges.flatMap((e) => e.props),
+        context,
+        store,
+        language,
+      )
+      if (!signal?.aborted) callbacks.onDeclaredObjectEdges?.(objectEdges)
+    }
 
     const dataProps = await fetchDeclaredDataProps(allClassIris, context, store, signal)
-    if (!signal?.aborted && dataProps.size > 0) callbacks.onDeclaredDataProps?.(dataProps)
+    if (!signal?.aborted && dataProps.size > 0) {
+      await enrichLabels([...dataProps.values()].flat(), context, store, language)
+      if (!signal?.aborted) callbacks.onDeclaredDataProps?.(dataProps)
+    }
   }
   if (signal?.aborted) return { nodes, edges: [] }
 
