@@ -27,7 +27,7 @@ import type {
   SchemaDataProp,
 } from './types'
 import { DESCRIPTION_PROPERTIES } from './classDescription'
-import { RDF_TYPE, OWL_CLASS, RDFS_CLASS } from './queryBuilder'
+import { RDF_TYPE, OWL_CLASS, RDFS_CLASS, RDFS_SUBCLASSOF } from './queryBuilder'
 
 export interface SchemaExtractionOptions {
   /** Max classes to discover. Default 40. */
@@ -74,6 +74,8 @@ export interface SchemaExtractionCallbacks {
   onClassesLoaded?: (nodes: SchemaNode[]) => void
   /** Called after each class's edges arrive — render incrementally. */
   onEdgesLoaded?: (edges: SchemaEdge[]) => void
+  /** Called once with declared rdfs:subClassOf edges between known classes. */
+  onSubClassEdges?: (edges: SchemaEdge[]) => void
   /** Called after every class query completes (including skipped ones). */
   onProgress?: (completed: number, total: number) => void
   /** Called after each class finishes Phase 2 — use to persist incremental state. */
@@ -213,6 +215,37 @@ async function fetchEdgesForClass(
   }))
 }
 
+// ── Phase 1.5: declared (T-Box) relations ──────────────────────────────────────
+
+/** All `?sub rdfs:subClassOf ?super` pairs where both ends are known classes. */
+async function fetchSubClassEdges(
+  classIris: string[],
+  context: QueryContext,
+  store: Store | undefined,
+  signal?: AbortSignal,
+): Promise<SchemaEdge[]> {
+  if (classIris.length === 0) return []
+  const values = classIris.map((c) => `<${c}>`).join(' ')
+  const query = `
+    SELECT DISTINCT ?sub ?super WHERE {
+      VALUES ?sub { ${values} }
+      VALUES ?super { ${values} }
+      ?sub <${RDFS_SUBCLASSOF}> ?super .
+      FILTER(?sub != ?super)
+    }
+  `
+  const rows = await runSelect(query, context, store, signal)
+  return rows
+    .filter((r) => r['sub'] && r['super'])
+    .map((r) => ({
+      sourceIri: r['sub']!.value,
+      targetIri: r['super']!.value,
+      props: [{ iri: RDFS_SUBCLASSOF, label: 'subClassOf', count: 1 }],
+      totalCount: 1,
+      kind: 'subClassOf' as const,
+    }))
+}
+
 // ── Orchestrator ──────────────────────────────────────────────────────────────
 
 export async function extractSchema(
@@ -276,11 +309,20 @@ export async function extractSchema(
     if (signal?.aborted) return { nodes, edges: [] }
   }
 
-  // ── Phase 2: edges ──────────────────────────────────────────────────────────
-  // Include any extra IRIs (prior pages) so cross-batch edges are discovered.
+  // Known class set — include any extra IRIs (prior pages) so cross-batch
+  // relations are discovered. Shared by Phase 1.5 and Phase 2.
   const allClassIris = additionalClassIris
     ? [...new Set([...nodes.map((n) => n.iri), ...additionalClassIris])]
     : nodes.map((n) => n.iri)
+
+  // ── Phase 1.5: declared (T-Box) relations — mined once from fresh discovery ──
+  if (!preloadedNodes) {
+    const subClassEdges = await fetchSubClassEdges(allClassIris, context, store, signal)
+    if (!signal?.aborted && subClassEdges.length > 0) callbacks.onSubClassEdges?.(subClassEdges)
+  }
+  if (signal?.aborted) return { nodes, edges: [] }
+
+  // ── Phase 2: edges ──────────────────────────────────────────────────────────
   const allEdges: SchemaEdge[] = []
   // Initialise counter at skip count so progress % is accurate when resuming
   let completed = skipClasses?.size ?? 0
