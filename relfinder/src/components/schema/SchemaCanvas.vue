@@ -425,6 +425,32 @@ function initCytoscape() {
         selector: 'edge.no-label',
         style: { label: '' },
       },
+      // Declared object-property (domain→range) edges — teal, to read apart from
+      // the grey instance-observed edges.
+      {
+        selector: 'edge.kind-objectDeclared',
+        style: {
+          'line-color': '#0891b2',
+          'target-arrow-color': '#0891b2',
+        },
+      },
+      // Declared rdfs:subClassOf edges — dashed with a hollow triangle toward the
+      // superclass (UML/VOWL convention).
+      {
+        selector: 'edge.kind-subClassOf',
+        style: {
+          'line-color': '#a78bfa',
+          'line-style': 'dashed',
+          'target-arrow-color': '#a78bfa',
+          'target-arrow-shape': 'triangle',
+          'target-arrow-fill': 'hollow',
+        },
+      },
+      // Per-kind visibility toggle (Options checkboxes).
+      {
+        selector: 'edge.kind-hidden',
+        style: { display: 'none' },
+      },
       {
         selector: 'edge:selected',
         style: {
@@ -471,21 +497,29 @@ function addNewEdges() {
 
   const els = newEdges
     .filter((e) => cy!.$id(e.sourceIri).length > 0 && cy!.$id(e.targetIri).length > 0)
-    .map((e) => ({
-      data: {
-        id: `${e.sourceIri}__${e.targetIri}`,
-        source: e.sourceIri,
-        target: e.targetIri,
-        label: e.props[0]?.label ?? '',
-        width: edgeWidth(e.totalCount),
-        sourceIri: e.sourceIri,
-        targetIri: e.targetIri,
-      },
-    }))
+    .map((e) => {
+      const kind = e.kind ?? 'object'
+      return {
+        // Kind is part of the id so a subClassOf and an object edge between the
+        // same pair of classes don't collide.
+        data: {
+          id: `${kind}__${e.sourceIri}__${e.targetIri}`,
+          source: e.sourceIri,
+          target: e.targetIri,
+          label: kind === 'subClassOf' ? '' : (e.props[0]?.label ?? ''),
+          width: edgeWidth(e.totalCount),
+          sourceIri: e.sourceIri,
+          targetIri: e.targetIri,
+          kind,
+        },
+        classes: `kind-${kind}`,
+      }
+    })
 
   if (els.length > 0) {
     const added = cy.add(els)
     if (!showEdgeLabels.value) added.addClass('no-label')
+    applyEdgeKindVisibility()
   }
 
   renderedEdgeCount = props.edges.length
@@ -634,6 +668,15 @@ function toggleEdgeLabels() {
   else cy?.edges().addClass('no-label')
 }
 
+/** Show/hide declared edge kinds per the Options toggles (instance edges always show). */
+function applyEdgeKindVisibility() {
+  if (!cy) return
+  cy.batch(() => {
+    cy!.edges('.kind-subClassOf').toggleClass('kind-hidden', !schemaStore.showSubClassEdges)
+    cy!.edges('.kind-objectDeclared').toggleClass('kind-hidden', !schemaStore.showObjectPropEdges)
+  })
+}
+
 // ── Reactive updates ──────────────────────────────────────────────────────────
 
 watch(
@@ -666,6 +709,12 @@ watch(
   () => {
     if (cy) addNewEdges()
   },
+)
+
+// Declared edge-kind visibility toggles (Options checkboxes)
+watch(
+  () => [schemaStore.showSubClassEdges, schemaStore.showObjectPropEdges],
+  () => applyEdgeKindVisibility(),
 )
 
 onMounted(() => {
