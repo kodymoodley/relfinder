@@ -31,6 +31,11 @@ export interface PersistedSchema {
   processedClassIris: string[]
   /** Map<classIri, SchemaDataProp[]> serialised as entries array. */
   dataPropsCache: [string, SchemaDataProp[]][]
+  /**
+   * Map<classIri, SchemaDataProp[]> of declared datatype properties, serialised as entries.
+   * Absent in entries saved before this cache existed (treated as empty).
+   */
+  declaredDataPropsCache?: [string, SchemaDataProp[]][]
   /** Map<classIri, description string> serialised as entries array. */
   descriptionCache: [string, string][]
 }
