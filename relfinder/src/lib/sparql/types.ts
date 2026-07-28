@@ -170,12 +170,22 @@ export interface SchemaProp {
   count: number
 }
 
+/**
+ * Category of a schema edge.
+ *   'object'         — instance-observed object-property usage (default, back-compatible).
+ *   'objectDeclared' — declared rdfs:domain → rdfs:range on an owl:ObjectProperty.
+ *   'subClassOf'     — subclass → superclass (rdfs:subClassOf).
+ */
+export type SchemaEdgeKind = 'object' | 'objectDeclared' | 'subClassOf'
+
 /** All properties from one class to another, collapsed into a single directed edge. */
 export interface SchemaEdge {
   sourceIri: string
   targetIri: string
   props: SchemaProp[]
   totalCount: number
+  /** Edge category. Absent is treated as 'object' for backward compatibility. */
+  kind?: SchemaEdgeKind
 }
 
 export interface SchemaGraph {

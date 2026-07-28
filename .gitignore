@@ -8,6 +8,9 @@ pnpm-debug.log*
 .yarn/
 .pnp.*
 package-lock.json.bak
+catalog-v001.xml
+ont.properties
+ont.ttl
 
 # ── Vite / Build output ───────────────────────────────────────────────────────
 dist/

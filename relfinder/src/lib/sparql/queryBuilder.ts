@@ -55,6 +55,13 @@ export const SKOS_SUBJECT = 'http://www.w3.org/2004/02/skos/core#subject'
 export const OWL_CLASS = 'http://www.w3.org/2002/07/owl#Class'
 export const RDFS_CLASS = 'http://www.w3.org/2000/01/rdf-schema#Class'
 
+/** Property meta-types and schema predicates used to mine declared (T-Box) relations. */
+export const OWL_OBJECT_PROPERTY = 'http://www.w3.org/2002/07/owl#ObjectProperty'
+export const OWL_DATATYPE_PROPERTY = 'http://www.w3.org/2002/07/owl#DatatypeProperty'
+export const RDFS_SUBCLASSOF = 'http://www.w3.org/2000/01/rdf-schema#subClassOf'
+export const RDFS_DOMAIN = 'http://www.w3.org/2000/01/rdf-schema#domain'
+export const RDFS_RANGE = 'http://www.w3.org/2000/01/rdf-schema#range'
+
 /**
  * Returns true if `local` is safe to use as the local part of a SPARQL prefixed name.
  *
