@@ -27,7 +27,15 @@ import type {
   SchemaDataProp,
 } from './types'
 import { DESCRIPTION_PROPERTIES } from './classDescription'
-import { RDF_TYPE, OWL_CLASS, RDFS_CLASS, RDFS_SUBCLASSOF } from './queryBuilder'
+import {
+  RDF_TYPE,
+  OWL_CLASS,
+  RDFS_CLASS,
+  RDFS_SUBCLASSOF,
+  OWL_OBJECT_PROPERTY,
+  RDFS_DOMAIN,
+  RDFS_RANGE,
+} from './queryBuilder'
 
 export interface SchemaExtractionOptions {
   /** Max classes to discover. Default 40. */
@@ -76,6 +84,8 @@ export interface SchemaExtractionCallbacks {
   onEdgesLoaded?: (edges: SchemaEdge[]) => void
   /** Called once with declared rdfs:subClassOf edges between known classes. */
   onSubClassEdges?: (edges: SchemaEdge[]) => void
+  /** Called once with declared object-property domain→range edges between known classes. */
+  onDeclaredObjectEdges?: (edges: SchemaEdge[]) => void
   /** Called after every class query completes (including skipped ones). */
   onProgress?: (completed: number, total: number) => void
   /** Called after each class finishes Phase 2 — use to persist incremental state. */
@@ -246,6 +256,50 @@ async function fetchSubClassEdges(
     }))
 }
 
+/** Declared `?prop rdfs:domain ?d ; rdfs:range ?r` (owl:ObjectProperty) between known classes. */
+async function fetchDeclaredObjectEdges(
+  classIris: string[],
+  context: QueryContext,
+  store: Store | undefined,
+  signal?: AbortSignal,
+): Promise<SchemaEdge[]> {
+  if (classIris.length === 0) return []
+  const values = classIris.map((c) => `<${c}>`).join(' ')
+  const query = `
+    SELECT ?prop ?d ?r WHERE {
+      VALUES ?d { ${values} }
+      VALUES ?r { ${values} }
+      ?prop <${RDF_TYPE}> <${OWL_OBJECT_PROPERTY}> ;
+            <${RDFS_DOMAIN}> ?d ;
+            <${RDFS_RANGE}> ?r .
+    }
+  `
+  const rows = await runSelect(query, context, store, signal)
+  // Collapse multiple properties for the same (domain, range) pair into one edge.
+  const byPair = new Map<string, SchemaEdge>()
+  for (const r of rows) {
+    const propIri = r['prop']?.value
+    const d = r['d']?.value
+    const rr = r['r']?.value
+    if (!propIri || !d || !rr) continue
+    const entry: SchemaProp = { iri: propIri, label: shortIri(propIri), count: 1 }
+    const edge = byPair.get(`${d} ${rr}`)
+    if (edge) {
+      edge.props.push(entry)
+      edge.totalCount++
+    } else {
+      byPair.set(`${d} ${rr}`, {
+        sourceIri: d,
+        targetIri: rr,
+        props: [entry],
+        totalCount: 1,
+        kind: 'objectDeclared',
+      })
+    }
+  }
+  return Array.from(byPair.values())
+}
+
 // ── Orchestrator ──────────────────────────────────────────────────────────────
 
 export async function extractSchema(
@@ -319,6 +373,9 @@ export async function extractSchema(
   if (!preloadedNodes) {
     const subClassEdges = await fetchSubClassEdges(allClassIris, context, store, signal)
     if (!signal?.aborted && subClassEdges.length > 0) callbacks.onSubClassEdges?.(subClassEdges)
+
+    const objectEdges = await fetchDeclaredObjectEdges(allClassIris, context, store, signal)
+    if (!signal?.aborted && objectEdges.length > 0) callbacks.onDeclaredObjectEdges?.(objectEdges)
   }
   if (signal?.aborted) return { nodes, edges: [] }
 
